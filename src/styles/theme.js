@@ -1,0 +1,16 @@
+export const theme = {
+  colors: {
+    primary: '#7B9E89',
+    primaryLight: '#A8C4B3',
+    text: '#2C2C2A',
+    textSub: '#888780',
+    bg: '#FAF8F4',
+    surface: '#FFFFFF',
+    border: '#E5E3DC',
+    danger: '#D85A30',
+  },
+  radius: { sm: '8px', md: '12px', lg: '20px', full: '999px' },
+  fontSize: { caption: '13px', body: '16px', subtitle: '18px', title: '22px' },
+  spacing: { xs: '4px', sm: '8px', md: '16px', lg: '24px', xl: '32px' },
+  zIndex: { header: 100, modal: 1000, toast: 2000 },
+};
