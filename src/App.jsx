@@ -2,12 +2,17 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { ThemeProvider } from 'styled-components';
 import { theme } from './styles/theme';
 import GlobalStyle from './styles/GlobalStyle';
-import Home from './pages/Home';
-import DailyReport from './pages/DailyReport';
-import MorningReport from './pages/MorningReport';
-import NightCheck from './pages/NightCheck';
-import Onboarding from './pages/Onboarding';
-import WeeklyReport from './pages/WeeklyReport';
+import Home from './pages/Home/Home';
+import Invite from './pages/Onboarding/Invite';
+import InviteCode from './pages/Onboarding/InviteCode';
+import BasicInfo from './pages/Onboarding/BasicInfo';
+import HealthInfo from './pages/Onboarding/HealthInfo';
+import MedicationInfo from './pages/Onboarding/MedicationInfo';
+import Complete from './pages/Onboarding/Complete';
+import QuestionBox from './pages/QuestionBox/QuestionBox';
+import TodayReport from './pages/TodayReport/TodayReport';
+import WeeklyReport from './pages/WeeklyReport/WeeklyReport';
+import Settings from './pages/Settings/Settings';
 import Layout from './components/Layout';
 
 function App() {
@@ -18,11 +23,16 @@ function App() {
         <Layout>
           <Routes>
             <Route path="/" element={<Home />} />
-            <Route path='/daily-report' element={<DailyReport />} />
-            <Route path='/morning-report' element={<MorningReport />} />
-            <Route path='/night-check' element={<NightCheck />} />
-            <Route path='/onboarding' element={<Onboarding />} />
+            <Route path='/onboarding/invite' element={<Invite />} />
+            <Route path='/onboarding/invite-code' element={<InviteCode />} />
+            <Route path='/onboarding/basic-info' element={<BasicInfo />} />
+            <Route path='/onboarding/health-info' element={<HealthInfo />} />
+            <Route path='/onboarding/medication-info' element={<MedicationInfo />} />
+            <Route path='/onboarding/complete' element={<Complete />} />
+            <Route path='/question-box' element={<QuestionBox />} />
+            <Route path='/today-report' element={<TodayReport />} />
             <Route path='/weekly-report' element={<WeeklyReport />} />
+            <Route path='/settings' element={<Settings />} />
           </Routes>
         </Layout>
       </BrowserRouter>
