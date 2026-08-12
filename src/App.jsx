@@ -9,10 +9,8 @@ import BasicInfo from './pages/Onboarding/BasicInfo';
 import HealthInfo from './pages/Onboarding/HealthInfo';
 import MedicationInfo from './pages/Onboarding/MedicationInfo';
 import Complete from './pages/Onboarding/Complete';
-import QuestionBox from './pages/QuestionBox/QuestionBox';
 import TodayReport from './pages/TodayReport/TodayReport';
 import WeeklyReport from './pages/WeeklyReport/WeeklyReport';
-import Settings from './pages/Settings/Settings';
 import Layout from './components/Layout';
 
 function App() {
