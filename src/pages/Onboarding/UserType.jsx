@@ -57,19 +57,19 @@ export default UserType;
 
 const Page = styled.div`
   width: calc(100% + 32px);
+  height: 100%;
   margin: 0 -${({ theme }) => theme.spacing.md};
-  min-height: 100vh;
   background: #FFF8ED;
 `;
 
 const Content = styled.div`
   max-width: 402px;
+  height: 100%;
   margin: 0 auto;
-  padding: 76px 24px 20px;
+  padding: 104px 24px 20px;
+  box-sizing: border-box;
   display: flex;
   flex-direction: column;
-  min-height: 100vh;
-  box-sizing: border-box;
 `;
 
 const Header = styled.div`
