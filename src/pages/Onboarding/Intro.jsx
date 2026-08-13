@@ -8,9 +8,9 @@ import yellowFlower from '../../assets/onboarding/yellowflower.png';
 import leafLeft from '../../assets/onboarding/leaf-left.png';
 import leafRight from '../../assets/onboarding/leaf-right.png';
 
-import leafIcon from '../../assets/onboarding/leaf-bot.png';
-import moonIcon from '../../assets/onboarding/moon.png';
-import medIcon from '../../assets/onboarding/med.png';
+import leafIcon from '../../assets/onboarding/leaf.svg';
+import moonIcon from '../../assets/onboarding/moon.svg';
+import medIcon from '../../assets/onboarding/med.svg';
 
 const Intro = () => {
   const navigate = useNavigate();
@@ -245,6 +245,8 @@ background: #F6EBC7;
 const Icon = styled.img`
   width: ${({ $size }) => $size}px;
   height: ${({ $size }) => $size}px;
+  object-fit: contain;
+  display: block;
 `;
 
 const TextBox = styled.div`
