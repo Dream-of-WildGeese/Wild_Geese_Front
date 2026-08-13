@@ -40,7 +40,7 @@ const StepGuide = () => {
         </StepList>
 
         <StartButton
-          onClick={() => navigate('/onboarding/invite-code')}
+          onClick={() => navigate('/onboarding/invite')}
         >
           시작하기
         </StartButton>
