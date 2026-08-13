@@ -11,6 +11,7 @@ import Intro from './pages/Onboarding/Intro';
 import UserType from './pages/Onboarding/UserType';
 import StepGuide from './pages/Onboarding/StepGuide';
 import InviteCode from './pages/Onboarding/InviteCode';
+import StepComplete from './pages/Onboarding/StepComplete';
 
 function App() {
   return (
@@ -23,6 +24,7 @@ function App() {
             <Route path="/onboarding/UserType" element={<UserType />} />
             <Route path="/onboarding/step-guide" element={<StepGuide />} />
             <Route path="/onboarding/invite" element={<InviteCode />} />
+            <Route path="/onboarding/complete"element={<StepComplete />}/>
             <Route path="/" element={<Home />} />
             <Route path='/daily-health-check' element={<DailyHealthCheck />} />
             <Route path='/today-report' element={<TodayReport />} />
