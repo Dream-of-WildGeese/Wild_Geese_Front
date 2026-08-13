@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
 
 const UserType = () => {
+    const navigate= useNavigate();
   const [userType, setUserType] = useState(null);
 
   return (
@@ -38,7 +40,7 @@ const UserType = () => {
           </OptionButton>
         </OptionList>
 
-        <NextButton>다음</NextButton>
+        <NextButton onClick={()=> navigate('/onboarding/step-guide')}>다음</NextButton>
       </Content>
     </Page>
   );

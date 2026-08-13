@@ -10,6 +10,7 @@ import WeeklyReport from './pages/WeeklyReport/WeeklyReport';
 import Layout from './components/Layout';
 import Intro from './pages/Onboarding/Intro';
 import UserType from './pages/Onboarding/UserType';
+import StepGuide from './pages/Onboarding/StepGuide';
 
 function App() {
   return (
@@ -20,6 +21,7 @@ function App() {
           <Routes>
             <Route path="/onboarding" element={<Intro/>} />
             <Route path="/onboarding/UserType" element={<UserType />} />
+            <Route path="/onboarding/step-guide" element={<StepGuide />} />
             <Route path="/" element={<Home />} />
             <Route path='/daily-health-check' element={<DailyHealthCheck />} />
             <Route path='/today-report' element={<TodayReport />} />
