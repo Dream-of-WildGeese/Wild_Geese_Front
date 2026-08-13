@@ -3,9 +3,13 @@ import { useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
 import { createFamily } from '../../api/family/createFamily';
 import { joinFamily } from '../../api/family/joinFamily';
+import { useLocation } from 'react-router-dom';
+
 
 const InviteCode = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+  const role = location.state?.role;
 
   const [inviteCode, setInviteCode] = useState('');
   const [code, setCode] = useState('');
@@ -46,15 +50,15 @@ const InviteCode = () => {
     }
 
     try {
-      await joinFamily({
-        inviteCode: code,
-      });
+    await joinFamily({ inviteCode: code });
 
-      navigate('/onboarding/basic-info');
-    } catch (error) {
-      console.error(error);
-      alert(error.message || '유효하지 않은 초대 코드예요.');
-    }
+    navigate('/onboarding/complete/1', {
+      state: { role },
+    });
+  } catch (error) {
+    console.error(error);
+    alert('유효하지 않은 초대 코드예요.');
+  }
   };
 
   return (
@@ -84,11 +88,6 @@ const InviteCode = () => {
             지금 만나지 못해도 바로 연결돼요.
           </SectionDescription>
 
-          <KakaoButton>
-            카카오톡으로 초대 보내기
-          </KakaoButton>
-
-          <OrText>또는</OrText>
 
           <CodeBox>
             <CodeLabel>내 코드 직접 공유하기</CodeLabel>
@@ -96,11 +95,13 @@ const InviteCode = () => {
             <InviteCodeText>
               {inviteCode}
             </InviteCodeText>
-
+        
             <CopyButton onClick={handleCopy}>
               복사하기
             </CopyButton>
           </CodeBox>
+
+          <OrText>또는</OrText>
 
           <InputLabel>
             가족에게 받은 코드가 있으신가요?
@@ -270,31 +271,9 @@ line-height: normal;
 `;
 
 
-/* =========================
-   카카오톡 초대
-========================= */
 
-const KakaoButton = styled.button`
-margin-top:20px;
-  width: 100%;
- display: flex;
-height: 58px;
-justify-content: center;
-align-items: center;
-flex-shrink: 0;
-align-self: stretch;
-  border-radius: 14px;
-background: #FEE500;
 
-  color: #3C1E1E;
-font-family: Inter;
-font-size: 17px;
-font-style: normal;
-font-weight: 600;
-line-height: normal;
 
-  cursor: pointer;
-`;
 
 const OrText = styled.p`
   margin: 14px 0 14px;
@@ -313,6 +292,7 @@ line-height: normal;
 ========================= */
 
 const CodeBox = styled.div`
+  margin-top:48px;
   width: 100%;
   height: 142px;
   box-sizing: border-box;
