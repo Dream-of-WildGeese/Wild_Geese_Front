@@ -40,7 +40,11 @@ const UserType = () => {
           </OptionButton>
         </OptionList>
 
-        <NextButton onClick={()=> navigate('/onboarding/step-guide')}>다음</NextButton>
+        <NextButton onClick={() =>navigate('/onboarding/invite', 
+        {state: { role: userType },}) }>
+          다음
+        </NextButton>
+
       </Content>
     </Page>
   );

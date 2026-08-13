@@ -1,9 +1,13 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
+import { useLocation } from 'react-router-dom';
 
 const StepComplete = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+  const role = location.state?.role;
+  console.log('StepComplete:', role);
 
   return (
     <Page>
@@ -22,9 +26,13 @@ const StepComplete = () => {
         </Description>
 
         <ContinueButton
-            onClick={() => navigate('/onboarding/basic-info')}
+        onClick={() =>
+            navigate('/onboarding/health-set', {
+            state: { role },
+            })
+        }
         >
-            계속하기
+        계속하기
         </ContinueButton>
         </CompleteContent>
       </Content>

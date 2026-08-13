@@ -1,8 +1,8 @@
 import React,{ useState,useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
-import { createFamily } from '../../api/family/createFamily';
-import { joinFamily } from '../../api/family/joinFamily';
+//import { createFamily } from '../../api/family/createFamily';
+//import { joinFamily } from '../../api/family/joinFamily';
 import { useLocation } from 'react-router-dom';
 
 
@@ -10,10 +10,11 @@ const InviteCode = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const role = location.state?.role;
+  console.log('InviteCode:', role);
 
-  const [inviteCode, setInviteCode] = useState('');
-  const [code, setCode] = useState('');
-
+  //const [inviteCode, setInviteCode] = useState('');
+  const [code, setCode] = useState(''); 
+  const inviteCode = '482913'; //임시초대코드
   // 내 초대 코드 발급
   useEffect(() => {
     const getInviteCode = async () => {
@@ -43,23 +44,16 @@ const InviteCode = () => {
   };
 
   // 가족 코드 확인
-  const handleConfirm = async () => {
-    if (!code.trim()) {
-      alert('초대 코드를 입력해주세요.');
-      return;
-    }
-
-    try {
-    await joinFamily({ inviteCode: code });
-
-    navigate('/onboarding/complete/1', {
-      state: { role },
-    });
-  } catch (error) {
-    console.error(error);
-    alert('유효하지 않은 초대 코드예요.');
+  const handleConfirm = () => {
+  if (!code.trim()) {
+    alert('초대 코드를 입력해주세요.');
+    return;
   }
-  };
+
+  navigate('/onboarding/complete', {
+    state: { role },
+  });
+};
 
   return (
     <Page>
