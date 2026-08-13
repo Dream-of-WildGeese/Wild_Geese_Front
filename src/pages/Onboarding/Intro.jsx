@@ -257,7 +257,6 @@ const TextBox = styled.div`
 
 const FeatureTitle = styled.h2`
   margin: 0 0 6px;
-
   color: #4A3A2F;
   font-size: 16px;
   font-weight: 700;

@@ -12,6 +12,10 @@ import UserType from './pages/Onboarding/UserType';
 import StepGuide from './pages/Onboarding/StepGuide';
 import InviteCode from './pages/Onboarding/InviteCode';
 import StepComplete from './pages/Onboarding/StepComplete';
+import HealthSet from './pages/Onboarding/HealthSet';
+import MedicationManage from './pages/Onboarding/MedicationManage';
+import AddMedication from './pages/Onboarding/AddMedication';
+
 
 function App() {
   return (
@@ -25,6 +29,9 @@ function App() {
             <Route path="/onboarding/step-guide" element={<StepGuide />} />
             <Route path="/onboarding/invite" element={<InviteCode />} />
             <Route path="/onboarding/complete"element={<StepComplete />}/>
+            <Route path="/onboarding/health-set"element={<HealthSet />}/>
+            <Route path="/onboarding/medication/manage" element={<MedicationManage />} />
+            <Route path="/onboarding/medication/add" element={<AddMedication />} />
             <Route path="/" element={<Home />} />
             <Route path='/daily-health-check' element={<DailyHealthCheck />} />
             <Route path='/today-report' element={<TodayReport />} />

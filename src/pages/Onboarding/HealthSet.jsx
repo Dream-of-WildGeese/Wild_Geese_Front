@@ -89,7 +89,7 @@ const HealthSet = () => {
             <AgreeBox>
             <input
                 type="checkbox"
-                checked={agree}
+                checked={!agree}
                 onChange={() => setAgree(!agree)}
             />
 
@@ -125,7 +125,7 @@ const HealthSet = () => {
             <Card>
             <CardHeader>
                 <CardTitle>복용약</CardTitle>
-                <Manage>관리하기 ›</Manage>
+                <Manage onClick={() => navigate('/onboarding/medication/manage')}>관리하기 ›</Manage>
             </CardHeader>
 
             <CardDesc>
@@ -137,7 +137,7 @@ const HealthSet = () => {
                 <MedChip key={item}>{item}</MedChip>
                 ))}
 
-                <AddChip>+ 추가</AddChip>
+                <AddChip onClick={() => navigate('/onboarding/medication/add')}>+ 추가</AddChip>
             </ChipWrap>
             </Card>
 

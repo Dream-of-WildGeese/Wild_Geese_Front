@@ -25,7 +25,6 @@ const UserType = () => {
               부모
             </OptionText>
 
-            {userType === 'parent' && <Check>✓</Check>}
           </OptionButton>
 
           <OptionButton
@@ -35,13 +34,17 @@ const UserType = () => {
             <OptionText $selected={userType === 'child'}>
               자녀
             </OptionText>
-
-            {userType === 'child' && <Check>✓</Check>}
           </OptionButton>
         </OptionList>
 
-        <NextButton onClick={() =>navigate('/onboarding/invite', 
-        {state: { role: userType },}) }>
+        <NextButton
+          disabled={!userType}
+          onClick={() =>
+            navigate('/onboarding/invite', {
+              state: { role: userType },
+            })
+          }
+        >
           다음
         </NextButton>
 
@@ -53,94 +56,106 @@ const UserType = () => {
 export default UserType;
 
 const Page = styled.div`
-  width: 100%;
+  width: calc(100% + 32px);
+  margin: 0 -${({ theme }) => theme.spacing.md};
   min-height: 100vh;
+  background: #FFF8ED;
 `;
 
 const Content = styled.div`
-  padding-top: 64px;
+  max-width: 402px;
+  margin: 0 auto;
+  padding: 76px 24px 20px;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  box-sizing: border-box;
 `;
 
 const Header = styled.div`
-  /* 제목 + 설명 */
+  text-align: center;
 `;
 
 const Title = styled.h1`
   margin: 0;
-  color: #000;
-font-family: Inter;
-font-size: 25px;
+color: #4A3A2F;
+text-align: center;
+font-family: Jua;
+font-size: 40px;
 font-style: normal;
-font-weight: 600;
+font-weight: 400;
 line-height: normal;
 `;
 
 const Description = styled.p`
-  margin: 8px 0 0;
-  color: #6B6661;
-font-family: Inter;
-font-size: 16px;
+margin-top:10px;
+height: 20px;
+align-self: stretch;
+color: #A79C8E;
+text-align: center;
+font-family: "Noto Sans KR";
+font-size: 22px;
 font-style: normal;
-font-weight: 400;
+font-weight: 700;
 line-height: normal;
 `;
 
 const OptionList = styled.div`
   display: flex;
   flex-direction: column;
-  gap: 0;
-  
-  margin-top: 78px;
+  gap: 72px;
+  margin-top: 82px;
 `;
 
 const OptionButton = styled.button`
   width: 100%;
-  height: 68px;
+  height: 114px;
 
   display: flex;
+  justify-content: center;
   align-items: center;
-  justify-content: space-between;
 
-  padding: 0 18px 0 20px;
+  border-radius: 24px;
+  border: 2px solid
+    ${({ $selected }) =>
+      $selected ? '#8A7B3E' : 'rgba(74,58,47,.25)'};
 
-  flex-shrink: 0;
-  align-self: stretch;
+  background: rgba(255,255,255,.55);
 
-  border-radius: 14px;
-  border: 2px solid ${({ $selected }) => 
-    $selected ? '#E8734A' : '#DDD'
-  };
-  background: #FFF;
+  cursor: pointer;
 `;
 
 const OptionText = styled.span`
-  font-size: 18px;
-  font-weight: 500;
+  color: ${({ $selected }) =>
+    $selected ? '#4A3A2F' : '#A79C8E'};
 
-  ${({ $selected }) =>
-    $selected &&
-    `
-      color: #E8734A;
-    `}
+  font-family: 'Jua', sans-serif;
+  font-size: 36px;
+  font-weight: 400;
 `;
 
-const Check = styled.span`
-  color: #E8734A;
-  font-size: 24px;
-`;
+
 
 const NextButton = styled.button`
   width: 100%;
   height: 56px;
 
-  margin-top: 0;
+  margin-top: auto;
 
-  border: none;
-  border-radius: 14px;
+  border-radius: 16px;
+  border: 1.5px solid rgba(74,58,47,.55);
 
-  background: #E8734A;
-  color: white;
+  background: #CBD879;
+  color: #FFF8ED;
 
-  font-size: 17px;
-  font-weight: 600;
+  font-family: 'Jua', sans-serif;
+  font-size: 18px;
+  font-weight: 400;
+
+  cursor: pointer;
+  &:disabled {
+    background: #D8D5D1;
+    border-color: #D8D5D1;
+    cursor: not-allowed;
+  }
 `;
