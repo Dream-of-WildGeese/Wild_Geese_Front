@@ -3,7 +3,7 @@ import { ThemeProvider } from 'styled-components';
 import { theme } from './styles/theme';
 import GlobalStyle from './styles/GlobalStyle';
 import Home from './pages/Home/Home';
-import DailyHealthCheck from './pages/Home/DailyHealthCheck';
+import DailyHealthCheck from './pages/Home/TodayOndam/Night/DailyHealthCheck';
 import Invite from './pages/Onboarding/Invite';
 import InviteCode from './pages/Onboarding/InviteCode';
 import BasicInfo from './pages/Onboarding/BasicInfo';

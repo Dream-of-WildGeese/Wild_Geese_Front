@@ -5,6 +5,8 @@ import mailboxImg from '../../assets/mailbox.png';
 const StageLayer = styled.div`
   position: absolute;
   inset: 0;
+  /* 전체를 덮는 레이어라 마스코트/우체통 외 영역은 아래의 CTA 배너 클릭을 막지 않아야 한다 */
+  pointer-events: none;
 `;
 
 const Mascot = styled.img`
@@ -23,6 +25,7 @@ const MailboxButton = styled.button`
   top: 393px;
   width: 119px;
   height: 119px;
+  pointer-events: auto;
 `;
 
 const MailboxImage = styled.img`
