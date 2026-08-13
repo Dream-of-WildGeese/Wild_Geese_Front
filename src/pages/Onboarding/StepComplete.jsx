@@ -1,38 +1,54 @@
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
+import check from '../../assets/onboarding/check.svg';
+
 
 const StepComplete = () => {
-  const navigate = useNavigate();
+ const navigate = useNavigate();
   const location = useLocation();
+  const { step } = useParams();
+
   const role = location.state?.role;
-  console.log('StepComplete:', role);
+  const familyName = location.state?.familyName || '가족';
+
+  const completeData = {
+    1: {
+      badge: '1단계 완료 · 1/3',
+      title: `${familyName}님과 연결됐어요`,
+      description: '이제부터 서로의 하루를 함께 챙길 수 있어요',
+      next: '/onboarding/health-set',
+    },
+    2: {
+      badge: '2단계 완료 · 2/3',
+      title: '건강 프로필 설정이 완료됐어요',
+      description: '마지막으로 알림 시간을 설정해볼게요',
+      next: '/onboarding/alarm',
+    },
+  };
+
+  const current = completeData[step] || completeData[1];
+
 
   return (
     <Page>
       <Content>
-        <StepBadge>
-          1단계 완료 · 1/3
-        </StepBadge>
+        <StepBadge>{current.badge}</StepBadge>
 
-       <CompleteContent>
-        <CheckIcon>✓</CheckIcon>
+        <CompleteContent>
+        <CheckIcon src={check} alt="완료" />
+        <Title>{current.title}</Title>
 
-        <Title>김민준님과 연결됐어요</Title>
-
-        <Description>
-            이제부터 서로의 하루를 함께 챙길 수 있어요
-        </Description>
+        <Description>{current.description}</Description>
 
         <ContinueButton
-        onClick={() =>
-            navigate('/onboarding/health-set', {
-            state: { role },
+            onClick={() =>
+            navigate(current.next, {
+                state: { role },
             })
-        }
+            }
         >
-        계속하기
+            계속하기
         </ContinueButton>
         </CompleteContent>
       </Content>
@@ -43,102 +59,107 @@ const StepComplete = () => {
 export default StepComplete;
 
 const Page = styled.div`
-  width: 100%;
-  min-height: 100vh;
-  box-sizing: border-box;
+  width: calc(100% + 32px);
+  height: 100%;
+  margin: 0 -${({ theme }) => theme.spacing.md};
+  background: #FFF8ED;
 `;
 
 const Content = styled.div`
   position: relative;
-
   width: 100%;
-  min-height: 100vh;
+  height: 100%;
   box-sizing: border-box;
-
   padding: 30px 24px 24px;
 `;
 
 const StepBadge = styled.div`
   position: absolute;
-  top: 30px;
+  top: 56px;
   left: 50%;
   transform: translateX(-50%);
 
-  padding: 4px 12px;
+  padding: 6px 16px;
 
-  border-radius: 8px;
-  background: #E0F2E3;
+  border-radius: 999px;
+  border: 1.5px solid rgba(74, 58, 47, 0.35);
+  background: #fff8ed;
 
-  color: #339959;
-  font-family: Inter, sans-serif;
-  font-size: 14px;
-  font-weight: 500;
-  line-height: normal;
+  color: #4a3a2f;
+  font-family: "Noto Sans KR";
+  font-size: 16px;
+  font-weight: 700;
+  white-space: nowrap;
 `;
 
 const CompleteContent = styled.div`
   position: absolute;
-  top: 50%;
+  top: 60%;
   left: 50%;
+  transform: translate(-50%, -52%);
 
-  transform: translate(-50%, -50%);
+  width: calc(100% - 48px);
 
   display: flex;
   flex-direction: column;
   align-items: center;
-
-  width: calc(100% - 48px);
 `;
 
-const CheckIcon = styled.div`
-color: #339959;
-font-family: Inter;
-font-size: 64px;
-font-style: normal;
-font-weight: 600;
-line-height: normal;
+
+
+const CheckIcon = styled.img`
+  width: 88px;
+  height: 88px;
+  object-fit: contain;
 `;
 
 const Title = styled.h1`
-  margin: 20px 0 0;
-  color: #000;
-  text-align: center;
-  font-family: Inter, sans-serif;
-  font-size: 22px;
-  font-weight: 500;
-  line-height: normal;
+  margin: 28px 0 0;
+
+color: #4A3A2F;
+text-align: center;
+font-family: Jua;
+font-size: 22px;
+font-style: normal;
+font-weight: 400;
+line-height: normal;
 `;
 
 const Description = styled.p`
-  margin: 10px 0 0;
+  margin: 6px 0 0;
 
-  color: #6B6661;
-  text-align: center;
-  font-family: Inter, sans-serif;
-  font-size: 16px;
-  font-weight: 400;
-  line-height: normal;
+ color: #A79C8E;
+text-align: center;
+font-family: "Noto Sans KR";
+font-size: 16px;
+font-style: normal;
+font-weight: 400;
+line-height: normal;
 `;
 
 const ContinueButton = styled.button`
   width: 100%;
   height: 60px;
 
-  margin-top: 36px;
+  margin-top: 46px;
 
   display: flex;
   justify-content: center;
   align-items: center;
 
-  border: none;
-  border-radius: 14px;
-  background: #E8734A;
+  border-radius: 18px;
+  border: 1.5px solid rgba(74, 58, 47, 0.55);
 
-  color: #FFF;
-  font-family: Inter, sans-serif;
-  font-size: 19px;
-  font-weight: 600;
-  line-height: normal;
+  background: #cbd879;
+  color: #fff8ed;
+
+  font-family: Jua;
+  font-size: 24px;
+  font-weight: 400;
 
   cursor: pointer;
+
+  &:active {
+    transform: scale(0.99);
+  }
 `;
