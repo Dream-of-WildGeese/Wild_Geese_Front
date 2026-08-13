@@ -35,8 +35,8 @@ const HealthSet = () => {
         </Header>
 
         <ProgressWrapper>
-          <Progress active />
-          <Progress active />
+          <Progress $active />
+          <Progress $active />
           <Progress />
         </ProgressWrapper>
 
@@ -158,8 +158,10 @@ const HealthSet = () => {
 export default HealthSet;
 
 const Page = styled.div`
-  width: 100%;
-  height: 100vh;
+  width: calc(100% + 32px);
+  height: 100%;
+  margin: 0 -${({ theme }) => theme.spacing.md};
+  background: #FFF8ED;
 `;
 
 const Content = styled.div`
@@ -167,18 +169,19 @@ const Content = styled.div`
   display: flex;
   flex-direction: column;
   box-sizing: border-box;
-  padding: 50px 24px 24px;
+  padding: 44px 24px 20px;
 `;
 
 const ScrollArea = styled.div`
   flex: 1;
   overflow-y: auto;
   margin-top: 8px;
-  padding-bottom: 16px;
+  padding-bottom: 20px;
 
   &::-webkit-scrollbar {
     display: none;
   }
+
   scrollbar-width: none;
 `;
 
@@ -229,8 +232,8 @@ const Progress = styled.div`
 
   border-radius: 999px;
 
-  background: ${({ active }) =>
-    active ? '#E8734A' : '#D9D4CC'};
+  background: ${({ $active }) =>
+    $active ? '#E8734A' : '#D9D4CC'};
 `;
 
 const SubText = styled.p`
@@ -426,18 +429,19 @@ const Manage = styled.button`
 
 const NextButton = styled.button`
   width: 100%;
-  height: 60px;
+  height: 56px;
 
   margin-top: 8px;
 
-  border: none;
-  border-radius: 14px;
+  border-radius: 16px;
+  border: 1.5px solid rgba(74, 58, 47, 0.55);
 
-  background: #E8734A;
-  color: #FFF;
+  background: #CBD879;
+  color: #FFF8ED;
 
+  font-family: Jua, sans-serif;
   font-size: 18px;
-  font-weight: 600;
+  font-weight: 400;
 
   cursor: pointer;
 `;

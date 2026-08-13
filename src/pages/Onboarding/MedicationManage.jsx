@@ -58,7 +58,7 @@ const MedicationManage = () => {
         </AddButton>
       </ScrollArea>
 
-      <DoneButton onClick={() => navigate(-1)}>
+      <DoneButton onClick={() => navigate("/onboarding/complete/2")}>
         완료
       </DoneButton>
     </Content>

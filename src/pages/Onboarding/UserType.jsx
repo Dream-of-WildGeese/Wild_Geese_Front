@@ -40,7 +40,7 @@ const UserType = () => {
         <NextButton
           disabled={!userType}
           onClick={() =>
-            navigate('/onboarding/invite', {
+            navigate('/onboarding/step-guide', {
               state: { role: userType },
             })
           }

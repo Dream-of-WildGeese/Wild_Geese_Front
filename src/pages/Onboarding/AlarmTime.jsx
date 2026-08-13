@@ -73,7 +73,7 @@ const AlarmTime = () => {
           </Card>
         </ScrollArea>
 
-        <StartButton onClick={() => navigate('/home')}>
+        <StartButton onClick={() => navigate('/')}>
           함께 시작해볼까요?
         </StartButton>
       </Content>

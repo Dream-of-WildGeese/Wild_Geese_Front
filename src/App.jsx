@@ -15,6 +15,7 @@ import StepComplete from './pages/Onboarding/StepComplete';
 import HealthSet from './pages/Onboarding/HealthSet';
 import MedicationManage from './pages/Onboarding/MedicationManage';
 import AddMedication from './pages/Onboarding/AddMedication';
+import AlarmTime from './pages/Onboarding/AlarmTime';
 
 
 function App() {
@@ -28,10 +29,14 @@ function App() {
             <Route path="/onboarding/UserType" element={<UserType />} />
             <Route path="/onboarding/step-guide" element={<StepGuide />} />
             <Route path="/onboarding/invite" element={<InviteCode />} />
-            <Route path="/onboarding/complete"element={<StepComplete />}/>
+            <Route
+              path="/onboarding/complete/:step"
+              element={<StepComplete />}
+            />
             <Route path="/onboarding/health-set"element={<HealthSet />}/>
             <Route path="/onboarding/medication/manage" element={<MedicationManage />} />
             <Route path="/onboarding/medication/add" element={<AddMedication />} />
+            <Route path="/onboarding/alarm" element={<AlarmTime />} />
             <Route path="/" element={<Home />} />
             <Route path='/daily-health-check' element={<DailyHealthCheck />} />
             <Route path='/today-report' element={<TodayReport />} />

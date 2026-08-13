@@ -50,7 +50,7 @@ const InviteCode = () => {
     return;
   }
 
-  navigate('/onboarding/complete', {
+  navigate('/onboarding/complete/1', {
     state: { role },
   });
 };
@@ -126,25 +126,18 @@ const InviteCode = () => {
 export default InviteCode;
 
 
-/* =========================
-   Page
-========================= */
-
 const Page = styled.div`
-  width: 100%;
-  min-height: 100vh;
-  box-sizing: border-box;
+  width: calc(100% + 32px);
+  height: 100%;
+  margin: 0 -${({ theme }) => theme.spacing.md};
+  background: #FFF8ED;
 `;
-
-
-/* =========================
-   전체 콘텐츠
-========================= */
 
 const Content = styled.div`
   width: 100%;
-  padding-top: 50px;
+  height: 100%;
   box-sizing: border-box;
+  padding: 52px 20px 20px;
 `;
 
 
@@ -163,6 +156,7 @@ const Header = styled.div`
   justify-content: center;
 `;
 
+
 const BackButton = styled.button`
   position: absolute;
   left: 0;
@@ -180,9 +174,9 @@ const BackButton = styled.button`
   border: none;
   background: transparent;
 
-  color: #000;
+  color: #4A3A2F;
+ font-size: 32px;
   font-family: inherit;
-  font-size: 28px;
   font-weight: 300;
   line-height: 1;
 
@@ -190,13 +184,12 @@ const BackButton = styled.button`
 `;
 
 const Title = styled.h1`
-  margin-top: 40;
-color: #000;
-font-family: Inter;
-font-size: 18px;
-font-style: normal;
-font-weight: 500;
-line-height: normal;
+  margin: 0;
+
+  color: #4A3A2F;
+  font-family: Jua;
+  font-size: 22px;
+  font-weight: 400;
 `;
 
 
@@ -216,21 +209,23 @@ const Progress = styled.div`
 const ProgressBar = styled.div`
   flex: 1;
   height: 6px;
-
   border-radius: 999px;
 
   background: ${({ $active }) =>
-    $active ? '#E8734A' : '#D9D4CC'};
+    $active ? '#CBD879' : '#ECE3A8'};
 `;
 
 const ProgressText = styled.p`
-  margin: 8px 0 0;
+  margin: 7px 0 0;
 
-  color: #999;
-  font-family: Inter, sans-serif;
-  font-size: 14px;
-  font-weight: 400;
-  line-height: 1;
+  text-align: center;
+color: #A79C8E;
+text-align: center;
+font-family: "Noto Sans KR";
+font-size: 14px;
+font-style: normal;
+font-weight: 400;
+line-height: normal;
 `;
 
 
@@ -244,20 +239,19 @@ const Section = styled.section`
 `;
 
 const SectionTitle = styled.h2`
-color: #000;
-font-family: Inter;
-font-size: 23px;
+  margin: 18px 0 0;
+color: #4A3A2F;
+font-family: Jua;
+font-size: 22px;
 font-style: normal;
-font-weight: 500;
+font-weight: 400;
 line-height: normal;
-  margin: 0;
 `;
 
 const SectionDescription = styled.p`
-  margin: 8px 0 0;
-
-color: #6B6661;
-font-family: Inter;
+  margin-top: 10px;
+color: #A79C8E;
+font-family: "Noto Sans KR";
 font-size: 15px;
 font-style: normal;
 font-weight: 400;
@@ -270,14 +264,14 @@ line-height: normal;
 
 
 const OrText = styled.p`
-  margin: 14px 0 14px;
-color: #8C8780;
-text-align: center;
-font-family: Inter;
-font-size: 15px;
-font-style: normal;
-font-weight: 400;
-line-height: normal;
+  margin: 22px 0;
+
+  text-align: center;
+
+  color: #A79C8E;
+  font-family: "Noto Sans KR";
+  font-size: 22px;
+  font-weight: 700;
 `;
 
 
@@ -286,66 +280,55 @@ line-height: normal;
 ========================= */
 
 const CodeBox = styled.div`
-  margin-top:48px;
+  margin-top: 34px;
   width: 100%;
-  height: 142px;
+  min-height: 176px;
   box-sizing: border-box;
 
-  padding: 16px;
+  padding: 20px;
 
-  border-radius: 14px;
-  background: #F7F5F0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+
+  border-radius: 24px;
+  border: 2px solid rgba(74,58,47,.25);
+  background: rgba(255,255,255,.55);
 `;
 
 const CodeLabel = styled.p`
   margin: 0;
 
-  color: #6B6661;
-  font-family: Inter, sans-serif;
-  font-size: 14px;
-  font-style: normal;
+  color: #4A3A2F;
+  font-family: Jua;
+  font-size: 22px;
   font-weight: 400;
-  line-height: 20px;
 `;
 
 const InviteCodeText = styled.p`
-  margin: 8px 0;
+  margin: 0;
 
-  color: #000;
-  font-family: Inter, sans-serif;
-  font-size: 26px;
-  font-style: normal;
-  font-weight: 600;
-  line-height: 28px;
-  letter-spacing: 3px;
+  color: #4A3A2F;
+  font-family: Jua;
+  font-size: 54px;
+  line-height: 1;
 `;
 
 const CopyButton = styled.button`
   width: 100%;
   height: 46px;
 
-  padding: 0;
+  border-radius: 16px;
+  border: 1.5px solid rgba(74,58,47,.55);
+  background: #CBD879;
 
-  display: flex;
-  justify-content: center;
-  align-items: center;
-
-  box-sizing: border-box;
-
-  border-radius: 10px;
-  border: 1px solid #D9D4CC;
-  background: #FFF;
-
-  color: #000;
-  font-family: Inter, sans-serif;
-  font-size: 15px;
-  font-style: normal;
-  font-weight: 500;
-  line-height: 1;
+  color: #FFF8ED;
+  font-family: Jua;
+  font-size: 22px;
+  font-weight: 400;
 
   cursor: pointer;
 `;
-
 
 /* =========================
    받은 코드 입력
@@ -363,47 +346,39 @@ line-height: normal;
 
 const CodeInputBox = styled.div`
   width: 100%;
-  height: 130px;
+  min-height: 166px;
   box-sizing: border-box;
 
-  padding: 16px;
+  padding: 20px;
 
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
-  gap: 10px;
+  gap: 16px;
 
-  border-radius: 14px;
-  background: #F7F5F0;
+  border-radius: 24px;
+  border: 2px solid rgba(74,58,47,.25);
+  background: rgba(255,255,255,.55);
 `;
 
 const CodeInput = styled.input`
   width: 100%;
   height: 44px;
 
-  box-sizing: border-box;
-
   padding: 0 16px;
 
-  border: 1px solid #D9D4CC;
-  border-radius: 12px;
+  box-sizing: border-box;
 
-  background: #FFF;
+  border-radius: 16px;
+  border: 1.5px solid rgba(74,58,47,.25);
 
-  color: #000;
-  font-family: Inter, sans-serif;
-  font-size: 15px;
-  font-weight: 400;
-  line-height: 1;
+  background: rgba(255,255,255,.8);
 
-  outline: none;
+  color: #4A3A2F;
+  font-family: "Noto Sans KR";
+  font-size: 20px;
 
   &::placeholder {
-    color: #999;
-  }
-
-  &:focus {
-    border-color: #E8734A;
+    color: #A79C8E;
   }
 `;
 
@@ -411,37 +386,25 @@ const ConfirmButton = styled.button`
   width: 100%;
   height: 44px;
 
-  padding: 0;
+  border-radius: 16px;
+  border: 1.5px solid rgba(74,58,47,.55);
+  background: #CBD879;
 
-  display: flex;
-  align-items: center;
-  justify-content: center;
-
-  box-sizing: border-box;
-
-  border: 1px solid #D9D4CC;
-  border-radius: 12px;
-
-  background: #FFF;
-
-  color: #000;
-  font-family: Inter, sans-serif;
-  font-size: 15px;
-  font-weight: 500;
-  line-height: 1;
+  color: #FFF8ED;
+  font-family: Jua;
+  font-size: 22px;
 
   cursor: pointer;
 `;
 
 
 const HelpText = styled.p`
-  margin: 16px 0 0;
+  margin-top: 28px;
 
-  color: #8C8780;
-text-align: center;
-font-family: Inter;
-font-size: 13px;
-font-style: normal;
-font-weight: 400;
-line-height: normal;
+  text-align: center;
+
+  color: #A79C8E;
+  font-family: "Noto Sans KR";
+  font-size: 18px;
+  font-weight: 700;
 `;
