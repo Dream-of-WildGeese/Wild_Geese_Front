@@ -12,6 +12,7 @@ export const theme = {
     accentSoft: '#F7F5F0',
     borderStrong: '#D9D4CC',
     textMuted: '#6B6661',
+    reportBg: '#FFF8ED',
   },
   radius: { sm: '8px', md: '12px', lg: '20px', full: '999px' },
   fontSize: { caption: '13px', body: '16px', subtitle: '18px', title: '22px' },

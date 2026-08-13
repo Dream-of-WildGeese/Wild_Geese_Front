@@ -6,6 +6,7 @@ import Home from './pages/Home/Home';
 import DailyHealthCheck from './pages/Home/DailyHealthCheck';
 import TodayReport from './pages/TodayReport/TodayReport';
 import WeeklyReport from './pages/WeeklyReport/WeeklyReport';
+import MorningReport from './pages/MorningReport/MorningReport';
 import Layout from './components/Layout';
 import Intro from './pages/Onboarding/Intro';
 import UserType from './pages/Onboarding/UserType';
@@ -41,6 +42,7 @@ function App() {
             <Route path='/daily-health-check' element={<DailyHealthCheck />} />
             <Route path='/today-report' element={<TodayReport />} />
             <Route path='/weekly-report' element={<WeeklyReport />} />
+            <Route path='/morning-report' element={<MorningReport />} />
           </Routes>
         </Layout>
       </BrowserRouter>

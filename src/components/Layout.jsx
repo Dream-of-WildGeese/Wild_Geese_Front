@@ -10,5 +10,4 @@ const Layout = styled.div`
   background: ${({ theme }) => theme.colors.surface};
 `;
 
-
 export default Layout;
