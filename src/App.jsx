@@ -12,6 +12,7 @@ import MedicationInfo from './pages/Onboarding/MedicationInfo';
 import Complete from './pages/Onboarding/Complete';
 import TodayReport from './pages/TodayReport/TodayReport';
 import WeeklyReport from './pages/WeeklyReport/WeeklyReport';
+import MorningReport from './pages/MorningReport/MorningReport';
 import Layout from './components/Layout';
 
 function App() {
@@ -31,6 +32,7 @@ function App() {
             <Route path='/onboarding/complete' element={<Complete />} />
             <Route path='/today-report' element={<TodayReport />} />
             <Route path='/weekly-report' element={<WeeklyReport />} />
+            <Route path='/morning-report' element={<MorningReport />} />
           </Routes>
         </Layout>
       </BrowserRouter>
