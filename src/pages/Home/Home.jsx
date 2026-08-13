@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
 import homeBackground from '../../assets/home-background.png';
 import settingsIcon from '../../assets/settings-icon.png';
@@ -12,7 +12,12 @@ import HomeCharacterStage from './HomeCharacterStage';
 import HomeBottomNav from './HomeBottomNav';
 import HomePopup from './HomePopup';
 import HomeMedicationPopup from './HomeMedicationPopup';
-import HomeQuestionPopup from './HomeQuestionPopup';
+import DayQuestionPopup from './TodayOndam/Day/DayQuestionPopup';
+import MedicineCheckPopup from './TodayOndam/Medicine/MedicineCheckPopup';
+import NightIntroPopup from './TodayOndam/Night/NightIntroPopup';
+import NightCompletePopup from './TodayOndam/Night/NightCompletePopup';
+import { getHomeCtaSlot } from './TodayOndam/homeCtaFlow';
+import { MOCK_MEDICATIONS } from '../../mock/homeMock';
 
 const Stage = styled.div`
   position: relative;
@@ -56,8 +61,25 @@ const POPUP_CONTENT = {
 
 function Home() {
   const navigate = useNavigate();
+  const location = useLocation();
   const [activePopup, setActivePopup] = useState(null);
+  const [ctaSlot, setCtaSlot] = useState(null);
   const closePopup = () => setActivePopup(null);
+
+  // 저녁 건강체크 페이지에서 기록을 마치고 돌아오면 완료 팝업을 띄운다.
+  useEffect(() => {
+    if (location.state?.healthCheckDone) {
+      setActivePopup('healthCheckDone');
+      navigate(location.pathname, { replace: true, state: {} });
+    }
+  }, [location, navigate]);
+
+  const handleCtaClick = () => {
+    const slot = getHomeCtaSlot(MOCK_MEDICATIONS);
+    setCtaSlot(slot);
+    // 상단 약 아이콘의 'medication'(복용약 관리) 팝업과 이름이 겹치지 않도록 구분한다.
+    setActivePopup(slot.type === 'medication' ? 'medication_check' : slot.type);
+  };
 
   return (
     <Stage>
@@ -66,7 +88,7 @@ function Home() {
         onMedicationClick={() => setActivePopup('medication')}
         onSettingsClick={() => setActivePopup('settings')}
       />
-      <HomeCtaBanner onClick={() => setActivePopup('todayQuestion')} />
+      <HomeCtaBanner onClick={handleCtaClick} />
       <HomeCharacterStage onMailboxClick={() => setActivePopup('mailbox')} />
       <HomeBottomNav
         onQuestionBoxClick={() => navigate('/morning-report')}
@@ -75,7 +97,18 @@ function Home() {
       />
 
       {activePopup === 'medication' && <HomeMedicationPopup onClose={closePopup} />}
-      {activePopup === 'todayQuestion' && <HomeQuestionPopup onClose={closePopup} />}
+      {activePopup === 'morning' && <DayQuestionPopup onClose={closePopup} />}
+      {activePopup === 'medication_check' && (
+        <MedicineCheckPopup
+          dueMedications={ctaSlot.medications}
+          mealLabel={ctaSlot.mealLabel}
+          onClose={closePopup}
+        />
+      )}
+      {activePopup === 'evening' && (
+        <NightIntroPopup onStart={() => navigate('/daily-health-check')} onClose={closePopup} />
+      )}
+      {activePopup === 'healthCheckDone' && <NightCompletePopup onClose={closePopup} />}
       {activePopup && POPUP_CONTENT[activePopup] && (
         <HomePopup
           icon={POPUP_CONTENT[activePopup].icon}
