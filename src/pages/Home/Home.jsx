@@ -1,9 +1,9 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
 import homeBackground from '../../assets/home-background.png';
 import settingsIcon from '../../assets/settings-icon.png';
 import mailboxImg from '../../assets/mailbox.png';
-import navQuestionIcon from '../../assets/nav-question-icon.png';
 import navHomeIcon from '../../assets/nav-home-icon.png';
 import navWeeklyIcon from '../../assets/nav-weekly-icon.png';
 import HomeTopBar from './HomeTopBar';
@@ -16,9 +16,8 @@ import HomeQuestionPopup from './HomeQuestionPopup';
 
 const Stage = styled.div`
   position: relative;
-  width: calc(100% + 32px);
-  margin: 0 -${({ theme }) => theme.spacing.md};
-  height: 874px;
+  width: 100%;
+  height: 100%;
   overflow: hidden;
 `;
 
@@ -43,11 +42,6 @@ const POPUP_CONTENT = {
     title: '우체통',
     description: '우체통을 열면 줄글 편지지가 펼쳐져요. 가족에게 편지를 써보세요.',
   },
-  questionBox: {
-    icon: navQuestionIcon,
-    title: '질문함',
-    description: '지금까지 답한 건강 질문들을 모아보는 곳이에요.',
-  },
   home: {
     icon: navHomeIcon,
     title: '오늘의 온담',
@@ -61,6 +55,7 @@ const POPUP_CONTENT = {
 };
 
 function Home() {
+  const navigate = useNavigate();
   const [activePopup, setActivePopup] = useState(null);
   const closePopup = () => setActivePopup(null);
 
@@ -74,7 +69,7 @@ function Home() {
       <HomeCtaBanner onClick={() => setActivePopup('todayQuestion')} />
       <HomeCharacterStage onMailboxClick={() => setActivePopup('mailbox')} />
       <HomeBottomNav
-        onQuestionBoxClick={() => setActivePopup('questionBox')}
+        onQuestionBoxClick={() => navigate('/morning-report')}
         onHomeClick={() => setActivePopup('home')}
         onWeeklyReportClick={() => setActivePopup('weeklyReport')}
       />

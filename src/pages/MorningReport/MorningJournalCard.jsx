@@ -29,6 +29,7 @@ function formatJournalDate(date) {
 
 const Card = styled.div`
   position: relative;
+  flex-shrink: 0;
   width: 100%;
   height: 236px;
   overflow: hidden;

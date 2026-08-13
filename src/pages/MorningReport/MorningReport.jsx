@@ -5,6 +5,7 @@ import avatarHeartHug from '../../assets/avatar-heart-hug.png';
 import MorningReportHeader from './MorningReportHeader';
 import MorningJournalCard from './MorningJournalCard';
 import MorningReportToast from './MorningReportToast';
+import MorningReportDatePicker from './MorningReportDatePicker';
 
 // 아직 백엔드에 쌓인 기록이 없어서, 예시로 오늘 날짜(8월 13일) 항목 하나만 들어있다.
 // 실제 연동 시 이 배열을 API 응답으로 교체하면 카드가 늘어난 만큼 아래로 쌓여 스크롤된다.
@@ -28,15 +29,16 @@ const Page = styled.div`
   flex-direction: column;
   align-items: center;
   gap: 20px;
-  width: calc(100% + 32px);
-  margin: 0 -${({ theme }) => theme.spacing.md};
+  width: 100%;
+  height: 100%;
+  overflow-y: auto;
   padding: 20px 20px 24px;
-  min-height: 100vh;
   background: ${({ theme }) => theme.colors.reportBg};
   box-sizing: border-box;
 `;
 
 const Divider = styled.div`
+  flex-shrink: 0;
   width: 100%;
   height: 2px;
   border-radius: 2px;
@@ -53,9 +55,21 @@ function isSameMonth(date, year, month) {
   return date.getFullYear() === year && date.getMonth() + 1 === month;
 }
 
+// "이전/다음"은 어떤 화살표를 눌렀는지가 아니라, 실제 오늘과 비교했을 때
+// 과거인지 미래인지로 판단한다. (예: 2025년 7월 → 8월로 가도 여전히 과거이므로 "이전")
+function getEmptyDateMessage(targetDate) {
+  const today = new Date();
+  const targetMonthStart = new Date(targetDate.getFullYear(), targetDate.getMonth(), 1);
+  const todayMonthStart = new Date(today.getFullYear(), today.getMonth(), 1);
+  return targetMonthStart < todayMonthStart
+    ? '이전 달에는 기록이 없어요'
+    : '다음 달 기록은 아직 없어요';
+}
+
 function MorningReport() {
   const [viewedDate, setViewedDate] = useState(() => EXAMPLE_ENTRIES[0].date);
   const [toast, setToast] = useState(null);
+  const [isPickerOpen, setIsPickerOpen] = useState(false);
 
   useEffect(() => {
     if (!toast) return undefined;
@@ -67,15 +81,23 @@ function MorningReport() {
   const month = viewedDate.getMonth() + 1;
   const entriesForMonth = EXAMPLE_ENTRIES.filter((entry) => isSameMonth(entry.date, year, month));
 
-  const goToMonth = (offset, emptyMessage) => {
-    const nextDate = new Date(year, month - 1 + offset, 1);
+  const applyDate = (nextDate) => {
     setViewedDate(nextDate);
     const hasEntries = EXAMPLE_ENTRIES.some((entry) =>
       isSameMonth(entry.date, nextDate.getFullYear(), nextDate.getMonth() + 1)
     );
     if (!hasEntries) {
-      setToast({ id: Date.now(), message: emptyMessage });
+      setToast({ id: Date.now(), message: getEmptyDateMessage(nextDate) });
     }
+  };
+
+  const goToMonth = (offset) => {
+    applyDate(new Date(year, month - 1 + offset, 1));
+  };
+
+  const handleConfirmDate = (nextYear, nextMonth) => {
+    applyDate(new Date(nextYear, nextMonth - 1, 1));
+    setIsPickerOpen(false);
   };
 
   return (
@@ -83,8 +105,9 @@ function MorningReport() {
       <MorningReportHeader
         year={year}
         month={month}
-        onPrevMonth={() => goToMonth(-1, '이전 달에는 기록이 없어요')}
-        onNextMonth={() => goToMonth(1, '다음 달 기록은 아직 없어요')}
+        onPrevMonth={() => goToMonth(-1)}
+        onNextMonth={() => goToMonth(1)}
+        onOpenPicker={() => setIsPickerOpen(true)}
       />
       <MorningReportToast key={toast?.id} message={toast?.message} />
       <Divider />
@@ -99,6 +122,15 @@ function MorningReport() {
             answers={entry.answers}
           />
         ))
+      )}
+
+      {isPickerOpen && (
+        <MorningReportDatePicker
+          year={year}
+          month={month}
+          onConfirm={handleConfirmDate}
+          onClose={() => setIsPickerOpen(false)}
+        />
       )}
     </Page>
   );

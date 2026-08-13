@@ -1,8 +1,9 @@
 import styled from 'styled-components';
 import { useNavigate } from 'react-router-dom';
-import navQuestionIcon from '../../assets/nav-question-icon.png';
+import calendarIcon from '../../assets/calendar.png';
 
 const HeaderWrap = styled.div`
+  flex-shrink: 0;
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -32,10 +33,21 @@ const BackLabel = styled.span`
   color: #4a3a2f;
 `;
 
-const QuestionIcon = styled.img`
+const CalendarButton = styled.button`
   width: 50px;
   height: 50px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+  background: #fff8ed;
+`;
+
+const CalendarImage = styled.img`
+  width: 38px;
+  height: 38px;
   object-fit: contain;
+  pointer-events: none;
 `;
 
 const MonthNav = styled.div`
@@ -75,7 +87,7 @@ const MonthLabel = styled.p`
   color: #4a3a2f;
 `;
 
-function MorningReportHeader({ year, month, onPrevMonth, onNextMonth }) {
+function MorningReportHeader({ year, month, onPrevMonth, onNextMonth, onOpenPicker }) {
   const navigate = useNavigate();
 
   return (
@@ -84,7 +96,9 @@ function MorningReportHeader({ year, month, onPrevMonth, onNextMonth }) {
         <BackButton type="button" onClick={() => navigate('/')}>
           <BackLabel>뒤로가기</BackLabel>
         </BackButton>
-        <QuestionIcon src={navQuestionIcon} alt="질문함" />
+        <CalendarButton type="button" aria-label="연월 빠른 이동" onClick={onOpenPicker}>
+          <CalendarImage src={calendarIcon} alt="" />
+        </CalendarButton>
       </TopRow>
       <MonthNav>
         <YearLabel>{year}</YearLabel>
