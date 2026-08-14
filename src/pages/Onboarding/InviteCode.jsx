@@ -4,7 +4,8 @@ import styled from 'styled-components';
 //import { createFamily } from '../../api/family/createFamily';
 //import { joinFamily } from '../../api/family/joinFamily';
 import { useLocation } from 'react-router-dom';
-
+import back from '../../assets/onboarding/back.svg';
+import heart from '../../assets/onboarding/heart.svg';
 
 const InviteCode = () => {
   const navigate = useNavigate();
@@ -58,8 +59,10 @@ const InviteCode = () => {
   return (
     <Page>
       <Content>
+        <BackButton onClick={() => navigate(-1)}>
+          <BackIcon src={back} alt="뒤로가기" />
+        </BackButton>
         <Header>
-          <BackButton onClick={() => navigate(-1)}>‹</BackButton>
           <Title>가족 연결</Title>
         </Header>
 
@@ -74,49 +77,50 @@ const InviteCode = () => {
         </ProgressText>
 
         <Section>
-          <SectionTitle>1단계 가족 연결</SectionTitle>
-
+          <SectionTitleWrap>
+            <Heart src={heart} alt="" />
+            <SectionTitle>1단계. 가족 연결</SectionTitle>
+          </SectionTitleWrap>
           <SectionDescription>
-            가족과 연결되면 서로의 하루를 자연스럽게 나눌 수 있어요.
-            <br />
-            지금 만나지 못해도 바로 연결돼요.
+             가족과 서로의 하루를 자연스럽게 나누어 보세요.
           </SectionDescription>
 
 
           <CodeBox>
-            <CodeLabel>내 코드 직접 공유하기</CodeLabel>
+            <CodeLabel>내 코드 공유하기</CodeLabel>
 
-            <InviteCodeText>
-              {inviteCode}
-            </InviteCodeText>
-        
-            <CopyButton onClick={handleCopy}>
-              복사하기
-            </CopyButton>
+            <CodeValueBox>
+              <InviteCodeText>{inviteCode}</InviteCodeText>
+            </CodeValueBox>
+
+            <CopyButton onClick={handleCopy}>복사하기</CopyButton>
+
+            <CodeHelp>가족에게 초대 코드를 공유해주세요.</CodeHelp>
           </CodeBox>
 
-          <OrText>또는</OrText>
-
-          <InputLabel>
-            가족에게 받은 코드가 있으신가요?
-          </InputLabel>
+          <OrSection>
+            또는
+            <br />
+            <span>가족에게 받은 코드가 있으신가요?</span>
+          </OrSection>
 
           <CodeInputBox>
+            <InputTitle>받은 코드 입력하기</InputTitle>
+
             <CodeInput
               value={code}
-              onChange={(e) => setCode(e.target.value)}
+              onChange={(e)=>setCode(e.target.value)}
               placeholder="코드 6자리 입력"
-              maxLength={6}
             />
 
             <ConfirmButton onClick={handleConfirm}>
               확인하기
             </ConfirmButton>
-          </CodeInputBox>
 
-          <HelpText>
-            가족이 수락하면 자동으로 다음으로 넘어가요
-          </HelpText>
+            <HelpText>
+              가족이 수락하면 자동으로 다음으로 넘어가요
+            </HelpText>
+          </CodeInputBox>
         </Section>
       </Content>
     </Page>
@@ -128,16 +132,23 @@ export default InviteCode;
 
 const Page = styled.div`
   width: calc(100% + 32px);
-  height: 100%;
+  min-height: 100vh;
   margin: 0 -${({ theme }) => theme.spacing.md};
   background: #FFF8ED;
 `;
 
 const Content = styled.div`
-  width: 100%;
-  height: 100%;
+  position: relative;
+
+  max-width: 402px;
+  min-height: 100vh;
+  margin: 0 auto;
+
+  padding: 86px 20px 40px;
   box-sizing: border-box;
-  padding: 52px 20px 20px;
+
+  display: flex;
+  flex-direction: column;
 `;
 
 
@@ -156,40 +167,41 @@ const Header = styled.div`
   justify-content: center;
 `;
 
-
 const BackButton = styled.button`
   position: absolute;
-  left: 0;
+  top: 35px;
+  left: 24px;
 
-  width: 24px;
+  width: 40px;
   height: 40px;
 
   padding: 0;
-  margin: 0;
+  border: none;
+  background: transparent;
+  cursor: pointer;
 
   display: flex;
   align-items: center;
-  justify-content: flex-start;
-
-  border: none;
-  background: transparent;
-
-  color: #4A3A2F;
- font-size: 32px;
-  font-family: inherit;
-  font-weight: 300;
-  line-height: 1;
-
-  cursor: pointer;
+  justify-content: center;
 `;
+
+const BackIcon = styled.img`
+  width: 40px;
+  height: 40px;
+  object-fit: contain;
+`;
+
+
 
 const Title = styled.h1`
   margin: 0;
-
-  color: #4A3A2F;
-  font-family: Jua;
-  font-size: 22px;
-  font-weight: 400;
+color: #4A3A2F;
+text-align: center;
+font-family: Jua;
+font-size: 40px;
+font-style: normal;
+font-weight: 400;
+line-height: normal;
 `;
 
 
@@ -212,17 +224,15 @@ const ProgressBar = styled.div`
   border-radius: 999px;
 
   background: ${({ $active }) =>
-    $active ? '#CBD879' : '#ECE3A8'};
+    $active ? '#DBE4A1;' : '#F6EBC7;'};
 `;
 
 const ProgressText = styled.p`
   margin: 7px 0 0;
-
-  text-align: center;
 color: #A79C8E;
 text-align: center;
 font-family: "Noto Sans KR";
-font-size: 14px;
+font-size: 16px;
 font-style: normal;
 font-weight: 400;
 line-height: normal;
@@ -235,24 +245,36 @@ line-height: normal;
 
 const Section = styled.section`
   width: 100%;
-  margin-top: 20px;
+  margin-top: 12px;
+`;
+
+const SectionTitleWrap = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 26px;
+`;
+
+const Heart = styled.img`
+  width: 32px;
+  height: 32px;
 `;
 
 const SectionTitle = styled.h2`
-  margin: 18px 0 0;
+  margin: 0;
 color: #4A3A2F;
 font-family: Jua;
-font-size: 22px;
+font-size: 28px;
 font-style: normal;
 font-weight: 400;
 line-height: normal;
 `;
 
 const SectionDescription = styled.p`
-  margin-top: 10px;
-color: #A79C8E;
+  margin: 0 0 0;
+color:  #A79C8E;
 font-family: "Noto Sans KR";
-font-size: 15px;
+font-size: 18px;
 font-style: normal;
 font-weight: 400;
 line-height: normal;
@@ -260,19 +282,6 @@ line-height: normal;
 
 
 
-
-
-
-const OrText = styled.p`
-  margin: 22px 0;
-
-  text-align: center;
-
-  color: #A79C8E;
-  font-family: "Noto Sans KR";
-  font-size: 22px;
-  font-weight: 700;
-`;
 
 
 /* =========================
@@ -280,131 +289,183 @@ const OrText = styled.p`
 ========================= */
 
 const CodeBox = styled.div`
-  margin-top: 34px;
-  width: 100%;
-  min-height: 176px;
-  box-sizing: border-box;
-
-  padding: 20px;
+ margin-top: 24px;     
+  padding: 22px 20px 20px;  
 
   display: flex;
-  flex-direction: column;
-  gap: 12px;
-
-  border-radius: 24px;
-  border: 2px solid rgba(74,58,47,.25);
-  background: rgba(255,255,255,.55);
+height: 210px;
+padding-top: 34px;
+flex-direction: column;
+align-items: stretch;
+gap: 10px;
+align-self: stretch;
+border-radius: 18px;
+border: 1.3px solid rgba(74, 58, 47, 0.40);
+background: rgba(255, 255, 255, 0.55);
+`;
+const CodeValueBox = styled.div`
+  display: flex;
+height: 46px;
+justify-content: center;
+align-items: center;
+gap: 5px;
+align-self: stretch;
+border-radius: 12px;
+border: 1.3px solid rgba(74, 58, 47, 0.40);
+background: rgba(255, 255, 255, 0.80);
 `;
 
 const CodeLabel = styled.p`
   margin: 0;
-
-  color: #4A3A2F;
-  font-family: Jua;
-  font-size: 22px;
-  font-weight: 400;
-`;
-
-const InviteCodeText = styled.p`
-  margin: 0;
-
-  color: #4A3A2F;
-  font-family: Jua;
-  font-size: 54px;
-  line-height: 1;
-`;
-
-const CopyButton = styled.button`
-  width: 100%;
-  height: 46px;
-
-  border-radius: 16px;
-  border: 1.5px solid rgba(74,58,47,.55);
-  background: #CBD879;
-
-  color: #FFF8ED;
-  font-family: Jua;
-  font-size: 22px;
-  font-weight: 400;
-
-  cursor: pointer;
-`;
-
-/* =========================
-   받은 코드 입력
-========================= */
-
-const InputLabel = styled.p`
-  margin: 20px 0 10px;
-  color: #6B6661;
-font-family: Inter;
-font-size: 14px;
+  align-self: flex-start;
+color: #4A3A2F;
+font-family: Jua;
+font-size: 20px;
 font-style: normal;
 font-weight: 400;
 line-height: normal;
 `;
 
-const CodeInputBox = styled.div`
+const InviteCodeText = styled.p`
+  margin: 0;
+
+ color: #4A3A2F;
+text-align: center;
+font-family: Jua;
+font-size: 38px;
+font-style: normal;
+font-weight: 400;
+line-height: normal;
+`;
+
+const CodeHelp = styled.p`
+  margin: 0 0 0;
+color: #A79C8E;
+text-align: center;
+font-family: "Noto Sans KR";
+font-size: 16px;
+font-style: normal;
+font-weight: 500;
+line-height: normal;
+`;
+
+const CopyButton = styled.button`
   width: 100%;
-  min-height: 166px;
+  height: 40px;
+  min-height: 40px;
+  flex-shrink: 0;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  padding: 0;
+  border-radius: 16px;
+  border: 1.5px solid rgba(74, 58, 47, 0.55);
+  background: #DBE4A1;
   box-sizing: border-box;
 
-  padding: 20px;
+  color: #4A3A2F;
+  font-family: "Noto Sans KR";
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1;
+
+  cursor: pointer;
+`;
+
+
+/* =========================
+   받은 코드 입력
+========================= */
+
+const InputTitle = styled.p`
+  margin: 0;
+
+  color: #4A3A2F;
+  font-family: Jua;
+  font-size: 22px;
+`;
+
+const OrSection = styled.p`
+margin: 16px 0 12px;
+color: #877E73;
+text-align: center;
+font-family: "Noto Sans KR";
+font-size: 16px;
+font-style: normal;
+font-weight: 700;
+line-height: normal;
+`;
+
+
+
+
+const CodeInputBox = styled.div`
+  margin-top: 0;
+
+  height: 210px;
+  padding: 22px 20px 20px;
 
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  align-items: stretch;
+  gap: 10px;
 
-  border-radius: 24px;
-  border: 2px solid rgba(74,58,47,.25);
-  background: rgba(255,255,255,.55);
+  border-radius: 18px;
+  border: 1.3px solid rgba(74, 58, 47, 0.4);
+  background: rgba(255, 255, 255, 0.55);
+
+  box-sizing: border-box;
 `;
 
 const CodeInput = styled.input`
   width: 100%;
-  height: 44px;
+  height: 46px;
 
   padding: 0 16px;
-
   box-sizing: border-box;
 
-  border-radius: 16px;
-  border: 1.5px solid rgba(74,58,47,.25);
-
+  border-radius: 12px;
+  border: 1.3px solid rgba(74,58,47,.4);
   background: rgba(255,255,255,.8);
+
+  text-align: center;
 
   color: #4A3A2F;
   font-family: "Noto Sans KR";
-  font-size: 20px;
+  font-size: 18px;
+  font-weight: 400;
 
-  &::placeholder {
-    color: #A79C8E;
+  &::placeholder{
+    color:#A79C8E;
   }
 `;
 
 const ConfirmButton = styled.button`
   width: 100%;
-  height: 44px;
+  height: 40px;
 
   border-radius: 16px;
   border: 1.5px solid rgba(74,58,47,.55);
-  background: #CBD879;
+  background: #DBE4A1;
 
-  color: #FFF8ED;
-  font-family: Jua;
-  font-size: 22px;
+  color: #4A3A2F;
+  font-family: "Noto Sans KR";
+  font-size: 16px;
+  font-weight: 700;
 
   cursor: pointer;
 `;
 
 
 const HelpText = styled.p`
-  margin-top: 28px;
-
-  text-align: center;
+  margin: 0;
 
   color: #A79C8E;
+  text-align: center;
   font-family: "Noto Sans KR";
-  font-size: 18px;
-  font-weight: 700;
+  font-size: 16px;
+  font-weight: 500;
+  line-height: normal;
 `;
