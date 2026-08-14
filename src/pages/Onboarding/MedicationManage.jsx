@@ -1,37 +1,19 @@
-import React, { useState } from 'react';
+import React from 'react';
 import styled from 'styled-components';
 import { useNavigate } from 'react-router-dom';
 
 import back from '../../assets/onboarding/back.svg';
 import pill from '../../assets/onboarding/med.svg';
 import trash from '../../assets/onboarding/trash.svg';
+import { useAppData } from '../../store/AppDataContext';
 
 const MedicationManage = () => {
   const navigate = useNavigate();
-
-  const [medications, setMedications] = useState([
-    {
-      id: 1,
-      name: '혈압약',
-      repeat: '매일',
-      times: ['오전 8:00', '오후 6:00'],
-    },
-    {
-      id: 2,
-      name: '비타민 D',
-      repeat: '매일',
-      times: ['오전 8:00'],
-    },
-    {
-      id: 3,
-      name: '오메가 3',
-      repeat: '매일',
-      times: [],
-    },
-  ]);
+  const { data, removeMedication } = useAppData();
+  const medications = data.medications;
 
   const handleDelete = (id) => {
-    setMedications((prev) => prev.filter((med) => med.id !== id));
+    removeMedication(id);
   };
 
   return (
@@ -60,7 +42,9 @@ const MedicationManage = () => {
               </CardHeader>
 
               <ChipWrap>
-                <RepeatChip>{med.repeat}</RepeatChip>
+                <RepeatChip>
+                  {med.repeat?.includes('매일') ? '매일' : med.repeat?.join(', ') || '매일'}
+                </RepeatChip>
 
                 {med.times.map((time) => (
                   <TimeChip key={time}>{time}</TimeChip>

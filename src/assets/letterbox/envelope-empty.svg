@@ -1,0 +1,14 @@
+<svg preserveAspectRatio="none" overflow="visible" style="display: block;" width="140" height="100" viewBox="0 0 140 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+<g id="Envelope Illustration Empty" clip-path="url(#clip0_0_4)">
+<g id="Frame">
+<rect x="0.75" y="10.75" width="138.5" height="88.5" rx="7.25" fill="#F7F5F0"/>
+<rect x="0.75" y="10.75" width="138.5" height="88.5" rx="7.25" stroke="#E6E0D9" stroke-width="1.5"/>
+</g>
+<path id="Polygon" d="M70 0L130.622 41.25H9.37822L70 0Z" fill="#E6E0D9"/>
+</g>
+<defs>
+<clipPath id="clip0_0_4">
+<rect width="140" height="100" fill="white"/>
+</clipPath>
+</defs>
+</svg>

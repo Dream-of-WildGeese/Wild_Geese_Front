@@ -2,9 +2,11 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
 import back from '../../assets/onboarding/x.svg';
+import { useAppData } from '../../store/AppDataContext';
 
 const AddMedication = () => {
   const navigate = useNavigate();
+  const { addMedication } = useAppData();
 
   const [name, setName] = useState('');
   const [times, setTimes] = useState([]);
@@ -46,6 +48,25 @@ const AddMedication = () => {
     }
 
     setRepeat(next);
+  };
+
+  const handleAddManualTime = () => {
+    if (!hour.trim() || !minute.trim()) return;
+    const label = `${period} ${hour.padStart(2, '0')}:${minute.padStart(2, '0')}`;
+    if (!times.includes(label)) setTimes((prev) => [...prev, label]);
+    setHour('');
+    setMinute('');
+  };
+
+  const handleSave = () => {
+    if (!name.trim() || times.length === 0) return;
+    addMedication({
+      id: Date.now(),
+      name: name.trim(),
+      times,
+      repeat: repeat.length > 0 ? repeat : ['매일'],
+    });
+    navigate(-1);
   };
 
   return (
@@ -111,7 +132,7 @@ const AddMedication = () => {
                 onChange={(e) => setMinute(e.target.value)}
               />
 
-              <AddTimeButton type="button">+</AddTimeButton>
+              <AddTimeButton type="button" onClick={handleAddManualTime}>+</AddTimeButton>
             </ManualRow>
           </InputGroup>
 
@@ -134,7 +155,7 @@ const AddMedication = () => {
         </ScrollArea>
 
         <ButtonArea>
-          <SaveButton onClick={() => navigate(-1)}>
+          <SaveButton onClick={handleSave} disabled={!name.trim() || times.length === 0}>
             저장하기
           </SaveButton>
         </ButtonArea>

@@ -2,8 +2,6 @@ import { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
 import homeBackground from '../../assets/home-background.png';
-import settingsIcon from '../../assets/settings-icon.png';
-import mailboxImg from '../../assets/mailbox.png';
 import navHomeIcon from '../../assets/nav-home-icon.png';
 import navWeeklyIcon from '../../assets/nav-weekly-icon.png';
 import HomeTopBar from './HomeTopBar';
@@ -11,11 +9,12 @@ import HomeCtaBanner from './HomeCtaBanner';
 import HomeCharacterStage from './HomeCharacterStage';
 import HomeBottomNav from './HomeBottomNav';
 import HomePopup from './HomePopup';
-import HomeMedicationPopup from './HomeMedicationPopup';
 import DayQuestionPopup from './TodayOndam/Day/DayQuestionPopup';
 import MedicineCheckPopup from './TodayOndam/Medicine/MedicineCheckPopup';
 import NightIntroPopup from './TodayOndam/Night/NightIntroPopup';
 import NightCompletePopup from './TodayOndam/Night/NightCompletePopup';
+import Letterbox from './Letterbox/Letterbox';
+import { MOCK_LETTERS } from './Letterbox/letterboxMock';
 import { getHomeCtaSlot } from './TodayOndam/homeCtaFlow';
 import { MOCK_MEDICATIONS } from '../../mock/homeMock';
 
@@ -37,16 +36,6 @@ const Background = styled.img`
 `;
 
 const POPUP_CONTENT = {
-  settings: {
-    icon: settingsIcon,
-    title: '설정',
-    description: '알림 시간, 건강 프로필 등을 관리하는 설정 화면이에요.',
-  },
-  mailbox: {
-    icon: mailboxImg,
-    title: '우체통',
-    description: '우체통을 열면 줄글 편지지가 펼쳐져요. 가족에게 편지를 써보세요.',
-  },
   home: {
     icon: navHomeIcon,
     title: '오늘의 온담',
@@ -64,7 +53,13 @@ function Home() {
   const location = useLocation();
   const [activePopup, setActivePopup] = useState(null);
   const [ctaSlot, setCtaSlot] = useState(null);
+  const [letters, setLetters] = useState(MOCK_LETTERS);
   const closePopup = () => setActivePopup(null);
+  const unreadLetterCount = letters.filter((letter) => !letter.read).length;
+
+  const markLetterRead = (id) => {
+    setLetters((prev) => prev.map((letter) => (letter.id === id ? { ...letter, read: true } : letter)));
+  };
 
   // 저녁 건강체크 페이지에서 기록을 마치고 돌아오면 완료 팝업을 띄운다.
   useEffect(() => {
@@ -85,18 +80,23 @@ function Home() {
     <Stage>
       <Background src={homeBackground} alt="" />
       <HomeTopBar
-        onMedicationClick={() => setActivePopup('medication')}
-        onSettingsClick={() => setActivePopup('settings')}
+        onMedicationClick={() => navigate('/home/medicine')}
+        onSettingsClick={() => navigate('/home/settings')}
       />
       <HomeCtaBanner onClick={handleCtaClick} />
-      <HomeCharacterStage onMailboxClick={() => setActivePopup('mailbox')} />
+      <HomeCharacterStage
+        onMailboxClick={() => setActivePopup('mailbox')}
+        unreadLetterCount={unreadLetterCount}
+      />
       <HomeBottomNav
         onQuestionBoxClick={() => navigate('/morning-report')}
         onHomeClick={() => setActivePopup('home')}
         onWeeklyReportClick={() => setActivePopup('weeklyReport')}
       />
 
-      {activePopup === 'medication' && <HomeMedicationPopup onClose={closePopup} />}
+      {activePopup === 'mailbox' && (
+        <Letterbox letters={letters} onMarkRead={markLetterRead} onClose={closePopup} />
+      )}
       {activePopup === 'morning' && <DayQuestionPopup onClose={closePopup} />}
       {activePopup === 'medication_check' && (
         <MedicineCheckPopup

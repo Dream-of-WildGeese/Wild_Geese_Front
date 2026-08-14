@@ -3,28 +3,42 @@ import { useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
 import { useLocation } from 'react-router-dom';
 import back from '../../assets/onboarding/back.svg';
+import { useAppData } from '../../store/AppDataContext';
 
 const HealthSet = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const role = location.state?.role || 'parent';
-  console.log('HealthSet:', role);
+  const { data, setProfile, setInterests: saveInterests } = useAppData();
+  const role = location.state?.role || data.profile.role || 'parent';
 
-  const [name, setName] = useState('');
-  const [birth, setBirth] = useState('');
-  const [gender, setGender] = useState('');
+  const [name, setName] = useState(data.profile.name || '');
+  const [birth, setBirth] = useState(data.profile.birth || '');
+  const [gender, setGender] = useState(data.profile.gender || '');
   const [agree, setAgree] = useState(true);
-  const [interests, setInterests] = useState([]);
-  const medications = [];
+  const [interests, setInterests] = useState(data.interests || []);
+  const medications = data.medications;
 
   const interestList = ['수면', '활동량', '식사', '복약', '기분'];
 
   const toggleInterest = (item) => {
-    setInterests((prev) =>
-      prev.includes(item)
-        ? prev.filter((v) => v !== item)
-        : [...prev, item]
-    );
+    const next = interests.includes(item) ? interests.filter((v) => v !== item) : [...interests, item];
+    setInterests(next);
+    saveInterests(next);
+  };
+
+  const handleNameChange = (e) => {
+    setName(e.target.value);
+    setProfile({ name: e.target.value });
+  };
+
+  const handleBirthChange = (e) => {
+    setBirth(e.target.value);
+    setProfile({ birth: e.target.value });
+  };
+
+  const handleGenderChange = (value) => {
+    setGender(value);
+    setProfile({ gender: value });
   };
 
   return (
@@ -56,7 +70,7 @@ const HealthSet = () => {
                 <Label>이름</Label>
                 <Input
                 value={name}
-                onChange={(e) => setName(e.target.value)}
+                onChange={handleNameChange}
                 />
             </InputGroup>
 
@@ -65,7 +79,7 @@ const HealthSet = () => {
                 <Input
                 type="date"
                 value={birth}
-                onChange={(e) => setBirth(e.target.value)}
+                onChange={handleBirthChange}
                 />
             </InputGroup>
 
@@ -74,15 +88,15 @@ const HealthSet = () => {
 
                 <GenderWrap>
                 <GenderButton
-                    active={gender === 'male'}
-                    onClick={() => setGender('male')}
+                    $active={gender === 'male'}
+                    onClick={() => handleGenderChange('male')}
                 >
                     남성
                 </GenderButton>
 
                 <GenderButton
-                    active={gender === 'female'}
-                    onClick={() => setGender('female')}
+                    $active={gender === 'female'}
+                    onClick={() => handleGenderChange('female')}
                 >
                     여성
                 </GenderButton>
@@ -117,7 +131,7 @@ const HealthSet = () => {
                 {interestList.map((item) => (
                 <Chip
                     key={item}
-                    active={interests.includes(item)}
+                    $active={interests.includes(item)}
                     onClick={() => toggleInterest(item)}
                 >
                     {item}
@@ -138,7 +152,7 @@ const HealthSet = () => {
 
             <ChipWrap>
                 {medications.map((item) => (
-                <MedChip key={item}>{item}</MedChip>
+                <MedChip key={item.id}>{item.name}</MedChip>
                 ))}
 
                 <AddChip onClick={() => navigate('/onboarding/medication/add')}>+ 추가</AddChip>
@@ -336,12 +350,12 @@ const GenderButton = styled.button`
   height: 48px;
 
   border-radius: 12px;
-  border: ${({ active }) =>
-    active ? '2px solid #E8734A' : '1px solid #D9D4CC'};
+  border: ${({ $active }) =>
+    $active ? '2px solid #E8734A' : '1px solid #D9D4CC'};
 
   background: #FFF;
-  color: ${({ active }) =>
-    active ? '#E8734A' : '#111'};
+  color: ${({ $active }) =>
+    $active ? '#E8734A' : '#111'};
 
   font-size: 15px;
   font-weight: 500;
@@ -387,15 +401,15 @@ const Chip = styled.button`
   padding: 8px 14px;
 
   border: 1px solid
-    ${({ active }) =>
-      active ? '#E8734A' : '#D9D4CC'};
+    ${({ $active }) =>
+      $active ? '#E8734A' : '#D9D4CC'};
   border-radius: 999px;
 
-  background: ${({ active }) =>
-    active ? '#F8E2D3' : '#FFF'};
+  background: ${({ $active }) =>
+    $active ? '#F8E2D3' : '#FFF'};
 
-  color: ${({ active }) =>
-    active ? '#E8734A' : '#111'};
+  color: ${({ $active }) =>
+    $active ? '#E8734A' : '#111'};
 
   font-size: 14px;
 
