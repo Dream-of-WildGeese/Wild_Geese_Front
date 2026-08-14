@@ -107,13 +107,16 @@ const CurrentWeekDesc = styled.p`
   line-height: 1.35;
 `;
 
+// 라벨에 연도가 붙어 길어졌다. 개수가 늘어나도 한 줄로 밀리지 않게 감싼다.
 const MonthJumpRow = styled.div`
   display: flex;
+  flex-wrap: wrap;
   gap: 8px;
   margin-top: 20px;
 `;
 
 const MonthChip = styled.button`
+  white-space: nowrap;
   padding: 8px 16px;
   border-radius: 18px;
   font-size: 14px;
@@ -188,21 +191,29 @@ const Chevron = styled.span`
 function WeeklyReport() {
   const navigate = useNavigate();
   const [person, setPerson] = useState('me');
-  const [month, setMonth] = useState(new Date().getMonth() + 1);
-
   const { data, loading, error } = useApi(loadWeeklyList, { args: [person] });
 
   const currentWeek = data?.current ?? null;
   const pastWeeks = useMemo(() => data?.past ?? [], [data]);
-  const months = useMemo(
-    () => [...new Set([currentWeek, ...pastWeeks].filter(Boolean).map((week) => week.month))],
-    [currentWeek, pastWeeks],
-  );
+
+  // 최신 주가 위로 오도록 monthKey 내림차순으로 정렬한다.
+  // 월 숫자로 정렬하면 12월 다음에 1월이 오는 연말 구간에서 순서가 뒤집힌다.
+  const months = useMemo(() => {
+    const seen = new Map();
+    [currentWeek, ...pastWeeks].filter(Boolean).forEach((week) => {
+      if (!seen.has(week.monthKey)) seen.set(week.monthKey, week);
+    });
+    return [...seen.values()].sort((a, b) => b.monthKey - a.monthKey);
+  }, [currentWeek, pastWeeks]);
+
+  const [monthKey, setMonthKey] = useState(null);
+  const activeMonthKey = monthKey ?? months[0]?.monthKey ?? null;
+
   const weeksByMonth = useMemo(() => {
     const map = new Map();
     pastWeeks.forEach((week) => {
-      if (!map.has(week.month)) map.set(week.month, []);
-      map.get(week.month).push(week);
+      if (!map.has(week.monthKey)) map.set(week.monthKey, []);
+      map.get(week.monthKey).push(week);
     });
     return map;
   }, [pastWeeks]);
@@ -241,18 +252,23 @@ function WeeklyReport() {
 
       <MonthJumpRow>
         {months.map((m) => (
-          <MonthChip key={m} type="button" $active={month === m} onClick={() => setMonth(m)}>
-            {m}월
+          <MonthChip
+            key={m.monthKey}
+            type="button"
+            $active={activeMonthKey === m.monthKey}
+            onClick={() => setMonthKey(m.monthKey)}
+          >
+            {m.monthLabel}
           </MonthChip>
         ))}
       </MonthJumpRow>
 
       {months
-        .filter((m) => weeksByMonth.has(m))
+        .filter((m) => weeksByMonth.has(m.monthKey))
         .map((m) => (
-          <div key={m}>
-            <MonthLabel>{m}월</MonthLabel>
-            {weeksByMonth.get(m).map((week) => (
+          <div key={m.monthKey}>
+            <MonthLabel>{m.monthLabel}</MonthLabel>
+            {weeksByMonth.get(m.monthKey).map((week) => (
               <WeekRow
                 key={week.id}
                 type="button"

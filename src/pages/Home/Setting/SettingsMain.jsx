@@ -8,6 +8,7 @@ import { getMyFamily } from '../../../api/family';
 import { getUserId } from '../../../api/client';
 import { useApi, useApiAction } from '../../../hooks/useApi';
 import { formatAlarmTime, ROLE_LABEL } from './settingsUtils';
+import TimePickerModal from '../../../components/TimePickerModal';
 import LogoutConfirmPopup from './LogoutConfirmPopup';
 import WithdrawConfirmPopup from './WithdrawConfirmPopup';
 
@@ -150,6 +151,8 @@ function SettingsMain() {
   // 이름/역할은 서버에 조회 API가 없어서 온보딩 때 저장한 로컬 값을 그대로 쓴다.
   const { data, resetAppData } = useAppData();
   const [popup, setPopup] = useState(null);
+  // 어떤 알림 시각을 편집 중인지 ('morningTime' | 'eveningTime' | null)
+  const [timeEditor, setTimeEditor] = useState(null);
 
   // 알림 설정을 한 번도 저장한 적 없는 계정은 조회가 실패한다.
   // 그때는 기본값으로 화면을 띄워서, 토글을 누르면 그 값으로 새로 저장되게 한다.
@@ -163,16 +166,23 @@ function SettingsMain() {
     (member) => String(member.userId) !== String(myUserId),
   );
 
-  // 토글은 먼저 화면에 반영하고, 저장에 실패하면 이전 값으로 되돌린다.
-  const handleToggle = async (key) => {
+  // 토글/시간 모두 먼저 화면에 반영하고, 저장에 실패하면 이전 값으로 되돌린다.
+  const applyChange = async (patch) => {
     if (!setting) return;
-    const next = { ...setting, [key]: !setting[key] };
+    const next = { ...setting, ...patch };
     setSetting(next);
     const { ok, error } = await saveSetting(next);
     if (!ok) {
       setSetting(setting);
       alert(error.message);
     }
+  };
+
+  const handleToggle = (key) => applyChange({ [key]: !setting[key] });
+
+  const handleTimeConfirm = (nextTime) => {
+    applyChange({ [timeEditor]: nextTime });
+    setTimeEditor(null);
   };
 
   const handleLogout = () => {
@@ -214,14 +224,28 @@ function SettingsMain() {
         </ClickableRow>
 
         <SectionLabel>알림 시간</SectionLabel>
-        <Row>
+        <ClickableRow
+          type="button"
+          disabled={!setting}
+          onClick={() => setTimeEditor('morningTime')}
+        >
           <RowLabel>아침 연결 질문</RowLabel>
-          <RowValue>{setting ? formatAlarmTime(setting.morningTime) : '불러오는 중...'}</RowValue>
-        </Row>
-        <Row>
+          <RowValue>
+            {setting ? formatAlarmTime(setting.morningTime) : '불러오는 중...'}
+            <Chevron> ›</Chevron>
+          </RowValue>
+        </ClickableRow>
+        <ClickableRow
+          type="button"
+          disabled={!setting}
+          onClick={() => setTimeEditor('eveningTime')}
+        >
           <RowLabel>저녁 건강 체크</RowLabel>
-          <RowValue>{setting ? formatAlarmTime(setting.eveningTime) : '불러오는 중...'}</RowValue>
-        </Row>
+          <RowValue>
+            {setting ? formatAlarmTime(setting.eveningTime) : '불러오는 중...'}
+            <Chevron> ›</Chevron>
+          </RowValue>
+        </ClickableRow>
 
         <SectionLabel>푸시 알림</SectionLabel>
         {NOTIFICATION_ROWS.map((row) => (
@@ -262,6 +286,14 @@ function SettingsMain() {
       )}
       {popup === 'withdraw' && (
         <WithdrawConfirmPopup onCancel={() => setPopup(null)} onConfirm={handleWithdraw} />
+      )}
+      {timeEditor && (
+        <TimePickerModal
+          title={timeEditor === 'morningTime' ? '아침 연결 질문 시간' : '저녁 건강 체크 시간'}
+          value={setting?.[timeEditor]}
+          onConfirm={handleTimeConfirm}
+          onClose={() => setTimeEditor(null)}
+        />
       )}
     </Page>
   );

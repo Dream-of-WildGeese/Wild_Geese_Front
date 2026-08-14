@@ -142,6 +142,14 @@ const OptionList = styled.div`
   flex-direction: column;
   gap: 72px;
   margin-top: 82px;
+
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
 `;
 
 const OptionButton = styled.button`
