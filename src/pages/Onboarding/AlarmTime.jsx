@@ -6,15 +6,17 @@ import alarmMoon from '../../assets/onboarding/alarm-moon.svg';
 import back from '../../assets/onboarding/back.svg';
 import heart from '../../assets/onboarding/heart.svg';
 import clock from '../../assets/onboarding/clock.svg';
+import { useAppData } from '../../store/AppDataContext';
 
 
 const AlarmTime = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const role = location.state?.role;
+  const { data, setAlarms } = useAppData();
 
-  const [morningTime, setMorningTime] = useState('08:30');
-  const [eveningTime, setEveningTime] = useState('20:00');
+  const [morningTime, setMorningTime] = useState(data.alarms.morning);
+  const [eveningTime, setEveningTime] = useState(data.alarms.evening);
 
   return (
     <Page>
@@ -98,16 +100,19 @@ const AlarmTime = () => {
               </MedicineHeader>
 
               <MedicineText>
-                혈압약 : 오전 8:00, 오후 6:00
+                {data.medications.length > 0
+                  ? data.medications.map((med) => `${med.name} : ${med.times.join(', ')}`).join(' / ')
+                  : '등록된 복용약이 없어요'}
               </MedicineText>
             </Card>
           </ScrollArea>
           <StartButton
-          onClick={() =>
+          onClick={() => {
+            setAlarms({ morning: morningTime, evening: eveningTime });
             navigate('/onboarding/complete/3', {
               state: { role },
-            })
-          }
+            });
+          }}
         >
           완료
         </StartButton>

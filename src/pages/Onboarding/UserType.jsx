@@ -4,9 +4,11 @@ import styled from 'styled-components';
 import pinkFlower from '../../assets/onboarding/pinkflower.svg';
 import yellowFlower from '../../assets/onboarding/yellowflower.svg';
 import back from '../../assets/onboarding/back.svg';
+import { useAppData } from '../../store/AppDataContext';
 
 const UserType = () => {
     const navigate= useNavigate();
+  const { setProfile } = useAppData();
   const [userType, setUserType] = useState(null);
 
   return (
@@ -48,11 +50,12 @@ const UserType = () => {
 
         <NextButton
           disabled={!userType}
-          onClick={() =>
+          onClick={() => {
+            setProfile({ role: userType });
             navigate('/onboarding/step-guide', {
               state: { role: userType },
-            })
-          }
+            });
+          }}
         >
           다음
         </NextButton>
