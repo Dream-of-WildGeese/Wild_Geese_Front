@@ -1,6 +1,8 @@
 import styled from 'styled-components';
 import { useNavigate } from 'react-router-dom';
-import { useAppData } from '../../../store/AppDataContext';
+import { getMedications, deleteMedication } from '../../../api/medication';
+import { useApi, useApiAction } from '../../../hooks/useApi';
+import { toMedicationView } from '../../../utils/medication';
 
 const Page = styled.div`
   position: relative;
@@ -133,13 +135,19 @@ const AddButton = styled.button`
 
 function MedicineList() {
   const navigate = useNavigate();
-  const { data, removeMedication } = useAppData();
-  const medications = data.medications;
+  const { data, loading, error, refetch } = useApi(getMedications);
+  const { execute: removeMedication } = useApiAction(deleteMedication);
+
+  const medications = (data ?? []).map(toMedicationView);
   const totalDoses = medications.reduce((sum, med) => sum + med.times.length, 0);
 
-  const handleDelete = (event, id) => {
+  // 삭제 후 목록을 다시 불러와서 서버 상태와 어긋나지 않게 한다.
+  const handleDelete = async (event, id) => {
     event.stopPropagation();
-    removeMedication(id);
+    const { ok } = await removeMedication(id);
+    if (ok) {
+      refetch();
+    }
   };
 
   return (
@@ -160,7 +168,11 @@ function MedicineList() {
           </Summary>
         )}
 
-        {medications.length === 0 ? (
+        {loading ? (
+          <EmptyState>불러오는 중이에요...</EmptyState>
+        ) : error ? (
+          <EmptyState>{error.message}</EmptyState>
+        ) : medications.length === 0 ? (
           <EmptyState>등록된 약이 아직 없어요. 아래에서 추가해보세요.</EmptyState>
         ) : (
           <MedList>

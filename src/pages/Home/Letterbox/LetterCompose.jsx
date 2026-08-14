@@ -66,7 +66,7 @@ const SendButton = styled.button`
   font-weight: 600;
 `;
 
-function LetterCompose({ onBack, onSend }) {
+function LetterCompose({ onBack, onSend, sending }) {
   const [message, setMessage] = useState('');
 
   return (
@@ -84,8 +84,12 @@ function LetterCompose({ onBack, onSend }) {
         onChange={(e) => setMessage(e.target.value)}
         placeholder="여기에 편지를 적어주세요"
       />
-      <SendButton type="button" disabled={!message.trim()} onClick={() => onSend(message.trim())}>
-        편지 보내기
+      <SendButton
+        type="button"
+        disabled={!message.trim() || sending}
+        onClick={() => onSend(message.trim())}
+      >
+        {sending ? '보내는 중...' : '편지 보내기'}
       </SendButton>
     </Card>
   );

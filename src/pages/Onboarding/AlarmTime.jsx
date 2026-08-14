@@ -7,6 +7,8 @@ import back from '../../assets/onboarding/back.svg';
 import heart from '../../assets/onboarding/heart.svg';
 import clock from '../../assets/onboarding/clock.svg';
 import { useAppData } from '../../store/AppDataContext';
+import { updateNotificationSetting } from '../../api/user';
+import { useApiAction } from '../../hooks/useApi';
 
 
 const AlarmTime = () => {
@@ -17,6 +19,27 @@ const AlarmTime = () => {
 
   const [morningTime, setMorningTime] = useState(data.alarms.morning);
   const [eveningTime, setEveningTime] = useState(data.alarms.evening);
+  const { execute: saveSetting, loading: saving } = useApiAction(updateNotificationSetting);
+
+  // 서버는 알림 on/off와 시각을 한 번에 받으므로, 온보딩 기본값(전부 켜짐)과 함께 보낸다.
+  const handleComplete = async () => {
+    const { ok, error } = await saveSetting({
+      morningTime,
+      morningEnabled: true,
+      eveningTime,
+      eveningEnabled: true,
+      reportEnabled: true,
+      reportDayOfWeek: 'SUNDAY',
+      medicationEnabled: true,
+      familyReactionEnabled: true,
+    });
+    if (!ok) {
+      alert(error.message);
+      return;
+    }
+    setAlarms({ morning: morningTime, evening: eveningTime });
+    navigate('/onboarding/complete/3', { state: { role } });
+  };
 
   return (
     <Page>
@@ -106,16 +129,9 @@ const AlarmTime = () => {
               </MedicineText>
             </Card>
           </ScrollArea>
-          <StartButton
-          onClick={() => {
-            setAlarms({ morning: morningTime, evening: eveningTime });
-            navigate('/onboarding/complete/3', {
-              state: { role },
-            });
-          }}
-        >
-          완료
-        </StartButton>
+          <StartButton onClick={handleComplete} disabled={saving}>
+            {saving ? '저장 중...' : '완료'}
+          </StartButton>
         </Section>
 
       </Content>

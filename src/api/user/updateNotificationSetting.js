@@ -1,14 +1,23 @@
 import { client } from '../client';
 
+// 알림 on/off와 시각을 한 번에 보낸다. reportDayOfWeek는 MONDAY~SUNDAY.
 export const updateNotificationSetting = ({
-  morningQuestionEnabled,
-  eveningQuestionEnabled,
+  morningTime,
+  morningEnabled,
+  eveningTime,
+  eveningEnabled,
   reportEnabled,
-  notificationTime,
+  reportDayOfWeek,
+  medicationEnabled,
+  familyReactionEnabled,
 }) =>
-  client.put('/api/v1/users/me/notification-setting', {
-    morningQuestionEnabled,
-    eveningQuestionEnabled,
+  client.put('/api/v1/users/me/notificationsetting', {
+    morningTime,
+    morningEnabled,
+    eveningTime,
+    eveningEnabled,
     reportEnabled,
-    notificationTime,
+    reportDayOfWeek,
+    medicationEnabled,
+    familyReactionEnabled,
   });

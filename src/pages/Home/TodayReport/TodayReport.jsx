@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
-import { TODAY_REPORT } from './todayReportMock';
+import { loadTodayReport } from './todayReportData';
+import { useApi } from '../../../hooks/useApi';
 
 const Page = styled.div`
   position: relative;
@@ -411,11 +412,26 @@ const LetterButton = styled.button`
 function TodayReport() {
   const navigate = useNavigate();
   const [person, setPerson] = useState('me');
-  const report = TODAY_REPORT[person];
+  const { data: report, loading, error } = useApi(loadTodayReport, { args: [person] });
 
   const handleSendLetter = () => {
     navigate('/home', { state: { openLetterbox: 'compose' } });
   };
+
+  if (loading || error || !report) {
+    return (
+      <Page>
+        <Title>오늘의 온담</Title>
+        <AiComment>
+          {loading
+            ? '리포트를 불러오는 중이에요...'
+            : error
+              ? error.message
+              : '아직 연결된 가족이 없어요.'}
+        </AiComment>
+      </Page>
+    );
+  }
 
   return (
     <Page>
@@ -446,18 +462,23 @@ function TodayReport() {
         </SummaryChip>
       </SummaryRow>
 
-      <AiInsightCard>
-        <AiBadge>✦</AiBadge>
-        <AiTextCol>
-          <AiLabel>AI 한마디</AiLabel>
-          <AiComment>{report.aiComment}</AiComment>
-        </AiTextCol>
-      </AiInsightCard>
+      {report.aiComment && (
+        <AiInsightCard>
+          <AiBadge>✦</AiBadge>
+          <AiTextCol>
+            <AiLabel>AI 한마디</AiLabel>
+            <AiComment>{report.aiComment}</AiComment>
+          </AiTextCol>
+        </AiInsightCard>
+      )}
 
-      <StepRow>
-        <StepIconBadge>●</StepIconBadge>
-        <StepText>{report.stepMessage}</StepText>
-      </StepRow>
+      {/* 걸음수는 헬스케어 연동이 없어 서버가 내려주지 않는다. 값이 생기면 그때 노출된다. */}
+      {report.stepMessage && (
+        <StepRow>
+          <StepIconBadge>●</StepIconBadge>
+          <StepText>{report.stepMessage}</StepText>
+        </StepRow>
+      )}
 
       <Timeline>
         {report.timeline.map((entry, index) => {

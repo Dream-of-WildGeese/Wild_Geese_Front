@@ -11,9 +11,11 @@ import MedicineCheckPopup from './TodayOndam/Medicine/MedicineCheckPopup';
 import NightIntroPopup from './TodayOndam/Night/NightIntroPopup';
 import NightCompletePopup from './TodayOndam/Night/NightCompletePopup';
 import Letterbox from './Letterbox/Letterbox';
-import { MOCK_LETTERS } from './Letterbox/letterboxMock';
 import { getHomeCtaSlot } from './TodayOndam/homeCtaFlow';
-import { MOCK_MEDICATIONS } from '../../mock/homeMock';
+import { getDueMedications } from '../../api/medication';
+import { getReceivedLetters, markLetterAsRead } from '../../api/letter';
+import { useApi, useApiAction } from '../../hooks/useApi';
+import { toLetterView } from '../../utils/letter';
 
 const Stage = styled.div`
   position: relative;
@@ -37,16 +39,30 @@ function Home() {
   const location = useLocation();
   const [activePopup, setActivePopup] = useState(null);
   const [ctaSlot, setCtaSlot] = useState(null);
-  const [letters, setLetters] = useState(MOCK_LETTERS);
   const [letterboxInitialStep, setLetterboxInitialStep] = useState(null);
+
+  const {
+    data: receivedLetters,
+    loading: lettersLoading,
+    refetch: refetchLetters,
+  } = useApi(getReceivedLetters);
+  const { execute: markRead } = useApiAction(markLetterAsRead);
+  const { execute: fetchDueMedications } = useApiAction(getDueMedications);
+
+  // 받은 편지함은 페이지네이션 응답이라 content 배열만 꺼내 쓴다.
+  const letters = (receivedLetters?.content ?? []).map(toLetterView);
+  const unreadLetterCount = letters.filter((letter) => !letter.read).length;
+
   const closePopup = () => {
     setActivePopup(null);
     setLetterboxInitialStep(null);
   };
-  const unreadLetterCount = letters.filter((letter) => !letter.read).length;
 
-  const markLetterRead = (id) => {
-    setLetters((prev) => prev.map((letter) => (letter.id === id ? { ...letter, read: true } : letter)));
+  const markLetterRead = async (id) => {
+    const { ok } = await markRead(id);
+    if (ok) {
+      refetchLetters();
+    }
   };
 
   // 저녁 건강체크 완료, 또는 리포트 화면의 '편지 보내기'에서 돌아오면 해당 팝업을 띄운다.
@@ -63,8 +79,10 @@ function Home() {
     }
   }, [location, navigate]);
 
-  const handleCtaClick = () => {
-    const slot = getHomeCtaSlot(MOCK_MEDICATIONS);
+  // 지금 복용 예정인 약이 있는지는 서버가 판단하므로, 배너를 누른 시점에 물어본다.
+  const handleCtaClick = async () => {
+    const { data } = await fetchDueMedications();
+    const slot = getHomeCtaSlot(data ?? []);
     setCtaSlot(slot);
     // 상단 약 아이콘의 'medication'(복용약 관리) 팝업과 이름이 겹치지 않도록 구분한다.
     setActivePopup(slot.type === 'medication' ? 'medication_check' : slot.type);
@@ -91,7 +109,9 @@ function Home() {
       {activePopup === 'mailbox' && (
         <Letterbox
           letters={letters}
+          loading={lettersLoading}
           onMarkRead={markLetterRead}
+          onSent={refetchLetters}
           onClose={closePopup}
           initialStep={letterboxInitialStep}
         />

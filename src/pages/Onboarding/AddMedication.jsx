@@ -2,11 +2,13 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
 import back from '../../assets/onboarding/x.svg';
-import { useAppData } from '../../store/AppDataContext';
+import { createMedication } from '../../api/medication';
+import { useApiAction } from '../../hooks/useApi';
+import { toMedicationRequest } from '../../utils/medication';
 
 const AddMedication = () => {
   const navigate = useNavigate();
-  const { addMedication } = useAppData();
+  const { execute: addMedication } = useApiAction(createMedication);
 
   const [name, setName] = useState('');
   const [times, setTimes] = useState([]);
@@ -58,14 +60,15 @@ const AddMedication = () => {
     setMinute('');
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!name.trim() || times.length === 0) return;
-    addMedication({
-      id: Date.now(),
-      name: name.trim(),
-      times,
-      repeat: repeat.length > 0 ? repeat : ['매일'],
-    });
+    const { ok, error } = await addMedication(
+      toMedicationRequest({ name, times, repeat: repeat[0] ?? '매일' }),
+    );
+    if (!ok) {
+      alert(error.message);
+      return;
+    }
     navigate(-1);
   };
 

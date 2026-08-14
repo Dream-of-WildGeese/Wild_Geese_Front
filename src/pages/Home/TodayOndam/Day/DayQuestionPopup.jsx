@@ -3,7 +3,8 @@ import styled from 'styled-components';
 import mascotImg from '../../../../assets/mascot.png';
 import avatarCheering from '../../../../assets/avatar-cheering.png';
 import avatarHeartHug from '../../../../assets/avatar-heart-hug.png';
-import { MOCK_MORNING_QUESTION, MOCK_PARTNER_ANSWER } from '../../../../mock/homeMock';
+import { getTodayQuestion, submitMorningAnswer } from '../../../../api/morning';
+import { useApi, useApiAction } from '../../../../hooks/useApi';
 
 const REACTIONS = ['좋아요', '힘내요', '웃겨요', '최고', '축하해요'];
 
@@ -193,12 +194,28 @@ const EmptyAnswerText = styled.p`
 function DayQuestionPopup({ onClose }) {
   const [step, setStep] = useState('intro'); // intro | question | result
   const [answer, setAnswer] = useState('');
-  const [myAnswer, setMyAnswer] = useState('');
   const [sentReaction, setSentReaction] = useState(null);
 
-  const handleSubmit = () => {
+  const { data: question, loading, error, refetch } = useApi(getTodayQuestion);
+  const { execute: submitAnswer, loading: submitting } = useApiAction(submitMorningAnswer);
+
+  const questionText = question?.content ?? '';
+  const myAnswer = question?.myAnswer ?? '';
+  // 가족 답변은 여러 명일 수 있지만 화면은 한 명분만 보여준다.
+  const partnerAnswer = question?.familyAnswers?.[0] ?? null;
+
+  const handleSubmit = async () => {
     if (!answer.trim()) return;
-    setMyAnswer(answer.trim());
+    const { ok, error: submitError } = await submitAnswer(question.questionId, {
+      textValue: answer.trim(),
+      inputType: 'TEXT',
+    });
+    if (!ok) {
+      alert(submitError.message);
+      return;
+    }
+    // 내 답변을 저장하면 그제서야 가족 답변이 함께 내려오므로 다시 조회한다.
+    refetch();
     setStep('result');
   };
 
@@ -229,16 +246,23 @@ function DayQuestionPopup({ onClose }) {
     return (
       <Backdrop onClick={onClose}>
         <Card $wide onClick={(event) => event.stopPropagation()}>
-          <QuestionTitle>{MOCK_MORNING_QUESTION}</QuestionTitle>
+          <QuestionTitle>
+            {loading ? '질문을 불러오는 중이에요...' : error ? error.message : questionText}
+          </QuestionTitle>
           <Input
             placeholder="입력해주세요"
             value={answer}
             onChange={(event) => setAnswer(event.target.value)}
           />
-          {/* 음성 인식은 API 연동 후 작업 예정이라 지금은 표시만 한다 */}
+          {/* 음성 인식은 아침 질문용 STT API가 아직 없어서 표시만 한다 */}
           <VoiceButton type="button">● 음성으로 인식하기</VoiceButton>
-          <PrimaryButton $wide type="button" onClick={handleSubmit} disabled={!answer.trim()}>
-            완료
+          <PrimaryButton
+            $wide
+            type="button"
+            onClick={handleSubmit}
+            disabled={!answer.trim() || submitting || !question}
+          >
+            {submitting ? '보내는 중...' : '완료'}
           </PrimaryButton>
           <HintText>답변을 남기면 부모님 답변도 보러갈 수 있어요</HintText>
         </Card>
@@ -249,21 +273,21 @@ function DayQuestionPopup({ onClose }) {
   return (
     <Backdrop onClick={onClose}>
       <Card $wide onClick={(event) => event.stopPropagation()}>
-        <QuestionTitle $small>{MOCK_MORNING_QUESTION}</QuestionTitle>
+        <QuestionTitle $small>{questionText}</QuestionTitle>
         <AnswerBox>
           <Badge $mine>내 답변</Badge>
           <AnswerRow>
             <AnswerAvatar src={avatarCheering} alt="" />
-            <AnswerText>{myAnswer}</AnswerText>
+            <AnswerText>{myAnswer || answer}</AnswerText>
           </AnswerRow>
         </AnswerBox>
 
-        {MOCK_PARTNER_ANSWER ? (
+        {partnerAnswer ? (
           <AnswerBox>
-            <Badge>부모님 답변</Badge>
+            <Badge>{partnerAnswer.name} 답변</Badge>
             <AnswerRow>
               <AnswerAvatar src={avatarHeartHug} alt="" />
-              <AnswerText>{MOCK_PARTNER_ANSWER}</AnswerText>
+              <AnswerText>{partnerAnswer.textValue}</AnswerText>
             </AnswerRow>
             <ReactionRow>
               {REACTIONS.map((reaction) => (

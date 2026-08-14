@@ -2,6 +2,7 @@ import axios from 'axios';
 import { attachUserId, unwrapResponse, unwrapError } from './interceptors';
 
 export { getUserId, setUserId, clearUserId } from './userId';
+export { getInviteCode, setInviteCode, clearInviteCode } from './inviteCode';
 export { ApiError } from './ApiError';
 
 export const client = axios.create({

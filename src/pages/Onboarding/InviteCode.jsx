@@ -1,8 +1,9 @@
-import React,{ useState,useEffect } from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
-//import { createFamily } from '../../api/family/createFamily';
-//import { joinFamily } from '../../api/family/joinFamily';
+import { joinFamily } from '../../api/family';
+import { getInviteCode } from '../../api/client';
+import { useApiAction } from '../../hooks/useApi';
 import { useLocation } from 'react-router-dom';
 import back from '../../assets/onboarding/back.svg';
 import heart from '../../assets/onboarding/heart.svg';
@@ -11,30 +12,20 @@ const InviteCode = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const role = location.state?.role;
-  console.log('InviteCode:', role);
 
-  //const [inviteCode, setInviteCode] = useState('');
-  const [code, setCode] = useState(''); 
-  const inviteCode = '482913'; //임시초대코드
-  // 내 초대 코드 발급
-  useEffect(() => {
-    const getInviteCode = async () => {
-      try {
-        const response = await createFamily();
+  const [code, setCode] = useState('');
+  const { execute: join, loading: joining } = useApiAction(joinFamily);
 
-        console.log('내 초대 코드:', response);
-
-        setInviteCode(response);
-      } catch (error) {
-        console.error('초대 코드 발급 실패:', error);
-      }
-    };
-
-    getInviteCode();
-  }, []);
+  // 초대코드는 회원가입 응답에만 들어있어서, 가입 때 저장해둔 값을 그대로 보여준다.
+  // 다시 발급받는 API는 없다.
+  const inviteCode = getInviteCode() ?? '';
 
   // 내 코드 복사
   const handleCopy = async () => {
+    if (!inviteCode) {
+      alert('아직 발급된 초대 코드가 없어요.');
+      return;
+    }
     try {
       await navigator.clipboard.writeText(inviteCode);
       alert('초대 코드가 복사됐어요!');
@@ -45,16 +36,20 @@ const InviteCode = () => {
   };
 
   // 가족 코드 확인
-  const handleConfirm = () => {
-  if (!code.trim()) {
-    alert('초대 코드를 입력해주세요.');
-    return;
-  }
+  const handleConfirm = async () => {
+    if (!code.trim()) {
+      alert('초대 코드를 입력해주세요.');
+      return;
+    }
 
-  navigate('/onboarding/complete/1', {
-    state: { role },
-  });
-};
+    const { ok, error } = await join({ inviteCode: code.trim() });
+    if (!ok) {
+      alert(error.message);
+      return;
+    }
+
+    navigate('/onboarding/complete/1', { state: { role } });
+  };
 
   return (
     <Page>
@@ -113,8 +108,8 @@ const InviteCode = () => {
               placeholder="코드 6자리 입력"
             />
 
-            <ConfirmButton onClick={handleConfirm}>
-              확인하기
+            <ConfirmButton onClick={handleConfirm} disabled={joining}>
+              {joining ? '연결 중...' : '확인하기'}
             </ConfirmButton>
 
             <HelpText>

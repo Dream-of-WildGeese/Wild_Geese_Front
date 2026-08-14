@@ -3,6 +3,10 @@ import { useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
 import { useAppData } from '../../../store/AppDataContext';
 import { clearUserId } from '../../../api/client/userId';
+import { getNotificationSetting, updateNotificationSetting } from '../../../api/user';
+import { getMyFamily } from '../../../api/family';
+import { getUserId } from '../../../api/client';
+import { useApi, useApiAction } from '../../../hooks/useApi';
 import { formatAlarmTime, ROLE_LABEL } from './settingsUtils';
 import LogoutConfirmPopup from './LogoutConfirmPopup';
 import WithdrawConfirmPopup from './WithdrawConfirmPopup';
@@ -122,17 +126,54 @@ const ToggleThumb = styled.span`
   transition: left 0.15s ease;
 `;
 
+const DEFAULT_NOTIFICATION_SETTING = {
+  morningTime: '08:30',
+  morningEnabled: true,
+  eveningTime: '20:00',
+  eveningEnabled: true,
+  reportEnabled: true,
+  reportDayOfWeek: 'SUNDAY',
+  medicationEnabled: true,
+  familyReactionEnabled: true,
+};
+
+// key는 서버의 NotificationSetting 필드명을 그대로 쓴다.
 const NOTIFICATION_ROWS = [
-  { key: 'morningQuestion', label: '아침 연결 질문 알림' },
-  { key: 'eveningCheck', label: '저녁 건강 체크 알림' },
-  { key: 'medication', label: '복약 알림' },
-  { key: 'familyReaction', label: '가족 답변/반응 알림' },
+  { key: 'morningEnabled', label: '아침 연결 질문 알림' },
+  { key: 'eveningEnabled', label: '저녁 건강 체크 알림' },
+  { key: 'medicationEnabled', label: '복약 알림' },
+  { key: 'familyReactionEnabled', label: '가족 답변/반응 알림' },
 ];
 
 function SettingsMain() {
   const navigate = useNavigate();
-  const { data, setNotification, resetAppData } = useAppData();
+  // 이름/역할은 서버에 조회 API가 없어서 온보딩 때 저장한 로컬 값을 그대로 쓴다.
+  const { data, resetAppData } = useAppData();
   const [popup, setPopup] = useState(null);
+
+  // 알림 설정을 한 번도 저장한 적 없는 계정은 조회가 실패한다.
+  // 그때는 기본값으로 화면을 띄워서, 토글을 누르면 그 값으로 새로 저장되게 한다.
+  const { data: fetchedSetting, loading, setData: setSetting } = useApi(getNotificationSetting);
+  const setting = fetchedSetting ?? (loading ? null : DEFAULT_NOTIFICATION_SETTING);
+  const { data: family } = useApi(getMyFamily);
+  const { execute: saveSetting } = useApiAction(updateNotificationSetting);
+
+  const myUserId = getUserId();
+  const partner = (family?.members ?? []).find(
+    (member) => String(member.userId) !== String(myUserId),
+  );
+
+  // 토글은 먼저 화면에 반영하고, 저장에 실패하면 이전 값으로 되돌린다.
+  const handleToggle = async (key) => {
+    if (!setting) return;
+    const next = { ...setting, [key]: !setting[key] };
+    setSetting(next);
+    const { ok, error } = await saveSetting(next);
+    if (!ok) {
+      setSetting(setting);
+      alert(error.message);
+    }
+  };
 
   const handleLogout = () => {
     clearUserId();
@@ -175,11 +216,11 @@ function SettingsMain() {
         <SectionLabel>알림 시간</SectionLabel>
         <Row>
           <RowLabel>아침 연결 질문</RowLabel>
-          <RowValue>{formatAlarmTime(data.alarms.morning)}</RowValue>
+          <RowValue>{setting ? formatAlarmTime(setting.morningTime) : '불러오는 중...'}</RowValue>
         </Row>
         <Row>
           <RowLabel>저녁 건강 체크</RowLabel>
-          <RowValue>{formatAlarmTime(data.alarms.evening)}</RowValue>
+          <RowValue>{setting ? formatAlarmTime(setting.eveningTime) : '불러오는 중...'}</RowValue>
         </Row>
 
         <SectionLabel>푸시 알림</SectionLabel>
@@ -188,11 +229,12 @@ function SettingsMain() {
             <RowLabel>{row.label}</RowLabel>
             <ToggleTrack
               type="button"
-              $on={data.notifications[row.key]}
-              onClick={() => setNotification(row.key, !data.notifications[row.key])}
-              aria-pressed={data.notifications[row.key]}
+              $on={Boolean(setting?.[row.key])}
+              onClick={() => handleToggle(row.key)}
+              aria-pressed={Boolean(setting?.[row.key])}
+              disabled={!setting}
             >
-              <ToggleThumb $on={data.notifications[row.key]} />
+              <ToggleThumb $on={Boolean(setting?.[row.key])} />
             </ToggleTrack>
           </ToggleRow>
         ))}
@@ -200,11 +242,8 @@ function SettingsMain() {
         <SectionLabel>가족 연결</SectionLabel>
         <Row>
           <RowLabel>연결된 가족</RowLabel>
-          <RowValue>
-            {data.family.connectedName
-              ? `${data.family.connectedName} (${data.family.connectedRelation})`
-              : '아직 연결된 가족이 없어요'}
-          </RowValue>
+          {/* 가족 구성원 조회는 userId와 email만 내려줘서 이름 대신 email을 보여준다 */}
+          <RowValue>{partner ? partner.email : '아직 연결된 가족이 없어요'}</RowValue>
         </Row>
 
         <SectionLabel>계정</SectionLabel>
