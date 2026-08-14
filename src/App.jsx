@@ -29,7 +29,7 @@ function App() {
       <BrowserRouter>
         <Layout>
           <Routes>
-            <Route path="/onboarding" element={<Intro/>} />
+            <Route path="/" element={<Intro/>} />
             <Route path="/onboarding/UserType" element={<UserType />} />
             <Route path="/onboarding/step-guide" element={<StepGuide />} />
             <Route path="/onboarding/invite" element={<InviteCode />} />
@@ -41,7 +41,7 @@ function App() {
             <Route path="/onboarding/medication/manage" element={<MedicationManage />} />
             <Route path="/onboarding/medication/add" element={<AddMedication />} />
             <Route path="/onboarding/alarm" element={<AlarmTime />} />
-            <Route path="/" element={<Home />} />
+            <Route path="/home" element={<Home />} />
             <Route path='/daily-health-check' element={<DailyHealthCheck />} />
             <Route path='/today-report' element={<TodayReport />} />
             <Route path='/weekly-report' element={<WeeklyReport />} />

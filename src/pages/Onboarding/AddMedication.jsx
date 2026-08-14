@@ -178,6 +178,7 @@ const CloseButton = styled.button`
   position: absolute;
   top: 35px;
   left: 24px;
+  z-index: 10;
 
   width: 40px;
   height: 40px;
@@ -390,19 +391,19 @@ const ButtonArea = styled.div`
   position: absolute;
   left: 20px;
   right: 20px;
-  bottom: 20px;
+  bottom: 30px;
 `;
 
 const SaveButton = styled.button`
   width: 100%;
   height: 56px;
 
-  border-radius: 18px;
+  border-radius: 16px;
   border: 1.5px solid rgba(74, 58, 47, 0.55);
   background: #CBD879;
 
   color: #4A3A2F;
   font-family: Jua;
-  font-size: 22px;
+  font-size: 18px;
   cursor: pointer;
 `;

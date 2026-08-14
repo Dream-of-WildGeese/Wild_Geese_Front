@@ -93,7 +93,7 @@ function MorningReportHeader({ year, month, onPrevMonth, onNextMonth, onOpenPick
   return (
     <HeaderWrap>
       <TopRow>
-        <BackButton type="button" onClick={() => navigate('/')}>
+        <BackButton type="button" onClick={() => navigate('/home')}>
           <BackLabel>뒤로가기</BackLabel>
         </BackButton>
         <CalendarButton type="button" aria-label="연월 빠른 이동" onClick={onOpenPicker}>

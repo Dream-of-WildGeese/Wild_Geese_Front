@@ -19,7 +19,7 @@ const AlarmTime = () => {
   return (
     <Page>
       <Content>
-        <BackButton onClick={() => navigate(-1)}>
+        <BackButton onClick={() => navigate('/onboarding/complete/2', { state: { role } })}>
           <BackIcon src={back} alt="뒤로가기" />
         </BackButton>
 
@@ -122,7 +122,7 @@ export default AlarmTime;
 
 const Page = styled.div`
   width: calc(100% + 32px);
-  height: 100vh;
+  height: 100%;
   margin: 0 -${({ theme }) => theme.spacing.md};
   background: #FFF8ED;
 `;
@@ -131,7 +131,7 @@ const Content = styled.div`
   position: relative;
 
   max-width: 402px;
-  height: 100vh;
+  height: 100%;
   margin: 0 auto;
 
   padding: 86px 20px 30px;
@@ -145,6 +145,7 @@ const BackButton = styled.button`
   position: absolute;
   top: 35px;
   left: 24px;
+  z-index: 10;
 
   width: 40px;
   height: 40px;
@@ -205,6 +206,7 @@ const ProgressText = styled.p`
 `;
 
 const Section = styled.section`
+  flex: 1;
   margin-top: 20px;
 
   display: flex;
@@ -367,7 +369,7 @@ const StartButton = styled.button`
 color: #4A3A2F;
 text-align: center;
 font-family: Jua;
-font-size: 22px;
+font-size: 18px;
 font-style: normal;
 font-weight: 400;
 line-height: normal;

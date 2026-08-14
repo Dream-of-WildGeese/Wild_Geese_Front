@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
 import { useLocation } from 'react-router-dom';
+import back from '../../assets/onboarding/back.svg';
 
 const HealthSet = () => {
   const navigate = useNavigate();
@@ -29,8 +30,11 @@ const HealthSet = () => {
   return (
     <Page>
       <Content>
+        <BackButton onClick={() => navigate('/onboarding/complete/1', { state: { role } })}>
+          <BackIcon src={back} alt="뒤로가기" />
+        </BackButton>
+
         <Header>
-          <BackButton onClick={() => navigate(-1)}>‹</BackButton>
           <Title>건강 프로필 설정</Title>
         </Header>
 
@@ -165,11 +169,12 @@ const Page = styled.div`
 `;
 
 const Content = styled.div`
+  position: relative;
   height: 100%;
   display: flex;
   flex-direction: column;
   box-sizing: border-box;
-  padding: 44px 24px 20px;
+  padding: 44px 24px 30px;
 `;
 
 const ScrollArea = styled.div`
@@ -187,8 +192,6 @@ const ScrollArea = styled.div`
 
 
 const Header = styled.div`
-  position: relative;
-
   display: flex;
   align-items: center;
   justify-content: center;
@@ -198,17 +201,26 @@ const Header = styled.div`
 
 const BackButton = styled.button`
   position: absolute;
-  left: 0;
+  top: 35px;
+  left: 24px;
+  z-index: 10;
+
+  width: 40px;
+  height: 40px;
 
   padding: 0;
-
   border: none;
-  background: none;
-
-  font-size: 30px;
-  font-weight: 300;
-
+  background: transparent;
   cursor: pointer;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+`;
+
+const BackIcon = styled.img`
+  width: 40px;
+  height: 40px;
 `;
 
 const Title = styled.h1`

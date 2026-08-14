@@ -215,14 +215,14 @@ function DailyHealthCheck() {
 
   const handleBack = () => {
     if (stepIndex === 0) {
-      navigate('/');
+      navigate('/home');
       return;
     }
     setStepIndex(stepIndex - 1);
   };
 
   const handleFinish = () => {
-    navigate('/', { state: { healthCheckDone: true } });
+    navigate('/home', { state: { healthCheckDone: true } });
   };
 
   return (
