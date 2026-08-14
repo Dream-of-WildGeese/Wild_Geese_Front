@@ -1,76 +1,93 @@
-import React , { useState }from 'react'
+import React, { useState } from 'react';
 import styled from 'styled-components';
 import { useNavigate } from 'react-router-dom';
-import pill from '../../assets/onboarding/pill.png';
+
+import back from '../../assets/onboarding/back.svg';
+import pill from '../../assets/onboarding/med.svg';
+import trash from '../../assets/onboarding/trash.svg';
 
 const MedicationManage = () => {
   const navigate = useNavigate();
-  const handleDelete = (id) => {
-  setMedications((prev) => prev.filter((med) => med.id !== id));
-};
 
   const [medications, setMedications] = useState([
-  {
-    id: 1,
-    name: '혈압약',
-    times: ['오전 8:00', '오후 6:00'],
-    repeat: '매일',
-  },
-  {
-    id: 2,
-    name: '비타민D',
-    times: ['오전 8:00'],
-    repeat: '매일',
-  },
-]);
+    {
+      id: 1,
+      name: '혈압약',
+      repeat: '매일',
+      times: ['오전 8:00', '오후 6:00'],
+    },
+    {
+      id: 2,
+      name: '비타민 D',
+      repeat: '매일',
+      times: ['오전 8:00'],
+    },
+    {
+      id: 3,
+      name: '오메가 3',
+      repeat: '매일',
+      times: [],
+    },
+  ]);
+
+  const handleDelete = (id) => {
+    setMedications((prev) => prev.filter((med) => med.id !== id));
+  };
 
   return (
-  <Page>
-    <Content>
-      <Header>
-        <BackButton onClick={() => navigate(-1)}>‹</BackButton>
-        <Title>복용약 관리</Title>
-      </Header>
+    <Page>
+      <Content>
+        <BackButton onClick={() => navigate(-1)}>
+          <BackIcon src={back} alt="뒤로가기" />
+        </BackButton>
 
-      <ScrollArea>
-        {medications.map((med) => (
-          <MedicationCard key={med.id}>
-            <CardHeader>
-              <NameWrap>
-                <PillIcon src={pill} alt="" />
-                <MedName>{med.name}</MedName>
-              </NameWrap>
+        <Header>
+          <Title>복용약 관리</Title>
+        </Header>
 
-              <DeleteButton onClick={() => handleDelete(med.id)}>🗑️</DeleteButton>
-            </CardHeader>
+        <ScrollArea>
+          {medications.map((med) => (
+            <MedicationCard key={med.id}>
+              <CardHeader>
+                <NameWrap>
+                  <PillIcon src={pill} alt="" />
+                  <MedName>{med.name}</MedName>
+                </NameWrap>
 
-            <ChipWrap>
-              {med.times.map((time) => (
-                <TimeChip key={time}>{time}</TimeChip>
-              ))}
-              <RepeatChip>{med.repeat}</RepeatChip>
-            </ChipWrap>
-          </MedicationCard>
-        ))}
+                <DeleteButton onClick={() => handleDelete(med.id)}>
+                  <TrashIcon src={trash} alt="삭제" />
+                </DeleteButton>
+              </CardHeader>
 
-        <AddButton onClick={() => navigate("/onboarding/medication/add")}>
-          + 새 약 추가하기
-        </AddButton>
-      </ScrollArea>
+              <ChipWrap>
+                <RepeatChip>{med.repeat}</RepeatChip>
 
-      <DoneButton onClick={() => navigate("/onboarding/complete/2")}>
-        완료
-      </DoneButton>
-    </Content>
-  </Page>
-    );
+                {med.times.map((time) => (
+                  <TimeChip key={time}>{time}</TimeChip>
+                ))}
+              </ChipWrap>
+            </MedicationCard>
+          ))}
+
+          
+        </ScrollArea>
+        <AddButton onClick={() => navigate('/onboarding/medication/add')}>
+            + 새 약 추가하기
+          </AddButton>
+
+        <ButtonArea>
+          <DoneButton onClick={() => navigate('/onboarding/complete/2')}>
+            완료
+          </DoneButton>
+        </ButtonArea>
+      </Content>
+    </Page>
+  );
 };
 
+export default MedicationManage;
 
-
-
-
-export default MedicationManage
+/* ---------------- Layout ---------------- */
 
 const Page = styled.div`
   width: calc(100% + 32px);
@@ -80,10 +97,13 @@ const Page = styled.div`
 `;
 
 const Content = styled.div`
+  position: relative;
+
   max-width: 402px;
   height: 100%;
   margin: 0 auto;
-  padding: 50px 20px 20px;
+
+  padding: 86px 20px 30px;
   box-sizing: border-box;
 
   display: flex;
@@ -92,8 +112,30 @@ const Content = styled.div`
 
 /* ---------------- Header ---------------- */
 
+const BackButton = styled.button`
+  position: absolute;
+  top: 35px;
+  left: 24px;
+
+  width: 40px;
+  height: 40px;
+
+  border: none;
+  padding: 0;
+  background: transparent;
+  cursor: pointer;
+
+  display: flex;
+  justify-content: center;
+  align-items: center;
+`;
+
+const BackIcon = styled.img`
+  width: 40px;
+  height: 40px;
+`;
+
 const Header = styled.div`
-  position: relative;
   height: 40px;
 
   display: flex;
@@ -101,56 +143,41 @@ const Header = styled.div`
   align-items: center;
 `;
 
-const BackButton = styled.button`
-  position: absolute;
-  left: 0;
-
-  border: none;
-  background: none;
-  padding: 0;
-
-  font-size: 30px;
-  color: #4a3a2f;
-  cursor: pointer;
-`;
-
 const Title = styled.h1`
   margin: 0;
 
-  color: #4a3a2f;
-  font-family: 'Jua', sans-serif;
-  font-size: 28px;
-  font-weight: 400;
+color: #4A3A2F;
+text-align: center;
+font-family: Jua;
+font-size: 40px;
+font-style: normal;
+font-weight: 400;
+line-height: normal;
 `;
 
 /* ---------------- Scroll ---------------- */
 
-const ScrollArea = styled.div`
-  flex: 1;
-  margin-top: 36px;
+const ScrollArea = styled.div`  
+  overflow-y: auto;
+
+  margin-top: 48px;
 
   display: flex;
   flex-direction: column;
-  gap: 16px;
-
-  overflow-y: auto;
-  padding-bottom: 20px;
+  gap: 18px;
 
   &::-webkit-scrollbar {
     display: none;
   }
-
-  scrollbar-width: none;
 `;
 
 /* ---------------- Card ---------------- */
 
 const MedicationCard = styled.div`
-  padding: 18px;
-
-  border-radius: 24px;
-  border: 2px solid rgba(74, 58, 47, 0.25);
-  background: rgba(255, 255, 255, 0.55);
+  padding: 14px 18px;
+  border-radius: 18px;
+border: 1.3px solid rgba(74, 58, 47, 0.40);
+background: rgba(255, 255, 255, 0.55);
 `;
 
 const CardHeader = styled.div`
@@ -160,119 +187,118 @@ const CardHeader = styled.div`
 `;
 
 const NameWrap = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 10px;
+  display:flex;
+  align-items:center;
+  gap:8px;
 `;
 
 const PillIcon = styled.img`
-  width: 26px;
-  height: 26px;
+  width:32px;
+  height:32px;
 `;
 
 const MedName = styled.span`
-  color: #4a3a2f;
-  font-family: 'Noto Sans KR', sans-serif;
-  font-size: 20px;
-  font-weight: 700;
+  font-size:18px;
+  font-weight:700;
 `;
 
 const DeleteButton = styled.button`
   border: none;
-  background: none;
+  background: transparent;
   padding: 0;
-
-  font-size: 18px;
   cursor: pointer;
 `;
 
-const ChipWrap = styled.div`
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-
-  margin-top: 16px;
+const TrashIcon = styled.img`
+  width: 30px;
+  height: 30px;
 `;
 
-const TimeChip = styled.div`
-  padding: 8px 16px;
- display: flex;
-width: 95px;
-height: 30px;
-justify-content: center;
-align-items: center;
-border-radius: 15px;
-border: 1.2px solid rgba(74, 58, 47, 0.35);
-background: rgba(255, 255, 255, 0.60);
-flex-direction: column;
-flex-shrink: 0;
-color: #4A3A2F;
-text-align: center;
-font-family: "Noto Sans KR";
-font-size: 14px;
-font-style: normal;
-font-weight: 700;
-line-height: normal;
+/* ---------------- Chips ---------------- */
+
+const ChipWrap = styled.div`
+  display:flex;
+  align-items:center;
+  gap:10px;
+  margin-top:10px;
+  flex-wrap:nowrap;
 `;
 
 const RepeatChip = styled.div`
-display: flex;
-width: 50px;
-height: 30px;
-justify-content: center;
-align-items: center;
-border-radius: 15px;
-border: 1.2px solid rgba(74, 58, 47, 0.35);
-background: rgba(255, 255, 255, 0.60);
-flex-direction: column;
-justify-content: center;
-flex-shrink: 0;
-color: #4A3A2F;
-text-align: center;
-font-family: "Noto Sans KR";
-font-size: 14px;
-font-style: normal;
-font-weight: 700;
-line-height: normal;
+  width: 50px;
+  height: 30px;
 
+  display: flex;
+  justify-content: center;
+  align-items: center;
+
+  border-radius: 15px;
+  border: 1.2px solid rgba(74, 58, 47, 0.35);
+  background: #F6EBC7;
+
+  color: #4A3A2F;
+  font-family: "Noto Sans KR";
+  font-size: 14px;
+  font-weight: 700;
+
+  flex-shrink: 0;
 `;
 
+const TimeChip = styled.div`
+  width: 95px;
+  height: 30px;
+
+  display: flex;
+  justify-content: center;
+  align-items: center;
+
+  border-radius: 15px;
+  border: 1.2px solid rgba(74, 58, 47, 0.35);
+  background:#F8F5EE;
+
+  color: #4A3A2F;
+  font-family: "Noto Sans KR";
+  font-size: 14px;
+  font-weight: 700;
+
+  flex-shrink: 0;
+`;
 /* ---------------- Buttons ---------------- */
 
 const AddButton = styled.button`
   width: 100%;
-  height: 56px;
-
-  margin-top: 16px;
-
+  height: 54px;
+  margin-top: 24px;
   border-radius: 16px;
   border: 1.5px solid rgba(74, 58, 47, 0.55);
-
-  background: #f6ebc7;
+  background: #EFDC9D;
 
   color: #4a3a2f;
-  font-family: 'Noto Sans KR', sans-serif;
-  font-size: 18px;
-  font-weight: 700;
-
+  font-family: Jua;
+  font-size: 20px;
   cursor: pointer;
+`;
+
+const ButtonArea = styled.div`
+  position: absolute;
+  left: 20px;
+  right: 20px;
+  bottom: 30px;
 `;
 
 const DoneButton = styled.button`
   width: 100%;
   height: 56px;
 
-  margin-top: auto;
+border-radius: 16px;
+border: 1.5px solid rgba(74, 58, 47, 0.55);
+background: #DBE4A1;
 
-  border-radius: 16px;
-  border: 1.5px solid rgba(74, 58, 47, 0.55);
-
-  background: #cbd879;
-
-  color: #4A3A2F;
-  font-family: 'Jua', sans-serif;
-  font-size: 18px;
-  font-weight: 400;
-
-  cursor: pointer;
+color: #4A3A2F;
+text-align: center;
+font-family: Jua;
+font-size: 22px;
+font-style: normal;
+font-weight: 400;
+line-height: normal;
 `;
