@@ -1,16 +1,17 @@
 import { useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
-import family from '../../assets/onboarding/family.png';
-import speech from '../../assets/onboarding/Union.svg';
+import family from '../../assets/onboarding/family.svg';
 
-import pinkFlower from '../../assets/onboarding/pinkflower.png';
-import yellowFlower from '../../assets/onboarding/yellowflower.png';
-import leafLeft from '../../assets/onboarding/leaf-left.png';
-import leafRight from '../../assets/onboarding/leaf-right.png';
+import pinkFlower from '../../assets/onboarding/pinkflower.svg';
+import yellowFlower from '../../assets/onboarding/yellowflower.svg';
+import leafLeft from '../../assets/onboarding/leaf-left.svg';
+import leafRight from '../../assets/onboarding/leaf.svg';
 
 import leafIcon from '../../assets/onboarding/leaf.svg';
 import moonIcon from '../../assets/onboarding/moon.svg';
 import medIcon from '../../assets/onboarding/med.svg';
+import introText from '../../assets/onboarding/intro-text.svg';
+import logo from '../../assets/onboarding/ondam-logo.svg';
 
 const Intro = () => {
   const navigate = useNavigate();
@@ -24,21 +25,17 @@ const Intro = () => {
           <FlowerYellow src={yellowFlower} alt="" />
           <LeafLeft src={leafLeft} alt="" />
 
-          <Logo>온담</Logo>
+          <LogoImage src={logo} alt="온담" />
 
-          <SpeechWrapper>
-            <Speech src={speech} alt="" />
-            <SpeechText>따뜻한 대화로 건강을 챙겨보세요!</SpeechText>
-          </SpeechWrapper>
         </HeroSection>
+        <IntroTextImage src={introText} alt="따뜻한 대화로 건강을 챙겨보세요!" />
 
         <FamilyImage src={family} alt="" />
 
         <FeatureList>
           <Feature>
-            <IconContainer>
-              <Icon src={leafIcon} alt="" $size={30} />
-            </IconContainer>
+              <Icon src={leafIcon} alt="" $size={48} />
+
 
             <TextBox>
               <FeatureTitle>아침엔 가벼운 질문으로 연결돼요</FeatureTitle>
@@ -49,9 +46,9 @@ const Intro = () => {
           </Feature>
 
           <Feature>
-            <IconContainer>
-              <Icon src={moonIcon} alt="" $size={32} />
-            </IconContainer>
+
+              <Icon src={moonIcon} alt="" $size={48} />
+
 
             <TextBox>
               <FeatureTitle>저녁엔 음성으로 건강을 체크해요</FeatureTitle>
@@ -62,9 +59,9 @@ const Intro = () => {
           </Feature>
 
           <Feature>
-            <IconContainer>
-              <Icon src={medIcon} alt="" $size={30} />
-            </IconContainer>
+
+              <Icon src={medIcon} alt="" $size={48} />
+
 
             <TextBox>
               <FeatureTitle>복용약 시간도 잊지 않게 챙겨요</FeatureTitle>
@@ -75,9 +72,11 @@ const Intro = () => {
           </Feature>
         </FeatureList>
 
-        <StartButton onClick={() => navigate('/onboarding/UserType')}>
-          시작하기
-        </StartButton>
+        <ButtonArea>
+            <StartButton onClick={() => navigate('/onboarding/UserType')}>
+                시작하기
+            </StartButton>
+        </ButtonArea>
       </Content>
     </Page>
   );
@@ -107,37 +106,29 @@ const Content = styled.div`
   flex-direction: column;
 `;
 
-/* =========================
-   로고 + 말풍선
-========================= */
+
 
 const HeroSection = styled.div`
   position: relative;
   width: 100%;
-  height: 229px;
+  height: 165px;
   margin-top: 66px;
 `;
 
-const Logo = styled.p`
+const LogoImage = styled.img`
   position: absolute;
-  top: 20px;
-  left: 0;
-  width: 100%;
+  top: 25px;
+  left: 50%;
+  transform: translateX(-50%);
 
-  margin: 0;
-
-  color: rgba(74, 58, 47, 0.9);
-  font-family: 'Jua', sans-serif;
-  font-size: 100px;
-  font-weight: 400;
-  line-height: normal;
-  text-align: center;
+  width: 170px;
+  height: auto;
 `;
 
 const FlowerPink = styled.img`
   position: absolute;
   top: 0;
-  left: 65px;
+  left: 55px;
   width: 50px;
   height: 50px;
 `;
@@ -145,7 +136,7 @@ const FlowerPink = styled.img`
 const LeafTop = styled.img`
   position: absolute;
   top: 0;
-  left: 245px;
+  left: 255px;
   width: 50px;
   height: 50px;
 `;
@@ -160,41 +151,19 @@ const FlowerYellow = styled.img`
 
 const LeafLeft = styled.img`
   position: absolute;
-  top: 70px;
-  left: 60px;
+  top: 80px;
+  left: 45px;
   width: 53.13px;
   height: 53.13px;
   
 `;
 
-const SpeechWrapper = styled.div`
-  position: absolute;
-  top: 173px;
-  left: 20px;
-  width: 316px;
-  height: 55.913px;
-`;
-
-const Speech = styled.img`
-  width: 100%;
-  height: 100%;
-`;
-
-const SpeechText = styled.p`
-  position: absolute;
-  inset: 0;
-
-  display: flex;
-  align-items: center;
-  justify-content: center;
-
-  margin: 0;
-
-  color: #4a3a2f;
-  font-family: 'Jua', sans-serif;
-  font-size: 18px;
-  font-weight: 400;
-  line-height: normal;
+const IntroTextImage = styled.img`
+  width: 65%;
+  max-width: 364px;
+  height: auto;
+  margin: 20px auto 0;
+  display: block;
 `;
 
 /* =========================
@@ -205,7 +174,7 @@ const FamilyImage = styled.img`
   width: 100%;
   height: 152px;
   object-fit: cover;
-  margin-top: 15px;
+  margin-top: 46px;
 `;
 
 /* =========================
@@ -223,30 +192,23 @@ const FeatureList = styled.div`
 const Feature = styled.div`
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 18px;
+  height:68px;
 
-  padding: 12px;
-  border-radius: 18px;
-  border: 1.3px solid rgba(74, 58, 47, 0.4);
-  background: rgba(255, 255, 255, 0.55);
+  padding: 16px 18px;
+
+  border-radius: 20px;
+  border: 1.5px solid rgba(74,58,47,.35);
+
+  background: rgba(255,255,255,.55);
 `;
 
-const IconContainer = styled.div`
-  display: flex;
-width: 48px;
-height: 48px;
-justify-content: center;
-align-items: center;
-border-radius: 14px;
-border: 1.5px solid rgba(74, 58, 47, 0.55);
-background: #F6EBC7;
-`;
 
 const Icon = styled.img`
   width: ${({ $size }) => $size}px;
   height: ${({ $size }) => $size}px;
   object-fit: contain;
-  display: block;
+  flex-shrink: 0;
 `;
 
 const TextBox = styled.div`
@@ -255,27 +217,25 @@ const TextBox = styled.div`
   display: flex;
   flex-direction: column;
   justify-content: center;
+  gap: 6px;
 `;
 
 const FeatureTitle = styled.h2`
-  margin: 0 0 6px;
+  margin: 0;
   color: #4A3A2F;
+  font-family: "Noto Sans KR";
   font-size: 16px;
-  font-weight: 700;
-  line-height: 1.35;
+  font-weight: 400;
+  line-height: 1;
 `;
 
 const FeatureDescription = styled.p`
   margin: 0;
   color: #A79C8E;
-font-family: "Noto Sans KR";
-font-size: 13px;
-font-style: normal;
-font-weight: 400;
-line-height: normal;
-height: 18px;
-align-self: stretch;
-;
+  font-family: "Noto Sans KR";
+  font-size: 13px;
+  font-weight: 700;
+  line-height: normal;
 `;
 
 /* =========================
@@ -286,7 +246,7 @@ const StartButton = styled.button`
   width: 100%;
   height: 56px;
 
-  margin-top: 51px;
+ 
 
   display: flex;
   justify-content: center;
@@ -296,11 +256,17 @@ const StartButton = styled.button`
   border-radius: 16px;
 
   background: #cbd879;
-  color: #f8f5ee;
 
-  font-family: 'Jua', sans-serif;
-  font-size: 18px;
-  font-weight: 400;
-
+color: #4A3A2F;
+text-align: center;
+font-family: Jua;
+font-size: 18px;
+font-style: normal;
+font-weight: 400;
+line-height: normal;
   cursor: pointer;
+`;
+const ButtonArea = styled.div`
+  margin-top: auto;
+  padding-top: 51px;
 `;
