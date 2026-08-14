@@ -1,6 +1,9 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
+import pinkFlower from '../../assets/onboarding/pinkflower.svg';
+import yellowFlower from '../../assets/onboarding/yellowflower.svg';
+import back from '../../assets/onboarding/back.svg';
 
 const UserType = () => {
     const navigate= useNavigate();
@@ -9,6 +12,9 @@ const UserType = () => {
   return (
     <Page>
       <Content>
+        <BackButton onClick={() => navigate(-1)}>
+          <BackIcon src={back} alt="뒤로가기" />
+        </BackButton>
         <Header>
           <Title>당신은 누구신가요?</Title>
           <Description>
@@ -21,19 +27,22 @@ const UserType = () => {
             $selected={userType === 'parent'}
             onClick={() => setUserType('parent')}
           >
+            <Flower src={yellowFlower} alt="" />
             <OptionText $selected={userType === 'parent'}>
               부모
             </OptionText>
-
+            <Flower src={yellowFlower} alt="" />
           </OptionButton>
 
           <OptionButton
             $selected={userType === 'child'}
             onClick={() => setUserType('child')}
           >
+            <Flower src={pinkFlower} alt="" />
             <OptionText $selected={userType === 'child'}>
               자녀
             </OptionText>
+            <Flower src={pinkFlower} alt="" />
           </OptionButton>
         </OptionList>
 
@@ -65,13 +74,37 @@ const Page = styled.div`
 const Content = styled.div`
   max-width: 402px;
   height: 100%;
+  min-height: 100%;
   margin: 0 auto;
   padding: 104px 24px 20px;
   box-sizing: border-box;
+
   display: flex;
   flex-direction: column;
 `;
+const BackButton = styled.button`
+  position: absolute;
+  top: 35px;
+  left: 24px;
 
+  width: 40px;
+  height: 40px;
+
+  padding: 0;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+`;
+
+const BackIcon = styled.img`
+  width: 40px;
+  height: 40px;
+  object-fit: contain;
+`;
 const Header = styled.div`
   text-align: center;
 `;
@@ -108,31 +141,38 @@ const OptionList = styled.div`
 `;
 
 const OptionButton = styled.button`
-  width: 100%;
-  height: 114px;
-
   display: flex;
+  height: 140px;
   justify-content: center;
   align-items: center;
-
-  border-radius: 24px;
-  border: 2px solid
+  gap: 10px;
+  align-self: stretch;
+  border-radius: 20px;
+  border: 2px solid rgba(74, 58, 47, 0.70);
     ${({ $selected }) =>
-      $selected ? '#8A7B3E' : 'rgba(74,58,47,.25)'};
+        $selected ? '#8A7B3E' : 'rgba(74,58,47,.25)'};
 
-  background: rgba(255,255,255,.55);
+    background: rgba(255,255,255,.55);
 
   cursor: pointer;
+`;
+
+const Flower = styled.img`
+  width: 70px;
+  height: 70px;
+  flex-shrink: 0;
 `;
 
 const OptionText = styled.span`
   color: ${({ $selected }) =>
     $selected ? '#4A3A2F' : '#A79C8E'};
 
-  font-family: 'Jua', sans-serif;
-  font-size: 36px;
+  text-align: center;
+  font-family: Jua;
+  font-size: 60px;
   font-weight: 400;
 `;
+
 
 
 
@@ -142,20 +182,16 @@ const NextButton = styled.button`
 
   margin-top: auto;
 
+  display: flex;
+  justify-content: center;
+  align-items: center;
+
+  border: 1.5px solid rgba(74, 58, 47, 0.55);
   border-radius: 16px;
-  border: 1.5px solid rgba(74,58,47,.55);
-
   background: #CBD879;
-  color: #FFF8ED;
 
-  font-family: 'Jua', sans-serif;
+  color: #4A3A2F;
+  font-family: Jua;
   font-size: 18px;
   font-weight: 400;
-
-  cursor: pointer;
-  &:disabled {
-    background: #D8D5D1;
-    border-color: #D8D5D1;
-    cursor: not-allowed;
-  }
 `;
