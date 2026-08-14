@@ -23,8 +23,8 @@ const getInitialStep = (letters) => {
   return letters.some((letter) => !letter.read) ? 'arrived' : 'list';
 };
 
-function Letterbox({ letters, onMarkRead, onClose }) {
-  const [step, setStep] = useState(() => getInitialStep(letters));
+function Letterbox({ letters, onMarkRead, onClose, initialStep }) {
+  const [step, setStep] = useState(() => initialStep ?? getInitialStep(letters));
   const [selectedLetterId, setSelectedLetterId] = useState(null);
 
   const selectedLetter = letters.find((letter) => letter.id === selectedLetterId) ?? null;
