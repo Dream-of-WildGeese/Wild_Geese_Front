@@ -5,8 +5,10 @@ const Layout = styled.div`
   width: 100%;
   max-width: 402px;
   height: 874px;
-  margin: 0 auto;
+  margin: ${({ theme }) => theme.spacing.xl} auto 0;
   overflow: hidden;
+  border-radius: 40px;
+  border: 2px solid #000;
   background: ${({ theme }) => theme.colors.surface};
 `;
 

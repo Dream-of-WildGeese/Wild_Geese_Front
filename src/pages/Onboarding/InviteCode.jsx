@@ -59,7 +59,7 @@ const InviteCode = () => {
   return (
     <Page>
       <Content>
-        <BackButton onClick={() => navigate(-1)}>
+        <BackButton onClick={() => navigate('/onboarding/step-guide')}>
           <BackIcon src={back} alt="뒤로가기" />
         </BackButton>
         <Header>
@@ -132,7 +132,7 @@ export default InviteCode;
 
 const Page = styled.div`
   width: calc(100% + 32px);
-  min-height: 100vh;
+  height: 100%;
   margin: 0 -${({ theme }) => theme.spacing.md};
   background: #FFF8ED;
 `;
@@ -141,10 +141,10 @@ const Content = styled.div`
   position: relative;
 
   max-width: 402px;
-  min-height: 100vh;
+  height: 100%;
   margin: 0 auto;
 
-  padding: 86px 20px 40px;
+  padding: 86px 20px 30px;
   box-sizing: border-box;
 
   display: flex;
@@ -157,8 +157,6 @@ const Content = styled.div`
 ========================= */
 
 const Header = styled.div`
-  position: relative;
-
   width: 100%;
   height: 40px;
 
@@ -171,6 +169,7 @@ const BackButton = styled.button`
   position: absolute;
   top: 35px;
   left: 24px;
+  z-index: 10;
 
   width: 40px;
   height: 40px;

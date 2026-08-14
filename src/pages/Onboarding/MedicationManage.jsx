@@ -37,7 +37,7 @@ const MedicationManage = () => {
   return (
     <Page>
       <Content>
-        <BackButton onClick={() => navigate(-1)}>
+        <BackButton onClick={() => navigate('/onboarding/health-set')}>
           <BackIcon src={back} alt="뒤로가기" />
         </BackButton>
 
@@ -116,6 +116,7 @@ const BackButton = styled.button`
   position: absolute;
   top: 35px;
   left: 24px;
+  z-index: 10;
 
   width: 40px;
   height: 40px;
@@ -292,12 +293,12 @@ const DoneButton = styled.button`
 
 border-radius: 16px;
 border: 1.5px solid rgba(74, 58, 47, 0.55);
-background: #DBE4A1;
+background: #CBD879;
 
 color: #4A3A2F;
 text-align: center;
 font-family: Jua;
-font-size: 22px;
+font-size: 18px;
 font-style: normal;
 font-weight: 400;
 line-height: normal;

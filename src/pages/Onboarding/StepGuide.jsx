@@ -11,7 +11,7 @@ const StepGuide = () => {
   return (
     <Page>
       <Content>
-        <BackButton onClick={() => navigate(-1)}>
+        <BackButton onClick={() => navigate('/onboarding/UserType')}>
           <BackIcon src={back} alt="뒤로가기" />
         </BackButton>
         <Title>온담에 오신 걸 <br />진심으로 환영해요</Title>
@@ -92,6 +92,7 @@ const BackButton = styled.button`
   position: absolute;
   top: 35px;
   left: 24px;
+  z-index: 10;
 
   width: 40px;
   height: 40px;

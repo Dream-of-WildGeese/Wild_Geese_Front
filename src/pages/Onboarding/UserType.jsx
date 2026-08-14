@@ -12,7 +12,7 @@ const UserType = () => {
   return (
     <Page>
       <Content>
-        <BackButton onClick={() => navigate(-1)}>
+        <BackButton onClick={() => navigate('/')}>
           <BackIcon src={back} alt="뒤로가기" />
         </BackButton>
         <Header>
@@ -76,7 +76,7 @@ const Content = styled.div`
   height: 100%;
   min-height: 100%;
   margin: 0 auto;
-  padding: 104px 24px 20px;
+  padding: 104px 24px 30px;
   box-sizing: border-box;
 
   display: flex;
@@ -86,6 +86,7 @@ const BackButton = styled.button`
   position: absolute;
   top: 35px;
   left: 24px;
+  z-index: 10;
 
   width: 40px;
   height: 40px;

@@ -99,7 +99,7 @@ const Content = styled.div`
   max-width: 402px;
   height: 100%;
   margin: 0 auto;
-  padding: 0 20px 20px;
+  padding: 0 20px 30px;
   box-sizing: border-box;
 
   display: flex;
