@@ -2,22 +2,30 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { ThemeProvider } from 'styled-components';
 import { theme } from './styles/theme';
 import GlobalStyle from './styles/GlobalStyle';
+
 import Home from './pages/Home/Home';
-import DailyHealthCheck from './pages/Home/DailyHealthCheck';
+import DailyHealthCheck from './pages/Home/TodayOndam/Night/DailyHealthCheck';
+
 import TodayReport from './pages/TodayReport/TodayReport';
 import WeeklyReport from './pages/WeeklyReport/WeeklyReport';
 import MorningReport from './pages/MorningReport/MorningReport';
+
 import Layout from './components/Layout';
+
 import Intro from './pages/Onboarding/Intro';
 import UserType from './pages/Onboarding/UserType';
 import StepGuide from './pages/Onboarding/StepGuide';
+import Invite from './pages/Onboarding/Invite';
 import InviteCode from './pages/Onboarding/InviteCode';
+import BasicInfo from './pages/Onboarding/BasicInfo';
+import HealthInfo from './pages/Onboarding/HealthInfo';
+import MedicationInfo from './pages/Onboarding/MedicationInfo';
 import StepComplete from './pages/Onboarding/StepComplete';
 import HealthSet from './pages/Onboarding/HealthSet';
 import MedicationManage from './pages/Onboarding/MedicationManage';
 import AddMedication from './pages/Onboarding/AddMedication';
 import AlarmTime from './pages/Onboarding/AlarmTime';
-
+import Complete from './pages/Onboarding/Complete';
 
 function App() {
   return (
