@@ -39,7 +39,7 @@ const StepComplete = () => {
     description: '이제부터 서로의 하루를 함께 챙길 수 있어요',
     icon: completeFlower2,
     buttonText: `${familyName} 보러가기`,
-    next: '/home', // 홈 경로에 맞게 수정
+    next: '/', 
   },
 };
 
