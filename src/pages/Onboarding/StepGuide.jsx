@@ -1,6 +1,9 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
+import back from '../../assets/onboarding/back.svg';
+import heart from '../../assets/onboarding/heart.svg';
+import arrow from '../../assets/onboarding/arrow.svg';
 
 const StepGuide = () => {
   const navigate = useNavigate();
@@ -8,6 +11,9 @@ const StepGuide = () => {
   return (
     <Page>
       <Content>
+        <BackButton onClick={() => navigate(-1)}>
+          <BackIcon src={back} alt="뒤로가기" />
+        </BackButton>
         <Title>온담에 오신 걸 <br />진심으로 환영해요</Title>
 
         <Description>
@@ -19,43 +25,47 @@ const StepGuide = () => {
         <StepList>
             <StepItem>
                 <Step>
-                <NumberCircle>1</NumberCircle>
+                <HeartIcon src={heart} alt="" />
                 <StepText>
-                    <StepTitle>1단계 가족 연결</StepTitle>
+                    <StepTitle>1단계. 가족 연결</StepTitle>
                     <StepDescription>가족을 초대해서 연결해보세요</StepDescription>
                 </StepText>
                 </Step>
-                <Connector />
+                <ArrowIcon src={arrow} alt="" />
             </StepItem>
 
             <StepItem>
                 <Step>
-                <NumberCircle>2</NumberCircle>
+                <HeartIcon src={heart} alt="" />
                 <StepText>
-                    <StepTitle>2단계 건강 프로필</StepTitle>
+                    <StepTitle>2단계. 건강 프로필</StepTitle>
                     <StepDescription>정보를 바탕으로 꼭 맞는 건강체크를 도와드려요</StepDescription>
                 </StepText>
                 </Step>
-                <Connector />
+                <ArrowIcon src={arrow} alt="" />
             </StepItem>
 
             <StepItem>
                 <Step>
-                <NumberCircle>3</NumberCircle>
+                <HeartIcon src={heart} alt="" />
                 <StepText>
-                    <StepTitle>3단계 알림 시간</StepTitle>
+                    <StepTitle>3단계. 알림 시간</StepTitle>
                     <StepDescription>편한 시간에 알림을 받아보세요</StepDescription>
                 </StepText>
                 </Step>
             </StepItem>
         </StepList>
 
+        <ButtonArea>
+            <StartButton
+            onClick={() => navigate('/onboarding/invite')}
+            >
+            시작하기
+            </StartButton>
 
-        <StartButton
-          onClick={() => navigate('/onboarding/invite')}
-        >
-          시작하기
-        </StartButton>
+        </ButtonArea>
+
+
       </Content>
     </Page>
   );
@@ -70,11 +80,37 @@ margin: 0 -${({ theme }) => theme.spacing.md};
 background: #FFF8ED; `; 
 
 const Content = styled.div`
- height: 100%; 
- padding: 68px 20px 30px; 
- box-sizing: border-box;
-  display: flex; 
-  flex-direction: column; `;
+  position: relative;
+  height: 100%;
+  padding: 86px 20px 30px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+`;
+
+const BackButton = styled.button`
+  position: absolute;
+  top: 35px;
+  left: 24px;
+
+  width: 40px;
+  height: 40px;
+
+  padding: 0;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+`;
+
+const BackIcon = styled.img`
+  width: 40px;
+  height: 40px;
+  object-fit: contain;
+`;
 
 
 const Title = styled.h1`
@@ -84,23 +120,29 @@ const Title = styled.h1`
   font-family: Jua;
   font-size: 40px;
   font-weight: 400;
+  font-style: normal;
+  line-height: normal;
 `;
 
 const Description = styled.p`
-  margin: 22px 0 0;
+  margin: 18px 0 0;
+
   text-align: center;
   color: #A79C8E;
-  font-family: "Noto Sans KR";
-  font-size: 18px;
-  font-weight: 700;
-  line-height: 1.5;
+text-align: center;
+font-family: "Noto Sans KR";
+font-size: 18px;
+font-style: normal;
+font-weight: 400;
+line-height: normal;
+letter-spacing: -0.36px;
 `;
 
 
 const StepList = styled.div`
   display: flex;
   flex-direction: column;
-  margin-top: 72px;
+  margin-top: 44px;
 `;
 
 
@@ -112,36 +154,25 @@ const StepItem = styled.div`
 `;
 
 const Step = styled.div`
-  width: 100%;
+  width: 95%;
   height: 84px;
+
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 18px;
 
-  padding: 18px 22px;
+  padding: 18px 20px;
+
   border-radius: 24px;
   border: 2px solid rgba(74,58,47,.25);
   background: rgba(255,255,255,.55);
   box-sizing: border-box;
 `;
 
-const NumberCircle = styled.div`
-border-radius: 16px;
-border: 1.4px solid rgba(74, 58, 47, 0.50);
-background: #F6EBC7;
-  display: flex;
-width: 32px;
-height: 32px;
-flex-direction: column;
-justify-content: center;
-flex-shrink: 0;
-color: #4A3A2F;
-text-align: center;
-font-family: Jua;
-font-size: 16px;
-font-style: normal;
-font-weight: 400;
-line-height: normal;
+const HeartIcon = styled.img`
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
 `;
 
 const StepText = styled.div` 
@@ -151,11 +182,12 @@ flex-direction: column;
 justify-content: center; 
 `;
 
-const Connector = styled.div` 
-width: 2px; 
-height: 42px; 
-background: rgba(74,58,47,.28); 
+const ArrowIcon = styled.img`
+  width: 50px;
+  height: 50px;
+  margin: 10px 0;
 `;
+
 const StepTitle = styled.h2` 
 margin: 0; 
 color: #4A3A2F; 
@@ -175,16 +207,19 @@ const StepDescription = styled.p`
 const StartButton = styled.button`
   width: 100%;
   height: 56px;
-  margin-top: auto;
 
   border-radius: 16px;
   border: 1.5px solid rgba(74,58,47,.55);
   background: #CBD879;
 
-  color: #FFF8ED;
+  color: #4A3A2F;
   font-family: Jua;
   font-size: 18px;
   font-weight: 400;
 
   cursor: pointer;
+`;
+const ButtonArea = styled.div`
+  margin-top: auto;
+  padding-top: 51px;
 `;
