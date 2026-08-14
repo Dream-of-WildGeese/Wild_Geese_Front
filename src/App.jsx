@@ -7,8 +7,6 @@ import { AppDataProvider } from './store/AppDataContext';
 import Home from './pages/Home/Home';
 import DailyHealthCheck from './pages/Home/TodayOndam/Night/DailyHealthCheck';
 
-import TodayReport from './pages/TodayReport/TodayReport';
-import WeeklyReport from './pages/WeeklyReport/WeeklyReport';
 import MorningReport from './pages/MorningReport/MorningReport';
 
 import Layout from './components/Layout';
@@ -27,6 +25,9 @@ import MedicineList from './pages/Home/medicine/MedicineList';
 import MedicineEdit from './pages/Home/medicine/MedicineEdit';
 import SettingsMain from './pages/Home/Setting/SettingsMain';
 import ProfileEdit from './pages/Home/Setting/ProfileEdit';
+import TodayReport from './pages/Home/TodayReport/TodayReport';
+import WeeklyReport from './pages/Home/WeeklyReport/WeeklyReport';
+import WeeklyReportDetail from './pages/Home/WeeklyReport/WeeklyReportDetail';
 
 function App() {
   return (
@@ -53,9 +54,10 @@ function App() {
               <Route path="/home/medicine/:id" element={<MedicineEdit />} />
               <Route path="/home/settings" element={<SettingsMain />} />
               <Route path="/home/settings/profile" element={<ProfileEdit />} />
+              <Route path="/home/today-report" element={<TodayReport />} />
+              <Route path="/home/weekly-report" element={<WeeklyReport />} />
+              <Route path="/home/weekly-report/:weekId" element={<WeeklyReportDetail />} />
               <Route path='/daily-health-check' element={<DailyHealthCheck />} />
-              <Route path='/today-report' element={<TodayReport />} />
-              <Route path='/weekly-report' element={<WeeklyReport />} />
               <Route path='/morning-report' element={<MorningReport />} />
             </Routes>
           </Layout>
