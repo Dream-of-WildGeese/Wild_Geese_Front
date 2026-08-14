@@ -1,34 +1,11 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
+import { getTodayEveningQuestions, submitEveningAnswers } from '../../../../api/evening';
+import { useApi, useApiAction } from '../../../../hooks/useApi';
 
-// 앞의 4개(컨디션/수면/식사/외출활동)는 모든 사용자에게 공통으로 노출되는 질문이다.
-// 마지막 5번째(몸 상태)는 추후 다른 화면에서 입력한 질병 정보를 바탕으로
-// LLM이 맞춤 질문을 생성할 예정이라, 지금은 와이어프레임 예시 문구로 대체한다.
-const QUESTIONS = [
-  {
-    title: ['오늘 컨디션은', '어땠나요?'],
-    options: ['좋았어요', '보통이었어요', '좀 힘들었어요'],
-  },
-  {
-    title: ['오늘 수면은', '어떠셨나요?'],
-    options: ['푹 잤어요', '조금 부족했어요', '거의 못 잤어요'],
-  },
-  {
-    title: ['오늘 식사는', '어떠셨나요?'],
-    options: ['잘 챙겼어요', '한두 끼 걸렀어요', '입맛이 없었어요'],
-  },
-  {
-    title: ['오늘 외출이나 활동은', '어떠셨나요?'],
-    options: ['가볍게 움직였어요', '집에서 쉬었어요', '거의 못 움직였어요'],
-  },
-  {
-    title: ['오늘 몸 상태는', '어떠셨나요?'],
-    options: ['괜찮았어요', '조금 불편했어요', '많이 불편했어요'],
-  },
-];
-
-const TOTAL_STEPS = QUESTIONS.length;
+// 질문 목록과 선택지는 GET /api/v1/evening/today가 내려준다.
+// metricType(CONDITION/SLEEP/MEAL/ACTIVITY/BODY)에 따라 질병 맞춤 질문이 섞여 나올 수 있다.
 
 const Page = styled.div`
   position: relative;
@@ -197,16 +174,19 @@ const SubmitButton = styled.button`
 function DailyHealthCheck() {
   const navigate = useNavigate();
   const [stepIndex, setStepIndex] = useState(0);
-  const [answers, setAnswers] = useState(() => Array(TOTAL_STEPS).fill(null));
+  const [answers, setAnswers] = useState({});
   const [note, setNote] = useState('');
 
-  const isLastStep = stepIndex === TOTAL_STEPS - 1;
-  const question = QUESTIONS[stepIndex];
+  const { data, loading, error } = useApi(getTodayEveningQuestions);
+  const { execute: submitAnswers, loading: submitting } = useApiAction(submitEveningAnswers);
+
+  const questions = data?.questions ?? [];
+  const totalSteps = questions.length;
+  const isLastStep = stepIndex === totalSteps - 1;
+  const question = questions[stepIndex];
 
   const selectOption = (optionIndex) => {
-    const next = [...answers];
-    next[stepIndex] = optionIndex;
-    setAnswers(next);
+    setAnswers((prev) => ({ ...prev, [question.questionId]: optionIndex }));
 
     if (!isLastStep) {
       setStepIndex(stepIndex + 1);
@@ -221,9 +201,49 @@ function DailyHealthCheck() {
     setStepIndex(stepIndex - 1);
   };
 
-  const handleFinish = () => {
+  const handleFinish = async () => {
+    // 고른 선택지만 보낸다. 마지막 질문에는 자유 입력(note)을 함께 실어 보낸다.
+    const payload = questions
+      .filter((item) => answers[item.questionId] != null)
+      .map((item, index) => {
+        const choice = item.choices?.[answers[item.questionId]];
+        const isLast = index === questions.length - 1;
+        return {
+          questionId: item.questionId,
+          choiceValue: choice ? String(choice.value) : null,
+          textValue: isLast && note.trim() ? note.trim() : (choice?.label ?? ''),
+          inputType: 'CHOICE',
+        };
+      });
+
+    const { ok, error: submitError } = await submitAnswers(payload);
+    if (!ok) {
+      alert(submitError.message);
+      return;
+    }
     navigate('/home', { state: { healthCheckDone: true } });
   };
+
+  if (loading || error || totalSteps === 0) {
+    return (
+      <Page>
+        <Header>
+          <HeaderButton type="button" aria-label="닫기" onClick={() => navigate('/home')}>
+            ✕
+          </HeaderButton>
+          <HeaderTitle>오늘의 건강 체크</HeaderTitle>
+          <HeaderSpacer />
+        </Header>
+        <QuestionTitle>
+          {loading
+            ? '질문을 불러오는 중이에요...'
+            : error
+              ? error.message
+              : '오늘은 준비된 질문이 없어요.'}
+        </QuestionTitle>
+      </Page>
+    );
+  }
 
   return (
     <Page>
@@ -236,38 +256,31 @@ function DailyHealthCheck() {
       </Header>
 
       <StepDots>
-        {QUESTIONS.map((_, index) => (
-          <StepDot key={index} $active={index === stepIndex} />
+        {questions.map((item, index) => (
+          <StepDot key={item.questionId} $active={index === stepIndex} />
         ))}
       </StepDots>
 
       <StepCounter>
-        {stepIndex + 1} / {TOTAL_STEPS}
+        {stepIndex + 1} / {totalSteps}
       </StepCounter>
-      <QuestionTitle>
-        {question.title.map((line) => (
-          <span key={line}>
-            {line}
-            <br />
-          </span>
-        ))}
-      </QuestionTitle>
+      <QuestionTitle>{question.content}</QuestionTitle>
 
-      {/* 음성 인식은 API 연동 후 작업 예정이라 지금은 표시만 한다 */}
+      {/* 음성 답변 STT API(POST /evening/answers/voice)는 있지만 녹음 UI가 아직 없어 표시만 한다 */}
       <VoiceButton type="button">
         <MicCircle>●</MicCircle>
         <VoiceLabel>눌러서 말해보세요</VoiceLabel>
       </VoiceButton>
 
       <OrText>또는 직접 골라주세요</OrText>
-      {question.options.map((option, optionIndex) => (
+      {(question.choices ?? []).map((choice, optionIndex) => (
         <OptionButton
-          key={option}
+          key={choice.label}
           type="button"
-          $selected={answers[stepIndex] === optionIndex}
+          $selected={answers[question.questionId] === optionIndex}
           onClick={() => selectOption(optionIndex)}
         >
-          {option}
+          {choice.label}
         </OptionButton>
       ))}
 
@@ -279,8 +292,12 @@ function DailyHealthCheck() {
             value={note}
             onChange={(event) => setNote(event.target.value)}
           />
-          <SubmitButton type="button" disabled={answers[stepIndex] === null} onClick={handleFinish}>
-            오늘 기록 완료
+          <SubmitButton
+            type="button"
+            disabled={answers[question.questionId] == null || submitting}
+            onClick={handleFinish}
+          >
+            {submitting ? '저장 중...' : '오늘 기록 완료'}
           </SubmitButton>
         </>
       )}

@@ -1,6 +1,7 @@
 import { useNavigate, useLocation, useParams } from 'react-router-dom';
 import styled from 'styled-components';
-import { WEEKS, WEEK_DETAILS } from './weeklyReportMock';
+import { loadWeeklyDetail } from './weeklyReportData';
+import { useApi } from '../../../hooks/useApi';
 
 const Page = styled.div`
   position: relative;
@@ -351,8 +352,13 @@ const DayButtonDate = styled.span`
 `;
 
 const SLEEP_COLOR = { good: '#59a666', ok: '#f2bf59', low: '#d96659' };
-const sleepColor = (hours) => (hours >= 7 ? SLEEP_COLOR.good : hours >= 5 ? SLEEP_COLOR.ok : SLEEP_COLOR.low);
-const STEP_MAX = 10000;
+
+// 서버는 수면·활동을 시간이나 걸음 수가 아니라 저녁 건강체크 선택지 점수(1~3)로 내려준다.
+// 1이 가장 좋은 상태라, 막대는 점수가 좋을수록 높게 그린다.
+const SCORE_MAX = 3;
+const scoreBarHeight = (score) => (score ? ((SCORE_MAX + 1 - score) / SCORE_MAX) * 60 : 0);
+const scoreBarColor = (score) =>
+  score <= 1 ? SLEEP_COLOR.good : score <= 2 ? SLEEP_COLOR.ok : SLEEP_COLOR.low;
 
 function WeeklyReportDetail() {
   const navigate = useNavigate();
@@ -360,10 +366,11 @@ function WeeklyReportDetail() {
   const { weekId } = useParams();
   const person = location.state?.person ?? 'me';
 
-  const week = WEEKS.find((w) => w.id === weekId);
-  const detail = WEEK_DETAILS[weekId]?.[person];
+  const { data, loading, error } = useApi(loadWeeklyDetail, { args: [weekId, person] });
+  const week = data?.week;
+  const detail = data?.detail;
 
-  if (!week || !detail) {
+  if (loading || error || !week || !detail) {
     return (
       <Page>
         <Header>
@@ -373,7 +380,13 @@ function WeeklyReportDetail() {
           <HeaderTitle>주간 리포트</HeaderTitle>
           <HeaderSpacer />
         </Header>
-        <DateRange>이 주는 아직 리포트가 준비되지 않았어요.</DateRange>
+        <DateRange>
+          {loading
+            ? '리포트를 불러오는 중이에요...'
+            : error
+              ? error.message
+              : '이 주는 아직 리포트가 준비되지 않았어요.'}
+        </DateRange>
       </Page>
     );
   }
@@ -442,7 +455,7 @@ function WeeklyReportDetail() {
         <BarRow>
           {detail.sleep.map((item) => (
             <BarCol key={item.day}>
-              <Bar $height={(item.hours / 9) * 60} $color={sleepColor(item.hours)} />
+              <Bar $height={scoreBarHeight(item.value)} $color={scoreBarColor(item.value)} />
               <DayLabel>{item.day}</DayLabel>
             </BarCol>
           ))}
@@ -450,15 +463,15 @@ function WeeklyReportDetail() {
         <SleepLegend>
           <SleepLegendItem>
             <SleepLegendSwatch $color={SLEEP_COLOR.good} />
-            <SleepLegendLabel>7시간 이상</SleepLegendLabel>
+            <SleepLegendLabel>푹 잤어요</SleepLegendLabel>
           </SleepLegendItem>
           <SleepLegendItem>
             <SleepLegendSwatch $color={SLEEP_COLOR.ok} />
-            <SleepLegendLabel>5~7시간</SleepLegendLabel>
+            <SleepLegendLabel>조금 부족했어요</SleepLegendLabel>
           </SleepLegendItem>
           <SleepLegendItem>
             <SleepLegendSwatch $color={SLEEP_COLOR.low} />
-            <SleepLegendLabel>5시간 미만</SleepLegendLabel>
+            <SleepLegendLabel>거의 못 잤어요</SleepLegendLabel>
           </SleepLegendItem>
         </SleepLegend>
         <MetricNote>{detail.sleepNote}</MetricNote>
@@ -488,7 +501,7 @@ function WeeklyReportDetail() {
         <BarRow>
           {detail.steps.map((item) => (
             <BarCol key={item.day}>
-              <Bar $height={(item.value / STEP_MAX) * 60} $color="#e8734a" />
+              <Bar $height={scoreBarHeight(item.value)} $color="#e8734a" />
               <DayLabel>{item.day}</DayLabel>
             </BarCol>
           ))}
@@ -501,15 +514,22 @@ function WeeklyReportDetail() {
           <MetricTitle>복약</MetricTitle>
           <TrendArrow $trend="up">→</TrendArrow>
         </MetricHead>
-        <MedRow>
-          {detail.medsTaken.map((item) => (
-            <DayCol key={item.day}>
-              <MedCircle $taken={item.taken}>{item.taken ? '✓' : ''}</MedCircle>
-              <DayLabel>{item.day}</DayLabel>
-            </DayCol>
-          ))}
-        </MedRow>
-        <MetricNote $tone="good">{detail.medsNote}</MetricNote>
+        {/* 주간 리포트 API는 복약을 주 단위 합계로만 준다. 요일별 기록이 생기면 이 줄이 채워진다 */}
+        {detail.medsTaken.length > 0 && (
+          <MedRow>
+            {detail.medsTaken.map((item) => (
+              <DayCol key={item.day}>
+                <MedCircle $taken={item.taken}>{item.taken ? '✓' : ''}</MedCircle>
+                <DayLabel>{item.day}</DayLabel>
+              </DayCol>
+            ))}
+          </MedRow>
+        )}
+        <MetricNote $tone="good">
+          {detail.medsTotal > 0
+            ? `이번 주 ${detail.medsTotal}번 중 ${detail.medsTakenCount}번 챙기셨어요.`
+            : detail.medsNote}
+        </MetricNote>
       </MetricCard>
 
       <AdviceCard>

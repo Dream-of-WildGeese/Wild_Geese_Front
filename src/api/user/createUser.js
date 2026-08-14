@@ -1,10 +1,14 @@
-import { client, setUserId } from '../client';
+import { client, setUserId, setInviteCode } from '../client';
 
-// 이름, 역할, 출생연도로 사용자를 생성하고 온보딩을 시작한다.
-export const createUser = async ({ name, role, birthYear }) => {
-  const data = await client.post('/api/v1/users', { name, role, birthYear });
+// role: PARENT | CHILD
+// 가입 응답에만 inviteCode가 담겨오고 재조회 API가 없어서, 여기서 함께 저장해둔다.
+export const createUser = async ({ email, password, name, role }) => {
+  const data = await client.post('/api/v1/users', { email, password, name, role });
   if (data?.userId) {
     setUserId(data.userId);
+  }
+  if (data?.inviteCode) {
+    setInviteCode(data.inviteCode);
   }
   return data;
 };

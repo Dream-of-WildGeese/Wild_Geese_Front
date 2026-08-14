@@ -1,7 +1,8 @@
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
-import { WEEKS } from './weeklyReportMock';
+import { loadWeeklyList } from './weeklyReportData';
+import { useApi } from '../../../hooks/useApi';
 
 const Page = styled.div`
   position: relative;
@@ -187,11 +188,16 @@ const Chevron = styled.span`
 function WeeklyReport() {
   const navigate = useNavigate();
   const [person, setPerson] = useState('me');
-  const [month, setMonth] = useState(8);
+  const [month, setMonth] = useState(new Date().getMonth() + 1);
 
-  const currentWeek = WEEKS.find((week) => week.isCurrent);
-  const pastWeeks = WEEKS.filter((week) => !week.isCurrent);
-  const months = useMemo(() => [...new Set(WEEKS.map((week) => week.month))], []);
+  const { data, loading, error } = useApi(loadWeeklyList, { args: [person] });
+
+  const currentWeek = data?.current ?? null;
+  const pastWeeks = useMemo(() => data?.past ?? [], [data]);
+  const months = useMemo(
+    () => [...new Set([currentWeek, ...pastWeeks].filter(Boolean).map((week) => week.month))],
+    [currentWeek, pastWeeks],
+  );
   const weeksByMonth = useMemo(() => {
     const map = new Map();
     pastWeeks.forEach((week) => {
@@ -224,9 +230,14 @@ function WeeklyReport() {
             </CurrentWeekLabelRow>
             <CurrentWeekRange>{currentWeek.range}</CurrentWeekRange>
           </CurrentWeekTextCol>
-          <CurrentWeekDesc>{currentWeek.summary[person]}</CurrentWeekDesc>
+          <CurrentWeekDesc>{currentWeek.comment}</CurrentWeekDesc>
         </CurrentWeekCard>
       )}
+
+      {loading && <MonthLabel>리포트를 불러오는 중이에요...</MonthLabel>}
+      {error && <MonthLabel>{error.message}</MonthLabel>}
+      {/* 가족 구성원은 최신 주차만 조회할 수 있어서 지난 주 목록이 없다 */}
+      {data?.partnerOnly && !loading && <MonthLabel>가족은 최신 주 리포트만 볼 수 있어요</MonthLabel>}
 
       <MonthJumpRow>
         {months.map((m) => (
@@ -252,7 +263,7 @@ function WeeklyReport() {
                   <WeekRange>{week.range}</WeekRange>
                 </WeekTextCol>
                 <WeekMetaCol>
-                  <WeekDesc>{week.summary[person]}</WeekDesc>
+                  <WeekDesc>{week.comment}</WeekDesc>
                   <Chevron>›</Chevron>
                 </WeekMetaCol>
               </WeekRow>

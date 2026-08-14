@@ -4,6 +4,12 @@ import styled from 'styled-components';
 import { useLocation } from 'react-router-dom';
 import back from '../../assets/onboarding/back.svg';
 import { useAppData } from '../../store/AppDataContext';
+import { updateHealthProfile } from '../../api/user';
+import { getMedications } from '../../api/medication';
+import { useApi, useApiAction } from '../../hooks/useApi';
+
+// 화면의 한글 성별을 서버 enum으로 바꾼다.
+const GENDER_VALUES = { 남성: 'MALE', 여성: 'FEMALE', 남: 'MALE', 여: 'FEMALE' };
 
 const HealthSet = () => {
   const navigate = useNavigate();
@@ -16,7 +22,29 @@ const HealthSet = () => {
   const [gender, setGender] = useState(data.profile.gender || '');
   const [agree, setAgree] = useState(true);
   const [interests, setInterests] = useState(data.interests || []);
-  const medications = data.medications;
+
+  const { data: medicationList } = useApi(getMedications);
+  const medications = (medicationList ?? []).map((med) => ({
+    id: med.medicationId,
+    name: med.name,
+  }));
+
+  const { execute: saveHealthProfile, loading: saving } = useApiAction(updateHealthProfile);
+
+  const handleNext = async () => {
+    const { ok, error } = await saveHealthProfile({
+      name: name.trim(),
+      birthDate: birth,
+      gender: GENDER_VALUES[gender] ?? gender,
+      diseases: [],
+      wellnessInterests: interests,
+    });
+    if (!ok) {
+      alert(error.message);
+      return;
+    }
+    navigate('/onboarding/complete/2');
+  };
 
   const interestList = ['수면', '활동량', '식사', '복약', '기분'];
 
@@ -163,10 +191,8 @@ const HealthSet = () => {
 
         
 
-        <NextButton
-          onClick={() => navigate('/onboarding/complete/2')}
-        >
-          다음
+        <NextButton onClick={handleNext} disabled={saving}>
+          {saving ? '저장 중...' : '다음'}
         </NextButton>
       </Content>
     </Page>

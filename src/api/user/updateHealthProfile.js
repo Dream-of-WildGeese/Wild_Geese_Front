@@ -1,4 +1,11 @@
 import { client } from '../client';
 
-export const updateHealthProfile = ({ diseases, interests }) =>
-  client.put('/api/v1/users/me/health-profile', { diseases, interests });
+// gender: MALE | FEMALE, birthDate: "1856-03-02" 형식.
+export const updateHealthProfile = ({ name, birthDate, gender, diseases, wellnessInterests }) =>
+  client.put('/api/v1/users/me/healthprofile', {
+    name,
+    birthDate,
+    gender,
+    diseases,
+    wellnessInterests,
+  });

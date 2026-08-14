@@ -1,7 +1,9 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import styled from 'styled-components';
-import { useAppData } from '../../../store/AppDataContext';
+import { getMedications, updateMedication, deleteMedication } from '../../../api/medication';
+import { useApi, useApiAction } from '../../../hooks/useApi';
+import { toMedicationView, toMedicationRequest } from '../../../utils/medication';
 
 const Page = styled.div`
   position: relative;
@@ -140,17 +142,40 @@ const REPEAT_OPTIONS = ['매일', '이틀에 한 번', '주 3회', '필요할 �
 function MedicineEdit() {
   const navigate = useNavigate();
   const { id } = useParams();
-  const { data, updateMedication, removeMedication } = useAppData();
-  const medication = data.medications.find((med) => String(med.id) === id);
+  // 단건 조회 API가 없어서 목록을 받아 해당 약만 골라 쓴다.
+  const { data, loading } = useApi(getMedications);
+  const { execute: saveMedication } = useApiAction(updateMedication);
+  const { execute: removeMedication } = useApiAction(deleteMedication);
 
-  const [name, setName] = useState(medication?.name ?? '');
-  const [times, setTimes] = useState(medication?.times ?? []);
-  const [repeat, setRepeat] = useState(
-    medication?.repeat?.includes('매일') ? '매일' : medication?.repeat?.[0] ?? '매일',
-  );
+  const medication = (data ?? []).map(toMedicationView).find((med) => String(med.id) === id);
+
+  const [name, setName] = useState('');
+  const [times, setTimes] = useState([]);
+  const [repeat, setRepeat] = useState('매일');
   const [period, setPeriod] = useState('오전');
   const [hour, setHour] = useState('');
   const [minute, setMinute] = useState('');
+
+  // 목록이 도착한 뒤에야 초기값을 알 수 있어서 입력 상태를 한 번 채워준다.
+  // medication은 매 렌더 새로 만들어지는 객체라, 이미 채운 약인지 id로 확인한다.
+  const initializedIdRef = useRef(null);
+  useEffect(() => {
+    if (!medication || initializedIdRef.current === medication.id) return;
+    initializedIdRef.current = medication.id;
+    setName(medication.name);
+    setTimes(medication.times);
+    setRepeat(medication.repeat);
+  }, [medication]);
+
+  if (loading) {
+    return (
+      <Page>
+        <Content>
+          <Label>불러오는 중이에요...</Label>
+        </Content>
+      </Page>
+    );
+  }
 
   if (!medication) {
     return (
@@ -181,15 +206,23 @@ function MedicineEdit() {
     setMinute('');
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!name.trim() || times.length === 0) return;
-    updateMedication(medication.id, { name: name.trim(), times, repeat: [repeat] });
-    navigate('/home/medicine');
+    const { ok, error } = await saveMedication(medication.id, toMedicationRequest({ name, times, repeat }));
+    if (ok) {
+      navigate('/home/medicine');
+      return;
+    }
+    alert(error.message);
   };
 
-  const handleDelete = () => {
-    removeMedication(medication.id);
-    navigate('/home/medicine');
+  const handleDelete = async () => {
+    const { ok, error } = await removeMedication(medication.id);
+    if (ok) {
+      navigate('/home/medicine');
+      return;
+    }
+    alert(error.message);
   };
 
   return (

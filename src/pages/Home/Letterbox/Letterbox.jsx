@@ -1,5 +1,9 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import styled from 'styled-components';
+import { getMyFamily } from '../../../api/family';
+import { sendLetter } from '../../../api/letter';
+import { getUserId } from '../../../api/client';
+import { useApi, useApiAction } from '../../../hooks/useApi';
 import LetterboxList from './LetterboxList';
 import LetterArrived from './LetterArrived';
 import LetterRead from './LetterRead';
@@ -23,17 +27,47 @@ const getInitialStep = (letters) => {
   return letters.some((letter) => !letter.read) ? 'arrived' : 'list';
 };
 
-function Letterbox({ letters, onMarkRead, onClose, initialStep }) {
-  const [step, setStep] = useState(() => initialStep ?? getInitialStep(letters));
+function Letterbox({ letters, loading, onMarkRead, onSent, onClose, initialStep }) {
+  // 편지 목록이 서버에서 도착해야 첫 화면(도착 알림/목록/비어있음)을 정할 수 있다.
+  const [step, setStep] = useState(initialStep ?? null);
   const [selectedLetterId, setSelectedLetterId] = useState(null);
+
+  const { data: family } = useApi(getMyFamily);
+  const { execute: send, loading: sending } = useApiAction(sendLetter);
+
+  useEffect(() => {
+    if (step === null && !loading) {
+      setStep(getInitialStep(letters));
+    }
+  }, [step, loading, letters]);
 
   const selectedLetter = letters.find((letter) => letter.id === selectedLetterId) ?? null;
   const unreadCount = letters.filter((letter) => !letter.read).length;
+
+  // 편지는 가족 구성원에게 보내므로, 나를 뺀 첫 번째 구성원을 받는 사람으로 삼는다.
+  const myUserId = getUserId();
+  const recipient = (family?.members ?? []).find(
+    (member) => String(member.userId) !== String(myUserId),
+  );
 
   const openLetter = (letter) => {
     if (!letter.read) onMarkRead(letter.id);
     setSelectedLetterId(letter.id);
     setStep('read');
+  };
+
+  const handleSend = async (content) => {
+    if (!recipient) {
+      alert('편지를 보낼 가족이 아직 연결되지 않았어요.');
+      return;
+    }
+    const { ok, error } = await send({ toUserId: recipient.userId, content, inputType: 'TEXT' });
+    if (!ok) {
+      alert(error.message);
+      return;
+    }
+    onSent?.();
+    setStep('sent');
   };
 
   const handleArrivedOpen = () => {
@@ -54,7 +88,9 @@ function Letterbox({ letters, onMarkRead, onClose, initialStep }) {
         {step === 'read' && selectedLetter && (
           <LetterRead letter={selectedLetter} onReply={() => setStep('compose')} onClose={backToList} />
         )}
-        {step === 'compose' && <LetterCompose onBack={backToList} onSend={() => setStep('sent')} />}
+        {step === 'compose' && (
+          <LetterCompose onBack={backToList} onSend={handleSend} sending={sending} />
+        )}
         {step === 'sent' && <LetterSent onClose={backToList} />}
       </div>
     </Backdrop>

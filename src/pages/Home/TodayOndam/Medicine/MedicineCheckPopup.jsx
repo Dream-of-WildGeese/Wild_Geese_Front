@@ -1,7 +1,10 @@
 import { useState } from 'react';
 import styled from 'styled-components';
 import mascotImg from '../../../../assets/mascot.png';
-import { MOCK_MEDICATIONS } from '../../../../mock/homeMock';
+import { getMedications, createMedicationLog } from '../../../../api/medication';
+import { saveMealLog } from '../../../../api/meal';
+import { useApi, useApiAction } from '../../../../hooks/useApi';
+import { parseTime, toDateString } from '../../../../utils/medication';
 import { formatKoreanTime } from '../homeCtaFlow';
 
 const Backdrop = styled.div`
@@ -161,18 +164,53 @@ const EditLink = styled.button`
   color: ${({ theme }) => theme.colors.accent};
 `;
 
+const MEAL_TYPE_BY_LABEL = { 아침: 'BREAKFAST', 점심: 'LUNCH', 저녁: 'DINNER' };
+
+// 체크리스트 결과를 복약 기록과 식사 기록으로 나눠 저장한다.
+// 체크하지 않은 약은 NOT_RECORDED로 남겨서 '아직 안 먹음'과 '기록 없음'을 구분한다.
+async function submitMedicationCheck({ dueMedications, checks, mealLabel }) {
+  const recordDate = toDateString();
+
+  await Promise.all(
+    dueMedications.map((med) =>
+      createMedicationLog({
+        scheduleId: med.scheduleId,
+        recordDate,
+        status: checks[med.scheduleId] ? 'TAKEN' : 'NOT_RECORDED',
+      }),
+    ),
+  );
+
+  const mealType = MEAL_TYPE_BY_LABEL[mealLabel];
+  if (mealType) {
+    await saveMealLog({ recordDate, mealType, eaten: Boolean(checks.meal) });
+  }
+}
+
 function MedicineCheckPopup({ dueMedications, mealLabel, onClose }) {
-  const [step, setStep] = useState('intro'); // intro | checklist | result
+  const [step, setStep] = useState('intro'); // intro | checklist | complete | encourage
   const rows = [
     { id: 'meal', label: `${mealLabel} 드셨어요?` },
-    ...dueMedications.map((med) => ({ id: med.id, label: `${med.name} 드셨어요?` })),
+    ...dueMedications.map((med) => ({ id: med.scheduleId, label: `${med.name} 드셨어요?` })),
   ];
   const [checks, setChecks] = useState(() => Object.fromEntries(rows.map((row) => [row.id, false])));
 
-  const allChecked = rows.every((row) => checks[row.id]);
-  const timeLabel = formatKoreanTime(dueMedications[0]?.hour ?? 0, dueMedications[0]?.minute ?? 0);
+  const { execute: submitCheck, loading: submitting } = useApiAction(submitMedicationCheck);
+  // 완료 화면에서 오늘 등록된 약 전체를 동그라미로 보여줘야 해서 그때만 불러온다.
+  const { data: allMedications } = useApi(getMedications, { enabled: step === 'complete' });
 
-  const handleSubmit = () => setStep(allChecked ? 'complete' : 'encourage');
+  const allChecked = rows.every((row) => checks[row.id]);
+  const { hour, minute } = parseTime(dueMedications[0]?.scheduledTime ?? '00:00');
+  const timeLabel = formatKoreanTime(hour, minute);
+
+  const handleSubmit = async () => {
+    const { ok, error } = await submitCheck({ dueMedications, checks, mealLabel });
+    if (!ok) {
+      alert(error.message);
+      return;
+    }
+    setStep(allChecked ? 'complete' : 'encourage');
+  };
 
   if (step === 'intro') {
     return (
@@ -215,8 +253,8 @@ function MedicineCheckPopup({ dueMedications, mealLabel, onClose }) {
               </ActionGroup>
             </CheckRow>
           ))}
-          <PrimaryButton $wide type="button" onClick={handleSubmit}>
-            답하기
+          <PrimaryButton $wide type="button" onClick={handleSubmit} disabled={submitting}>
+            {submitting ? '저장 중...' : '답하기'}
           </PrimaryButton>
         </Card>
       </Backdrop>
@@ -229,10 +267,10 @@ function MedicineCheckPopup({ dueMedications, mealLabel, onClose }) {
         <Card onClick={(event) => event.stopPropagation()}>
           <Title>{mealLabel} 약 잘 챙기셨어요!</Title>
           <CircleRow>
-            {MOCK_MEDICATIONS.map((med) => {
-              const pending = !dueMedications.some((due) => due.id === med.id);
+            {(allMedications ?? []).map((med) => {
+              const pending = !dueMedications.some((due) => due.medicationId === med.medicationId);
               return (
-                <CircleWrap key={med.id}>
+                <CircleWrap key={med.medicationId}>
                   <CheckCircle $pending={pending}>{pending ? '' : '✓'}</CheckCircle>
                   <CircleLabel $pending={pending}>{med.name}</CircleLabel>
                 </CircleWrap>

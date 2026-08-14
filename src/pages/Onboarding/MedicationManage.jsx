@@ -5,15 +5,21 @@ import { useNavigate } from 'react-router-dom';
 import back from '../../assets/onboarding/back.svg';
 import pill from '../../assets/onboarding/med.svg';
 import trash from '../../assets/onboarding/trash.svg';
-import { useAppData } from '../../store/AppDataContext';
+import { getMedications, deleteMedication } from '../../api/medication';
+import { useApi, useApiAction } from '../../hooks/useApi';
+import { toMedicationView } from '../../utils/medication';
 
 const MedicationManage = () => {
   const navigate = useNavigate();
-  const { data, removeMedication } = useAppData();
-  const medications = data.medications;
+  const { data, refetch } = useApi(getMedications);
+  const { execute: removeMedication } = useApiAction(deleteMedication);
+  const medications = (data ?? []).map(toMedicationView);
 
-  const handleDelete = (id) => {
-    removeMedication(id);
+  const handleDelete = async (id) => {
+    const { ok } = await removeMedication(id);
+    if (ok) {
+      refetch();
+    }
   };
 
   return (
@@ -42,9 +48,7 @@ const MedicationManage = () => {
               </CardHeader>
 
               <ChipWrap>
-                <RepeatChip>
-                  {med.repeat?.includes('매일') ? '매일' : med.repeat?.join(', ') || '매일'}
-                </RepeatChip>
+                <RepeatChip>{med.repeat}</RepeatChip>
 
                 {med.times.map((time) => (
                   <TimeChip key={time}>{time}</TimeChip>

@@ -6,20 +6,60 @@ import MorningReportHeader from './MorningReportHeader';
 import MorningJournalCard from './MorningJournalCard';
 import MorningReportToast from './MorningReportToast';
 import MorningReportDatePicker from './MorningReportDatePicker';
+import { getMorningHistory } from '../../api/morning';
+import { getDailyLog, getFamilyDailyLog } from '../../api/daily';
+import { getMyFamily } from '../../api/family';
+import { getUserId } from '../../api/client';
+import { useApi } from '../../hooks/useApi';
+import { toDateString } from '../../utils/medication';
 
-// 아직 백엔드에 쌓인 기록이 없어서, 예시로 오늘 날짜(8월 13일) 항목 하나만 들어있다.
-// 실제 연동 시 이 배열을 API 응답으로 교체하면 카드가 늘어난 만큼 아래로 쌓여 스크롤된다.
-const EXAMPLE_ENTRIES = [
-  {
-    id: '2026-08-13',
-    date: new Date(2026, 7, 13),
-    question: '오늘 아침 기분은 어떤 색깔이에요?',
-    answers: [
-      { id: 'me', name: '나', avatar: avatarCheering, text: '바쁜 하루가 될 것 같아서 회색 ㅎㅎ' },
-      { id: 'family', name: '가족', avatar: avatarHeartHug, text: '오늘은 날씨가 맑아서 파란색~' },
-    ],
-  },
-];
+// 아침 질문 이력 API는 질문 목록만 주고 답변은 담아주지 않는다.
+// 그래서 질문 목록을 받은 뒤, 각 날짜의 일지에서 나와 가족의 답변을 따로 채워 넣는다.
+async function loadMonthJournal({ from, to }) {
+  const [history, family] = await Promise.all([
+    getMorningHistory({ from, to }),
+    getMyFamily().catch(() => null),
+  ]);
+
+  const myUserId = getUserId();
+  const partner = (family?.members ?? []).find(
+    (member) => String(member.userId) !== String(myUserId),
+  );
+
+  return Promise.all(
+    (history ?? []).map(async (item) => {
+      const [myLog, partnerLog] = await Promise.all([
+        getDailyLog(item.questionDate).catch(() => null),
+        partner ? getFamilyDailyLog(partner.userId, item.questionDate).catch(() => null) : null,
+      ]);
+
+      const answers = [];
+      if (myLog?.morningAnswer?.textValue) {
+        answers.push({
+          id: 'me',
+          name: '나',
+          avatar: avatarCheering,
+          text: myLog.morningAnswer.textValue,
+        });
+      }
+      if (partnerLog?.morningAnswer?.textValue) {
+        answers.push({
+          id: 'family',
+          name: '가족',
+          avatar: avatarHeartHug,
+          text: partnerLog.morningAnswer.textValue,
+        });
+      }
+
+      return {
+        id: item.questionDate,
+        date: new Date(`${item.questionDate}T00:00:00`),
+        question: item.content,
+        answers,
+      };
+    }),
+  );
+}
 
 const TOAST_DURATION_MS = 1800;
 
@@ -67,7 +107,7 @@ function getEmptyDateMessage(targetDate) {
 }
 
 function MorningReport() {
-  const [viewedDate, setViewedDate] = useState(() => EXAMPLE_ENTRIES[0].date);
+  const [viewedDate, setViewedDate] = useState(() => new Date());
   const [toast, setToast] = useState(null);
   const [isPickerOpen, setIsPickerOpen] = useState(false);
 
@@ -79,16 +119,25 @@ function MorningReport() {
 
   const year = viewedDate.getFullYear();
   const month = viewedDate.getMonth() + 1;
-  const entriesForMonth = EXAMPLE_ENTRIES.filter((entry) => isSameMonth(entry.date, year, month));
+
+  // 보고 있는 달의 1일~말일 구간만 조회한다. (month는 1부터라 0일은 전달 말일이 된다)
+  const range = {
+    from: toDateString(new Date(year, month - 1, 1)),
+    to: toDateString(new Date(year, month, 0)),
+  };
+  const { data: entries, loading, error } = useApi(loadMonthJournal, { args: [range] });
+  const entriesForMonth = entries ?? [];
+
+  // 달을 옮긴 직후에는 아직 조회 결과가 없으므로, 응답이 도착한 뒤 비어 있으면 안내한다.
+  useEffect(() => {
+    if (loading || error) return;
+    if (entriesForMonth.length === 0 && !isSameMonth(new Date(), year, month)) {
+      setToast({ id: Date.now(), message: getEmptyDateMessage(new Date(year, month - 1, 1)) });
+    }
+  }, [loading, error, entriesForMonth.length, year, month]);
 
   const applyDate = (nextDate) => {
     setViewedDate(nextDate);
-    const hasEntries = EXAMPLE_ENTRIES.some((entry) =>
-      isSameMonth(entry.date, nextDate.getFullYear(), nextDate.getMonth() + 1)
-    );
-    if (!hasEntries) {
-      setToast({ id: Date.now(), message: getEmptyDateMessage(nextDate) });
-    }
   };
 
   const goToMonth = (offset) => {
@@ -111,7 +160,11 @@ function MorningReport() {
       />
       <MorningReportToast key={toast?.id} message={toast?.message} />
       <Divider />
-      {entriesForMonth.length === 0 ? (
+      {loading ? (
+        <EmptyState>기록을 불러오는 중이에요...</EmptyState>
+      ) : error ? (
+        <EmptyState>{error.message}</EmptyState>
+      ) : entriesForMonth.length === 0 ? (
         <EmptyState>이 달에는 아직 쌓인 기록이 없어요.</EmptyState>
       ) : (
         entriesForMonth.map((entry) => (

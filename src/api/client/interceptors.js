@@ -24,8 +24,16 @@ export const unwrapResponse = (response) => {
 
 export const unwrapError = (error) => {
   const errorDetail = error.response?.data?.error;
-  if (errorDetail) {
+  if (errorDetail && typeof errorDetail === 'object') {
     return Promise.reject(new ApiError(errorDetail.code, errorDetail.message));
+  }
+  // 서버가 500을 내면 { timestamp, status, error: 'Internal Server Error', path } 형태로
+  // 내려와서 error가 문자열이다. 이 경우 code를 잃지 않도록 상태코드로 대신 채운다.
+  const status = error.response?.status;
+  if (status) {
+    return Promise.reject(
+      new ApiError(`HTTP_${status}`, '일시적인 오류가 발생했어요. 잠시 후 다시 시도해주세요.'),
+    );
   }
   return Promise.reject(error);
 };

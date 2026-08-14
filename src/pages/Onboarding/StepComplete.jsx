@@ -1,7 +1,8 @@
 import React from 'react';
 import styled from 'styled-components';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
-import check from '../../assets/onboarding/check.svg';
+import { completeOnboarding } from '../../api/user';
+import { useApiAction } from '../../hooks/useApi';
 import back from '../../assets/onboarding/back.svg';
 import sprout from '../../assets/onboarding/sprout.svg';
 import completeFlower from '../../assets/onboarding/complete-flower.svg';
@@ -15,6 +16,7 @@ const StepComplete = () => {
 
   const role = location.state?.role;
   const familyName = location.state?.familyName || '가족';
+  const { execute: finishOnboarding, loading: finishing } = useApiAction(completeOnboarding);
 
  const completeData = {
   1: {
@@ -47,7 +49,19 @@ const StepComplete = () => {
 };
 
   const current = completeData[step] || completeData[1];
+  const isFinalStep = String(step) === '3';
 
+  // 마지막 단계를 지나면 온보딩 완료를 서버에 알린다.
+  // 실패해도 홈으로는 보내준다(다음 진입 때 다시 시도할 수 있다).
+  const handleContinue = async () => {
+    if (isFinalStep) {
+      const { ok, error } = await finishOnboarding();
+      if (!ok) {
+        console.error('온보딩 완료 처리 실패:', error);
+      }
+    }
+    navigate(current.next, { state: { role } });
+  };
 
   return (
     <Page>
@@ -67,14 +81,8 @@ const StepComplete = () => {
       </CompleteContent>
 
       <ButtonArea>
-        <ContinueButton
-          onClick={() =>
-            navigate(current.next, {
-              state: { role },
-            })
-          }
-        >
-          {current.buttonText}
+        <ContinueButton onClick={handleContinue} disabled={finishing}>
+          {finishing ? '마무리하는 중...' : current.buttonText}
         </ContinueButton>
       </ButtonArea>
     </Content>
