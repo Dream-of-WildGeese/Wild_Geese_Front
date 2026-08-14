@@ -225,7 +225,7 @@ const FeatureTitle = styled.h2`
   color: #4A3A2F;
   font-family: "Noto Sans KR";
   font-size: 16px;
-  font-weight: 400;
+  font-weight: 700;
   line-height: 1;
 `;
 
@@ -234,7 +234,7 @@ const FeatureDescription = styled.p`
   color: #A79C8E;
   font-family: "Noto Sans KR";
   font-size: 13px;
-  font-weight: 700;
+  font-weight: 400;
   line-height: normal;
 `;
 
