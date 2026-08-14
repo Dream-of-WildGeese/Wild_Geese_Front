@@ -6,8 +6,9 @@ const AddMedication = () => {
   const navigate = useNavigate();
 
   const [name, setName] = useState('');
-  const [times, setTimes] = useState(['아침 8:00', '저녁 6:00']);
-  const [repeat, setRepeat] = useState('');
+  const [times, setTimes] = useState(['']);
+  const [repeat, setRepeat] = useState([]);
+  const repeatList = ['월', '화', '수', '목', '금', '토', '일', '매일'];
 
   const timeOptions = [
     '아침 8:00',
@@ -16,6 +17,7 @@ const AddMedication = () => {
     '취침전 10:00',
   ];
 
+
   const toggleTime = (time) => {
     setTimes((prev) =>
       prev.includes(time)
@@ -23,6 +25,24 @@ const AddMedication = () => {
         : [...prev, time]
     );
   };
+  const toggleRepeat = (item) => {
+        if (item === '매일') {
+            setRepeat(
+            repeat.includes('매일') ? [] : ['매일']
+            );
+            return;
+        }
+
+        let next = repeat.filter(v => v !== '매일');
+
+        if (next.includes(item)) {
+            next = next.filter(v => v !== item);
+        } else {
+            next = [...next, item];
+        }
+
+        setRepeat(next);
+        };
 
   return (
     <Page>
@@ -58,24 +78,21 @@ const AddMedication = () => {
         </InputGroup>
 
         <InputGroup>
-          <Label>얼마나 자주 먹나요?</Label>
+            <Label>얼마나 자주 먹나요?</Label>
 
-          <Select
-            value={repeat}
-            onChange={(e) => setRepeat(e.target.value)}
-          >
-            <option value="">선택해주세요</option>
-            <option value="월">월</option>
-            <option value="화">화</option>
-            <option value="수">수</option>
-            <option value="목">목</option>
-            <option value="금">금</option>
-            <option value="토">토</option>
-            <option value="일">일</option>
-            <option value="매일">매일</option>
-          </Select>
+            <RepeatWrap>
+                {repeatList.map((day) => (
+                <RepeatChip
+                    key={day}
+                    $active={repeat.includes(day)}
+                    onClick={() => toggleRepeat(day)}
+                    type="button"
+                >
+                    {day}
+                </RepeatChip>
+                ))}
+            </RepeatWrap>
         </InputGroup>
-
         <SaveButton onClick={() => navigate(-1)}>
           저장하기
         </SaveButton>
@@ -218,6 +235,35 @@ const SaveButton = styled.button`
   font-family: Jua;
   font-size: 18px;
   font-weight: 400;
+
+  cursor: pointer;
+`;
+
+const RepeatWrap = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+`;
+
+const RepeatChip = styled.button`
+  min-width: 54px;
+  height: 40px;
+  padding: 0 16px;
+
+  border-radius: 999px;
+  border: 1.5px solid
+    ${({ $active }) =>
+      $active ? '#8A7B3E' : 'rgba(74,58,47,.25)'};
+
+  background: ${({ $active }) =>
+    $active ? '#CBD879' : '#FFF'};
+
+  color: ${({ $active }) =>
+    $active ? '#4A3A2F' : '#6B6661'};
+
+  font-family: "Noto Sans KR";
+  font-size: 15px;
+  font-weight: 700;
 
   cursor: pointer;
 `;

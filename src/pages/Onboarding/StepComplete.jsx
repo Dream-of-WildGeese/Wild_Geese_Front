@@ -151,7 +151,7 @@ const ContinueButton = styled.button`
   border: 1.5px solid rgba(74, 58, 47, 0.55);
 
   background: #cbd879;
-  color: #fff8ed;
+  color: #4A3A2F;
 
   font-family: Jua;
   font-size: 24px;

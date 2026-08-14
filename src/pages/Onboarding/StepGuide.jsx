@@ -156,13 +156,10 @@ const StepItem = styled.div`
 const Step = styled.div`
   width: 95%;
   height: 84px;
-
   display: flex;
   align-items: center;
   gap: 18px;
-
   padding: 18px 20px;
-
   border-radius: 24px;
   border: 2px solid rgba(74,58,47,.25);
   background: rgba(255,255,255,.55);

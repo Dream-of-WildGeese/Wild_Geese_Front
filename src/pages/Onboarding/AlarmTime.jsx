@@ -261,7 +261,7 @@ const StartButton = styled.button`
   border: 1.5px solid rgba(74,58,47,.55);
   background: #CBD879;
 
-  color: #FFF8ED;
+  color: #4A3A2F;
   font-family: Jua;
   font-size: 18px;
   cursor: pointer;

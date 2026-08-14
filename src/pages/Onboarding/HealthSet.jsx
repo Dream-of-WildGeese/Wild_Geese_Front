@@ -437,7 +437,7 @@ const NextButton = styled.button`
   border: 1.5px solid rgba(74, 58, 47, 0.55);
 
   background: #CBD879;
-  color: #FFF8ED;
+  color: #4A3A2F;
 
   font-family: Jua, sans-serif;
   font-size: 18px;

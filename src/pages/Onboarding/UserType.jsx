@@ -129,7 +129,7 @@ text-align: center;
 font-family: "Noto Sans KR";
 font-size: 22px;
 font-style: normal;
-font-weight: 700;
+font-weight: 400;
 line-height: normal;
 `;
 

@@ -269,7 +269,7 @@ const DoneButton = styled.button`
 
   background: #cbd879;
 
-  color: #fff8ed;
+  color: #4A3A2F;
   font-family: 'Jua', sans-serif;
   font-size: 18px;
   font-weight: 400;
