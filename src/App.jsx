@@ -4,7 +4,7 @@ import { theme } from './styles/theme';
 import GlobalStyle from './styles/GlobalStyle';
 
 import Home from './pages/Home/Home';
-import DailyHealthCheck from './pages/Home/DailyHealthCheck';
+import DailyHealthCheck from './pages/Home/TodayOndam/Night/DailyHealthCheck';
 
 import TodayReport from './pages/TodayReport/TodayReport';
 import WeeklyReport from './pages/WeeklyReport/WeeklyReport';
