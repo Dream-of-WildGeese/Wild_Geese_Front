@@ -53,12 +53,18 @@ const AddMedication = () => {
   };
 
   const handleAddManualTime = () => {
-    if (!hour.trim() || !minute.trim()) return;
-    const label = `${period} ${hour.padStart(2, '0')}:${minute.padStart(2, '0')}`;
-    if (!times.includes(label)) setTimes((prev) => [...prev, label]);
-    setHour('');
-    setMinute('');
-  };
+  if (!hour.trim() || !minute.trim()) return;
+
+  const label = `${period} ${hour.padStart(2, '0')}:${minute.padStart(2, '0')}`;
+
+  if (!times.includes(label)) {
+    setTimes((prev) => [...prev, label]);
+    alert(`${label}이(가) 추가됐어요!`);
+  }
+
+  setHour('');
+  setMinute('');
+};
 
   const handleSave = async () => {
     if (!name.trim() || times.length === 0) return;
@@ -137,6 +143,7 @@ const AddMedication = () => {
 
               <AddTimeButton type="button" onClick={handleAddManualTime}>+</AddTimeButton>
             </ManualRow>
+                      
           </InputGroup>
 
           <InputGroup>

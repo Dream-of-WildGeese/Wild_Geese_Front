@@ -35,7 +35,12 @@ const MAX_AGE = 120;
 const HealthSet = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { data, setProfile, setInterests: saveInterests } = useAppData();
+  const {
+  data,
+  setProfile,
+  setInterests: saveInterests,
+  setConditions,
+} = useAppData();
   const role = location.state?.role || data.profile.role || 'parent';
 
   const [name, setName] = useState(data.profile.name || '');
@@ -60,8 +65,8 @@ const HealthSet = () => {
       birthDate: birth,
       gender: GENDER_VALUES[gender] ?? gender,
       diseases: customDisease.trim()
-      ? [...diseases.filter((d) => d !== '기타'), customDisease.trim()]
-      : diseases,
+      ? [...selectedDiseases.filter((d) => d !== '기타'), customDisease.trim()]
+      : selectedDiseases,
 
     wellnessInterests: interests
       .map((item) => INTEREST_VALUES[item])
@@ -82,13 +87,13 @@ const HealthSet = () => {
     saveInterests(next);
   };
 
-  const toggleDisease = (item) => {
-    const next = diseases.includes(item)
-      ? diseases.filter((v) => v !== item)
-      : [...diseases, item];
-
-    setDiseases(next);
-  };
+  const toggleDisease = (disease) => {
+      setConditions(
+        selectedDiseases.includes(disease)
+          ? selectedDiseases.filter((d) => d !== disease)
+          : [...selectedDiseases, disease]
+      );
+    };
   const diseaseList = [
     '고혈압',
     '당뇨',
@@ -98,8 +103,14 @@ const HealthSet = () => {
     '골다공증',
     '기타',
   ];
-  const [diseases, setDiseases] = useState([]);
-  const [customDisease, setCustomDisease] = useState('');
+  
+
+  const selectedDiseases = data.conditions || [];
+  const [customDisease, setCustomDisease] = useState(
+  data.conditions?.find(
+    (d) => !diseaseList.includes(d)
+  ) || ''
+);
 
   const handleNameChange = (e) => {
     setName(e.target.value);
@@ -234,17 +245,28 @@ const HealthSet = () => {
                 {diseaseList.map((item) => (
                   <Chip
                     key={item}
-                    $active={diseases.includes(item)}
+                    $active={selectedDiseases.includes(item)}
                     onClick={() => toggleDisease(item)}
                   >
                     {item}
                   </Chip>
                 ))}
               </ChipWrap>
-              {diseases.includes('기타') && (
+              {selectedDiseases.includes('기타') && (
                   <DiseaseInput
                     value={customDisease}
-                    onChange={(e) => setCustomDisease(e.target.value)}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      setCustomDisease(value);
+
+                      setConditions([
+                        ...selectedDiseases.filter(
+                          (d) => d !== "기타" && d !== customDisease
+                        ),
+                        "기타",
+                        value,
+                      ]);
+                    }}
                     placeholder="예: 갑상선 질환"
                   />
                 )}

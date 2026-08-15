@@ -1,14 +1,13 @@
 import { createContext, useContext, useEffect, useMemo, useState } from 'react';
+import { getUserId } from '../api/client';
 
-// 아직 백엔드 연동 전이라, 온보딩에서 입력한 값을 로컬(localStorage)에 저장해두고
-// 홈의 약/설정 화면이 그 값을 그대로 읽어서 보여준다.
-// 추후 API가 붙으면 이 컨텍스트의 각 setter 내부만 실제 요청(completeOnboarding,
-// updateHealthProfile, updateNotificationSetting 등)으로 교체하면 된다.
-const STORAGE_KEY = 'ondam.appData';
+// 사용자별로 localStorage를 분리해서 저장
+const getStorageKey = (userId) => `ondam.appData.${userId ?? 'guest'}`;
 
 const DEFAULT_DATA = {
   profile: { name: '', birth: '', gender: '', role: null },
   interests: [],
+  conditions: [], 
   medications: [],
   alarms: { morning: '08:30', evening: '20:00' },
   notifications: {
@@ -20,11 +19,13 @@ const DEFAULT_DATA = {
   family: { connectedName: '', connectedRelation: '' },
 };
 
-const loadInitialData = () => {
+const loadInitialData = (userId) => {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
+    const raw = localStorage.getItem(getStorageKey(userId));
     if (!raw) return DEFAULT_DATA;
+
     const parsed = JSON.parse(raw);
+
     return {
       ...DEFAULT_DATA,
       ...parsed,
@@ -41,43 +42,88 @@ const loadInitialData = () => {
 const AppDataContext = createContext(null);
 
 export function AppDataProvider({ children }) {
-  const [data, setData] = useState(loadInitialData);
+  const userId = getUserId();
+  const storageKey = getStorageKey(userId);
 
+  const [data, setData] = useState(() => loadInitialData(userId));
+
+  // UserType에서 계정이 바뀌면 해당 유저 데이터 다시 불러오기
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-  }, [data]);
+    setData(loadInitialData(userId));
+  }, [userId]);
+
+  // 현재 유저 키에만 저장
+  useEffect(() => {
+    localStorage.setItem(storageKey, JSON.stringify(data));
+  }, [data, storageKey]);
 
   const value = useMemo(
     () => ({
       data,
+
       setProfile: (patch) =>
-        setData((prev) => ({ ...prev, profile: { ...prev.profile, ...patch } })),
-      setInterests: (interests) => setData((prev) => ({ ...prev, interests })),
+        setData((prev) => ({
+          ...prev,
+          profile: { ...prev.profile, ...patch },
+        })),
+
+      setInterests: (interests) =>
+        setData((prev) => ({ ...prev, interests })),
+
+      setConditions: (conditions) =>
+        setData((prev) => ({ ...prev, conditions })),
+
       addMedication: (medication) =>
-        setData((prev) => ({ ...prev, medications: [...prev.medications, medication] })),
+        setData((prev) => ({
+          ...prev,
+          medications: [...prev.medications, medication],
+        })),
+
       updateMedication: (id, patch) =>
         setData((prev) => ({
           ...prev,
-          medications: prev.medications.map((med) => (med.id === id ? { ...med, ...patch } : med)),
+          medications: prev.medications.map((med) =>
+            med.id === id ? { ...med, ...patch } : med
+          ),
         })),
+
       removeMedication: (id) =>
         setData((prev) => ({
           ...prev,
           medications: prev.medications.filter((med) => med.id !== id),
         })),
-      setAlarms: (patch) => setData((prev) => ({ ...prev, alarms: { ...prev.alarms, ...patch } })),
+
+      setAlarms: (patch) =>
+        setData((prev) => ({
+          ...prev,
+          alarms: { ...prev.alarms, ...patch },
+        })),
+
       setNotification: (key, value) =>
         setData((prev) => ({
           ...prev,
-          notifications: { ...prev.notifications, [key]: value },
+          notifications: {
+            ...prev.notifications,
+            [key]: value,
+          },
         })),
-      setFamily: (patch) => setData((prev) => ({ ...prev, family: { ...prev.family, ...patch } })),
+
+      setFamily: (patch) =>
+        setData((prev) => ({
+          ...prev,
+          family: { ...prev.family, ...patch },
+        })),
+
       resetAppData: () => setData(DEFAULT_DATA),
     }),
-    [data],
+    [data]
   );
 
-  return <AppDataContext.Provider value={value}>{children}</AppDataContext.Provider>;
+  return (
+    <AppDataContext.Provider value={value}>
+      {children}
+    </AppDataContext.Provider>
+  );
 }
 
 export const useAppData = () => {

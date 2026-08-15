@@ -11,6 +11,8 @@ import { updateNotificationSetting } from '../../api/user';
 import { useApiAction } from '../../hooks/useApi';
 import TimePickerModal from '../../components/TimePickerModal';
 import { formatAlarmTime } from '../Home/Setting/settingsUtils';
+import { getMedications } from '../../api/medication';
+import { useApi } from '../../hooks/useApi';
 
 
 const AlarmTime = () => {
@@ -18,6 +20,7 @@ const AlarmTime = () => {
   const location = useLocation();
   const role = location.state?.role;
   const { data, setAlarms } = useAppData();
+  const { data: medicationList } = useApi(getMedications);
 
   const [morningTime, setMorningTime] = useState(data.alarms.morning);
   const [eveningTime, setEveningTime] = useState(data.alarms.evening);
@@ -123,8 +126,15 @@ const AlarmTime = () => {
               </MedicineHeader>
 
               <MedicineText>
-                {data.medications.length > 0
-                  ? data.medications.map((med) => `${med.name} : ${med.times.join(', ')}`).join(' / ')
+                {(medicationList ?? []).length > 0
+                  ? medicationList
+                      .map(
+                        (med) =>
+                          `${med.name} : ${med.schedules
+                            .map((schedule) => formatAlarmTime(schedule.scheduledTime))
+                            .join(', ')}`
+                      )
+                      .join(' / ')
                   : '등록된 복용약이 없어요'}
               </MedicineText>
             </Card>
