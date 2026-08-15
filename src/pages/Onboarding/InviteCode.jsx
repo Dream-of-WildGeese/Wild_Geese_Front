@@ -1,24 +1,45 @@
-import React, { useState } from 'react';
+import React, { useState ,useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
 import { joinFamily } from '../../api/family';
-import { getInviteCode } from '../../api/client';
+import { getMyInviteCode } from '../../api/user';
 import { useApiAction } from '../../hooks/useApi';
 import { useLocation } from 'react-router-dom';
+import { useAppData } from '../../store/AppDataContext';
 import back from '../../assets/onboarding/back.svg';
 import heart from '../../assets/onboarding/heart.svg';
+
+// 테스트 유저 6명 중 부모/자녀 한 쌍만 온보딩에 연결돼 있어서, 상대방 이름을
+// role 기준으로 고정해둔다. 실제 유저가 붙으면 joinFamily/가족 조회 응답에서
+// 상대방 이름을 받아오는 방식으로 바꿔야 한다.
+const FAMILY_MEMBER_NAME = { parent: '신짱구', child: '봉미선' };
 
 const InviteCode = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const role = location.state?.role;
+  const { setFamily } = useAppData();
 
   const [code, setCode] = useState('');
-  const { execute: join, loading: joining } = useApiAction(joinFamily);
+  const [inviteCode, setInviteCode] = useState('');
 
-  // 초대코드는 회원가입 응답에만 들어있어서, 가입 때 저장해둔 값을 그대로 보여준다.
-  // 다시 발급받는 API는 없다.
-  const inviteCode = getInviteCode() ?? '';
+  const { execute: join, loading: joining } = useApiAction(joinFamily);
+  const { execute: fetchInviteCode } = useApiAction(getMyInviteCode);
+  
+  useEffect(() => {
+  const loadInviteCode = async () => {
+    const { ok, data, error } = await fetchInviteCode();
+
+    if (!ok) {
+      console.error('초대코드 조회 실패:', error);
+      return;
+    }
+
+    setInviteCode(data.inviteCode);
+  };
+
+  loadInviteCode();
+}, []);
 
   // 내 코드 복사
   const handleCopy = async () => {
@@ -48,7 +69,11 @@ const InviteCode = () => {
       return;
     }
 
-    navigate('/onboarding/complete/1', { state: { role } });
+    const familyName = FAMILY_MEMBER_NAME[role] || '가족';
+  
+    setFamily({ connectedName: familyName, connectedRelation: role === 'parent' ? '자녀' : '부모' });
+
+    navigate('/onboarding/complete/1', { state: { role, familyName } });
   };
 
   return (

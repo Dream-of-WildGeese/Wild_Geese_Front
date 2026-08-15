@@ -35,7 +35,12 @@ const MAX_AGE = 120;
 const HealthSet = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { data, setProfile, setInterests: saveInterests } = useAppData();
+  const {
+  data,
+  setProfile,
+  setInterests: saveInterests,
+  setConditions,
+} = useAppData();
   const role = location.state?.role || data.profile.role || 'parent';
 
   const [name, setName] = useState(data.profile.name || '');
@@ -59,9 +64,14 @@ const HealthSet = () => {
       name: name.trim(),
       birthDate: birth,
       gender: GENDER_VALUES[gender] ?? gender,
-      diseases: [],
-      wellnessInterests: interests.map((item) => INTEREST_VALUES[item]).filter(Boolean),
-    });
+      diseases: customDisease.trim()
+      ? [...selectedDiseases.filter((d) => d !== '기타'), customDisease.trim()]
+      : selectedDiseases,
+
+    wellnessInterests: interests
+      .map((item) => INTEREST_VALUES[item])
+      .filter(Boolean),
+        });
     if (!ok) {
       alert(error.message);
       return;
@@ -76,6 +86,31 @@ const HealthSet = () => {
     setInterests(next);
     saveInterests(next);
   };
+
+  const toggleDisease = (disease) => {
+      setConditions(
+        selectedDiseases.includes(disease)
+          ? selectedDiseases.filter((d) => d !== disease)
+          : [...selectedDiseases, disease]
+      );
+    };
+  const diseaseList = [
+    '고혈압',
+    '당뇨',
+    '고지혈증',
+    '심장질환',
+    '관절·허리 통증',
+    '골다공증',
+    '기타',
+  ];
+  
+
+  const selectedDiseases = data.conditions || [];
+  const [customDisease, setCustomDisease] = useState(
+  data.conditions?.find(
+    (d) => !diseaseList.includes(d)
+  ) || ''
+);
 
   const handleNameChange = (e) => {
     setName(e.target.value);
@@ -151,15 +186,15 @@ const HealthSet = () => {
 
                 <GenderWrap>
                 <GenderButton
-                    $active={gender === 'male'}
-                    onClick={() => handleGenderChange('male')}
+                    $active={gender === 'MALE'}
+                    onClick={() => handleGenderChange('MALE')}
                 >
                     남성
                 </GenderButton>
 
                 <GenderButton
-                    $active={gender === 'female'}
-                    onClick={() => handleGenderChange('female')}
+                    $active={gender === 'FEMALE'}
+                    onClick={() => handleGenderChange('FEMALE')}
                 >
                     여성
                 </GenderButton>
@@ -202,6 +237,53 @@ const HealthSet = () => {
                 ))}
             </ChipWrap>
             </Card>
+            <Card>
+              <CardTitle>현재 꾸준히 관리하고 있는 건강 문제가 있나요?</CardTitle>
+
+              <CardDesc>해당하는 항목을 모두 골라주세요.</CardDesc>
+              <ChipWrap>
+                {diseaseList.map((item) => (
+                  <Chip
+                    key={item}
+                    $active={selectedDiseases.includes(item)}
+                    onClick={() => toggleDisease(item)}
+                  >
+                    {item}
+                  </Chip>
+                ))}
+              </ChipWrap>
+              {selectedDiseases.includes('기타') && (
+                  <DiseaseInput
+                    value={customDisease}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      setCustomDisease(value);
+
+                      setConditions([
+                        ...selectedDiseases.filter(
+                          (d) => d !== "기타" && d !== customDisease
+                        ),
+                        "기타",
+                        value,
+                      ]);
+                    }}
+                    placeholder="예: 갑상선 질환"
+                  />
+                )}
+            </Card>
+            {/*
+            <HighlightCard>
+              <HighlightText>
+                특별한 건강 문제가 없으시다면, 평소 챙기고 싶은 게 있을까요?
+              </HighlightText>
+
+              <ChipWrap>
+                <Chip>체력 관리</Chip>
+                <Chip>스트레스 관리</Chip>
+                <Chip>수면 개선</Chip>
+                <Chip>식습관 개선</Chip>
+              </ChipWrap>
+            </HighlightCard>*/}
 
             <Card>
             <CardHeader>
@@ -582,4 +664,23 @@ const NextButton = styled.button`
   font-weight: 400;
 
   cursor: pointer;
+`;
+
+const DiseaseInput = styled(Input)`
+  margin-top: 16px;
+`;
+
+const HighlightCard = styled.div`
+  padding: 16px;
+  margin-bottom: 16px;
+  border-radius: 14px;
+  border: 1px solid #f2c3a8;
+  background: #fff3ec;
+`;
+
+const HighlightText = styled.p`
+  margin: 0 0 12px;
+  color: #e8734a;
+  font-size: 13px;
+  line-height: 1.4;
 `;
