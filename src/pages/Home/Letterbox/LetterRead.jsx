@@ -1,8 +1,11 @@
 import styled from 'styled-components';
 
+// 편지 본문 길이는 서버에서 오는 값이라 제각각이다. 카드가 화면을 넘지 않게 막고
+// 본문만 안에서 스크롤되게 한다.
 const Card = styled.div`
   width: 100%;
   max-width: 340px;
+  max-height: 80vh;
   padding: 26px 22px 24px;
   border-radius: 18px;
   background: #fcf7eb;
@@ -41,6 +44,14 @@ const Body = styled.p`
   line-height: 1.65;
   color: #6b6661;
   white-space: pre-line;
+
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
 `;
 
 const ReplyButton = styled.button`
