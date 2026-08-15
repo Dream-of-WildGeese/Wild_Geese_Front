@@ -5,6 +5,7 @@ import pinkFlower from '../../assets/onboarding/pinkflower.svg';
 import yellowFlower from '../../assets/onboarding/yellowflower.svg';
 import back from '../../assets/onboarding/back.svg';
 import { useAppData } from '../../store/AppDataContext';
+import { setUserId } from '../../api/client';
 
 const UserType = () => {
     const navigate= useNavigate();
@@ -51,6 +52,11 @@ const UserType = () => {
         <NextButton
           disabled={!userType}
           onClick={() => {
+            if (userType === 'parent') {
+              setUserId(39); // 봉미선
+            } else {
+              setUserId(35); // 신짱구
+            }
             setProfile({ role: userType });
             navigate('/onboarding/step-guide', {
               state: { role: userType },
