@@ -85,12 +85,18 @@ const InviteCode = () => {
             <CodeLabel>내 코드 공유하기</CodeLabel>
 
             <CodeValueBox>
-              <InviteCodeText>{inviteCode}</InviteCodeText>
+              <InviteCodeText>{inviteCode || '- - - - - -'}</InviteCodeText>
             </CodeValueBox>
 
-            <CopyButton onClick={handleCopy}>복사하기</CopyButton>
+            <CopyButton onClick={handleCopy} disabled={!inviteCode}>
+              복사하기
+            </CopyButton>
 
-            <CodeHelp>가족에게 초대 코드를 공유해주세요.</CodeHelp>
+            <CodeHelp>
+              {inviteCode
+                ? '가족에게 초대 코드를 공유해주세요.'
+                : '아직 발급된 코드가 없어요. 아래에서 가족 코드를 입력해 연결할 수 있어요.'}
+            </CodeHelp>
           </CodeBox>
 
           <OrSection>
@@ -237,9 +243,19 @@ line-height: normal;
    1단계 내용
 ========================= */
 
+// 코드 박스 두 개가 화면 높이를 넘어서면 아래가 잘려 보여서 스크롤을 허용한다.
+// (다른 온보딩 페이지의 ScrollArea와 같은 규격)
 const Section = styled.section`
   width: 100%;
   margin-top: 12px;
+
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
 `;
 
 const SectionTitleWrap = styled.div`
@@ -282,20 +298,21 @@ line-height: normal;
    내 코드
 ========================= */
 
+// 높이를 고정하면 안내 문구가 두 줄이 될 때 아래로 삐져나온다. 내용에 맞춰 늘어나게 둔다.
 const CodeBox = styled.div`
- margin-top: 24px;     
-  padding: 22px 20px 20px;  
+  margin-top: 24px;
+  padding: 34px 20px 20px;
 
   display: flex;
-height: 210px;
-padding-top: 34px;
-flex-direction: column;
-align-items: stretch;
-gap: 10px;
-align-self: stretch;
-border-radius: 18px;
-border: 1.3px solid rgba(74, 58, 47, 0.40);
-background: rgba(255, 255, 255, 0.55);
+  min-height: 210px;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 10px;
+  align-self: stretch;
+
+  border-radius: 18px;
+  border: 1.3px solid rgba(74, 58, 47, 0.40);
+  background: rgba(255, 255, 255, 0.55);
 `;
 const CodeValueBox = styled.div`
   display: flex;
@@ -398,7 +415,7 @@ line-height: normal;
 const CodeInputBox = styled.div`
   margin-top: 0;
 
-  height: 210px;
+  min-height: 210px;
   padding: 22px 20px 20px;
 
   display: flex;

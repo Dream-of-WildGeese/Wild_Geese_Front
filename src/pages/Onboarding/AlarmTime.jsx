@@ -9,6 +9,8 @@ import clock from '../../assets/onboarding/clock.svg';
 import { useAppData } from '../../store/AppDataContext';
 import { updateNotificationSetting } from '../../api/user';
 import { useApiAction } from '../../hooks/useApi';
+import TimePickerModal from '../../components/TimePickerModal';
+import { formatAlarmTime } from '../Home/Setting/settingsUtils';
 
 
 const AlarmTime = () => {
@@ -20,6 +22,8 @@ const AlarmTime = () => {
   const [morningTime, setMorningTime] = useState(data.alarms.morning);
   const [eveningTime, setEveningTime] = useState(data.alarms.evening);
   const { execute: saveSetting, loading: saving } = useApiAction(updateNotificationSetting);
+  // 어떤 시각을 편집 중인지 ('morning' | 'evening' | null)
+  const [timeEditor, setTimeEditor] = useState(null);
 
   // 서버는 알림 on/off와 시각을 한 번에 받으므로, 온보딩 기본값(전부 켜짐)과 함께 보낸다.
   const handleComplete = async () => {
@@ -87,11 +91,9 @@ const AlarmTime = () => {
                 예) "오늘 아침 메뉴는 뭐였나요?"
               </CardDescBox>
 
-              <TimeInput
-                type="time"
-                value={morningTime}
-                onChange={(e) => setMorningTime(e.target.value)}
-              />
+              <TimeButton type="button" onClick={() => setTimeEditor('morning')}>
+                {formatAlarmTime(morningTime)}
+              </TimeButton>
             </Card>
 
             <Card>
@@ -108,11 +110,9 @@ const AlarmTime = () => {
                 음성으로 물어봐요. 지병이 있다면 맞춤 질문도 나가요.
               </CardDescBox>
 
-              <TimeInput
-                type="time"
-                value={eveningTime}
-                onChange={(e) => setEveningTime(e.target.value)}
-              />
+              <TimeButton type="button" onClick={() => setTimeEditor('evening')}>
+                {formatAlarmTime(eveningTime)}
+              </TimeButton>
             </Card>
 
             <Card>
@@ -135,6 +135,19 @@ const AlarmTime = () => {
         </Section>
 
       </Content>
+
+      {timeEditor && (
+        <TimePickerModal
+          title={timeEditor === 'morning' ? '아침 연결 질문 시간' : '저녁 건강 체크 시간'}
+          value={timeEditor === 'morning' ? morningTime : eveningTime}
+          onConfirm={(next) => {
+            if (timeEditor === 'morning') setMorningTime(next);
+            else setEveningTime(next);
+            setTimeEditor(null);
+          }}
+          onClose={() => setTimeEditor(null)}
+        />
+      )}
     </Page>
   );
 };
@@ -333,7 +346,8 @@ const CardDescBox = styled.div`
   line-height: 1.45;
 `;
 
-const TimeInput = styled.input`
+// 브라우저 기본 <input type="time"> 대신 앱 톤에 맞춘 모달을 띄우는 버튼.
+const TimeButton = styled.button`
   width: 100%;
   height: 50px;
 
@@ -351,12 +365,8 @@ const TimeInput = styled.input`
   font-size: 16px;
   font-weight: 700;
 
-  outline: none;
-
-  &::-webkit-calendar-picker-indicator {
-    cursor: pointer;
-    opacity: .6;
-  }
+  text-align: left;
+  cursor: pointer;
 `;
 
 const MedicineHeader = styled.div`

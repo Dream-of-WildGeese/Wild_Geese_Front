@@ -210,16 +210,19 @@ const ChipWrap = styled.div`
   align-items:center;
   gap:10px;
   margin-top:10px;
-  flex-wrap:nowrap;
+  flex-wrap:wrap;
 `;
 
+// '이틀에 한 번'처럼 긴 라벨이 들어오므로 너비를 고정하지 않고 글자에 맞춰 늘린다.
 const RepeatChip = styled.div`
-  width: 50px;
+  min-width: 50px;
   height: 30px;
+  padding: 0 12px;
 
   display: flex;
   justify-content: center;
   align-items: center;
+  white-space: nowrap;
 
   border-radius: 15px;
   border: 1.2px solid rgba(74, 58, 47, 0.35);
@@ -234,12 +237,14 @@ const RepeatChip = styled.div`
 `;
 
 const TimeChip = styled.div`
-  width: 95px;
+  min-width: 95px;
   height: 30px;
+  padding: 0 12px;
 
   display: flex;
   justify-content: center;
   align-items: center;
+  white-space: nowrap;
 
   border-radius: 15px;
   border: 1.2px solid rgba(74, 58, 47, 0.35);

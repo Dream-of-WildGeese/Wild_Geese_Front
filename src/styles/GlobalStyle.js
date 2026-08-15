@@ -17,6 +17,11 @@ const GlobalStyle = createGlobalStyle`
     color: ${({ theme }) => theme.colors.text};
     background: ${({ theme }) => theme.colors.bg};
     -webkit-font-smoothing: antialiased;
+
+    /* 한글은 기본값이면 단어 중간에서 잘린다. 어절 단위로 줄바꿈시키고,
+       띄어쓰기 없는 긴 문자열만 예외적으로 강제 줄바꿈한다. */
+    word-break: keep-all;
+    overflow-wrap: break-word;
   }
 
   button {

@@ -79,11 +79,18 @@ height: 100%;
 margin: 0 -${({ theme }) => theme.spacing.md}; 
 background: #FFF8ED; `; 
 
+// Page가 화면보다 32px 넓어서, max-width로 잡아주지 않으면 뒤로가기 버튼과
+// 시작하기 버튼이 다른 온보딩 페이지보다 바깥으로 밀린다. (InviteCode/AlarmTime과 동일 규격)
 const Content = styled.div`
   position: relative;
+
+  max-width: 402px;
   height: 100%;
+  margin: 0 auto;
+
   padding: 86px 20px 30px;
   box-sizing: border-box;
+
   display: flex;
   flex-direction: column;
 `;
@@ -140,10 +147,19 @@ letter-spacing: -0.36px;
 `;
 
 
+// 화면이 작은 기기에서 3단계 카드가 잘리지 않도록 이 영역만 스크롤되게 한다.
 const StepList = styled.div`
   display: flex;
   flex-direction: column;
   margin-top: 44px;
+
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
 `;
 
 

@@ -145,12 +145,14 @@ const StepBadge = styled.div`
   left: 50%;
   transform: translateX(-50%);
 
-  width: 120px;
+  min-width: 120px;
   height: 30px;
+  padding: 0 14px;
 
   display: flex;
   justify-content: center;
   align-items: center;
+  white-space: nowrap;
 
   border-radius: 19px;
   border: 1.3px solid rgba(74,58,47,.35);

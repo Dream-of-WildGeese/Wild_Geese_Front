@@ -95,7 +95,11 @@ const toWeekSummary = (report, start) => {
     id: toDateString(start),
     label: formatWeekLabel(start),
     range: formatRange(start, end),
+    year: start.getFullYear(),
     month: start.getMonth() + 1,
+    // 연말/연초가 섞이면 월 숫자만으로는 순서를 못 정해서, 정렬용 키를 따로 만든다. (202608)
+    monthKey: start.getFullYear() * 100 + start.getMonth() + 1,
+    monthLabel: `${start.getFullYear()}년 ${start.getMonth() + 1}월`,
     comment: report?.weeklyComment ?? '아직 리포트가 준비되지 않았어요',
   };
 };

@@ -7,9 +7,30 @@ import { useAppData } from '../../store/AppDataContext';
 import { updateHealthProfile } from '../../api/user';
 import { getMedications } from '../../api/medication';
 import { useApi, useApiAction } from '../../hooks/useApi';
+import BirthDatePickerModal from '../../components/BirthDatePickerModal';
 
-// 화면의 한글 성별을 서버 enum으로 바꾼다.
-const GENDER_VALUES = { 남성: 'MALE', 여성: 'FEMALE', 남: 'MALE', 여: 'FEMALE' };
+// "1856-03-02" -> "1856년 3월 2일"
+const formatBirthLabel = (value) => {
+  const [year, month, day] = String(value).split('-').map(Number);
+  return `${year}년 ${month}월 ${day}일`;
+};
+
+// 화면이 쓰는 성별 값을 서버 enum(MALE/FEMALE)으로 바꾼다.
+const GENDER_VALUES = { male: 'MALE', female: 'FEMALE' };
+
+// 건강 관심사도 서버가 enum만 받는다. 한글 라벨을 그대로 보내면 400이 난다.
+const INTEREST_VALUES = {
+  수면: 'SLEEP',
+  활동량: 'ACTIVITY',
+  식사: 'MEAL',
+  복약: 'MEDICINE',
+  기분: 'MOOD',
+};
+
+// 만 나이 기준 가입 가능 연령. 개인정보보호법상 만 14세 미만은 법정대리인 동의가
+// 필요해서, 그 절차가 없는 지금은 14세를 하한으로 둔다.
+const MIN_AGE = 14;
+const MAX_AGE = 120;
 
 const HealthSet = () => {
   const navigate = useNavigate();
@@ -20,7 +41,9 @@ const HealthSet = () => {
   const [name, setName] = useState(data.profile.name || '');
   const [birth, setBirth] = useState(data.profile.birth || '');
   const [gender, setGender] = useState(data.profile.gender || '');
-  const [agree, setAgree] = useState(true);
+  // 개인정보 수집 동의. 체크해야만 다음으로 넘어갈 수 있다.
+  const [agreed, setAgreed] = useState(false);
+  const [isBirthPickerOpen, setIsBirthPickerOpen] = useState(false);
   const [interests, setInterests] = useState(data.interests || []);
 
   const { data: medicationList } = useApi(getMedications);
@@ -37,7 +60,7 @@ const HealthSet = () => {
       birthDate: birth,
       gender: GENDER_VALUES[gender] ?? gender,
       diseases: [],
-      wellnessInterests: interests,
+      wellnessInterests: interests.map((item) => INTEREST_VALUES[item]).filter(Boolean),
     });
     if (!ok) {
       alert(error.message);
@@ -59,10 +82,22 @@ const HealthSet = () => {
     setProfile({ name: e.target.value });
   };
 
-  const handleBirthChange = (e) => {
-    setBirth(e.target.value);
-    setProfile({ birth: e.target.value });
+  const handleBirthConfirm = (nextBirth) => {
+    setBirth(nextBirth);
+    setProfile({ birth: nextBirth });
+    setIsBirthPickerOpen(false);
   };
+
+  // 이름·생년월일·성별을 모두 채우고 개인정보 수집에 동의해야 다음으로 넘어간다.
+  // 무엇이 비었는지 짚어주지 않으면 버튼이 왜 안 눌리는지 알기 어렵다.
+  const missing = [
+    !name.trim() && '이름',
+    !birth && '생년월일',
+    !gender && '성별',
+    !agreed && '개인정보 수집 동의',
+  ].filter(Boolean);
+  const canProceed = missing.length === 0;
+  const missingLabel = missing.join(', ');
 
   const handleGenderChange = (value) => {
     setGender(value);
@@ -93,9 +128,10 @@ const HealthSet = () => {
                 <CardTitle>기본 정보</CardTitle>
                 <RoleBadge>{role === 'parent' ? '부모' : '자녀'}</RoleBadge>
             </CardHeader>
+            <CardDesc><Required>*</Required> 표시는 모두 입력해야 다음으로 넘어갈 수 있어요</CardDesc>
 
             <InputGroup>
-                <Label>이름</Label>
+                <Label>이름 <Required>*</Required></Label>
                 <Input
                 value={name}
                 onChange={handleNameChange}
@@ -103,16 +139,15 @@ const HealthSet = () => {
             </InputGroup>
 
             <InputGroup>
-                <Label>생년월일</Label>
-                <Input
-                type="date"
-                value={birth}
-                onChange={handleBirthChange}
-                />
+                <Label>생년월일 <Required>*</Required></Label>
+                <DateSelectButton type="button" onClick={() => setIsBirthPickerOpen(true)}>
+                  {birth ? formatBirthLabel(birth) : '생년월일을 선택해주세요'}
+                </DateSelectButton>
+                <FieldHint>만 {MIN_AGE}세 이상만 가입할 수 있어요</FieldHint>
             </InputGroup>
 
             <InputGroup>
-                <Label>성별</Label>
+                <Label>성별 <Required>*</Required></Label>
 
                 <GenderWrap>
                 <GenderButton
@@ -135,8 +170,8 @@ const HealthSet = () => {
             <AgreeBox>
             <input
                 type="checkbox"
-                checked={!agree}
-                onChange={() => setAgree(!agree)}
+                checked={agreed}
+                onChange={() => setAgreed(!agreed)}
             />
 
             <span>
@@ -191,10 +226,25 @@ const HealthSet = () => {
 
         
 
-        <NextButton onClick={handleNext} disabled={saving}>
+        {!canProceed && (
+          <RequirementHint>
+            {missingLabel}을(를) 입력해야 다음으로 넘어갈 수 있어요
+          </RequirementHint>
+        )}
+        <NextButton onClick={handleNext} disabled={saving || !canProceed}>
           {saving ? '저장 중...' : '다음'}
         </NextButton>
       </Content>
+
+      {isBirthPickerOpen && (
+        <BirthDatePickerModal
+          value={birth}
+          minAge={MIN_AGE}
+          maxAge={MAX_AGE}
+          onConfirm={handleBirthConfirm}
+          onClose={() => setIsBirthPickerOpen(false)}
+        />
+      )}
     </Page>
   );
 };
@@ -341,6 +391,42 @@ const Label = styled.label`
 
   color: #6B6661;
   font-size: 14px;
+`;
+
+// 브라우저 기본 <input type="date"> 대신 앱 톤에 맞춘 달력 모달을 띄우는 버튼.
+const DateSelectButton = styled.button`
+  width: 100%;
+  height: 48px;
+
+  box-sizing: border-box;
+  padding: 0 14px;
+
+  border: 1px solid #D9D4CC;
+  border-radius: 12px;
+  background: #FFF;
+
+  color: ${({ children }) => (String(children).includes('선택해주세요') ? '#A79C8E' : '#111')};
+  font-size: 15px;
+  text-align: left;
+  cursor: pointer;
+`;
+
+const Required = styled.span`
+  color: #E8734A;
+  font-weight: 700;
+`;
+
+const FieldHint = styled.p`
+  margin: 6px 0 0;
+  font-size: 12px;
+  color: #A79C8E;
+`;
+
+const RequirementHint = styled.p`
+  margin: 0 0 8px;
+  text-align: center;
+  font-size: 13px;
+  color: #A79C8E;
 `;
 
 const Input = styled.input`
