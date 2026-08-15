@@ -3,6 +3,7 @@ import styled from 'styled-components';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { completeOnboarding } from '../../api/user';
 import { useApiAction } from '../../hooks/useApi';
+import { useAppData } from '../../store/AppDataContext';
 import back from '../../assets/onboarding/back.svg';
 import sprout from '../../assets/onboarding/sprout.svg';
 import completeFlower from '../../assets/onboarding/complete-flower.svg';
@@ -15,7 +16,10 @@ const StepComplete = () => {
   const { step } = useParams();
 
   const role = location.state?.role;
-  const familyName = location.state?.familyName || '가족';
+  const { data } = useAppData();
+  // InviteCode에서 저장해둔 값을 우선 쓰고, 아직 안 붙었을 때만 state를 본다.
+  // health-set/alarm 단계를 거치며 location.state는 유실되지만 AppData는 유지된다.
+  const familyName = data.family.connectedName || location.state?.familyName || '가족';
   const { execute: finishOnboarding, loading: finishing } = useApiAction(completeOnboarding);
 
  const completeData = {

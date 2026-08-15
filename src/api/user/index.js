@@ -4,3 +4,4 @@ export { getNotificationSetting } from './getNotificationSetting';
 export { updateNotificationSetting } from './updateNotificationSetting';
 export { subscribePush } from './subscribePush';
 export { completeOnboarding } from './completeOnboarding';
+export { getMyInviteCode } from './getInviteCode';

@@ -57,7 +57,7 @@ const UserType = () => {
             } else {
               setUserId(35); // 신짱구
             }
-            setProfile({ role: userType });
+            setProfile({ role: userType, name: userType === 'parent' ? '봉미선' : '신짱구' });
             navigate('/onboarding/step-guide', {
               state: { role: userType },
             });
@@ -65,7 +65,6 @@ const UserType = () => {
         >
           다음
         </NextButton>
-
       </Content>
     </Page>
   );

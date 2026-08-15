@@ -1,5 +1,5 @@
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
 import back from '../../assets/onboarding/back.svg';
 import heart from '../../assets/onboarding/heart.svg';
@@ -7,6 +7,8 @@ import arrow from '../../assets/onboarding/arrow.svg';
 
 const StepGuide = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+  const role = location.state?.role;
 
   return (
     <Page>
@@ -58,7 +60,9 @@ const StepGuide = () => {
 
         <ButtonArea>
             <StartButton
-            onClick={() => navigate('/onboarding/invite')}
+            onClick={() => navigate('/onboarding/invite', {
+              state: { role },
+            })}
             >
             시작하기
             </StartButton>

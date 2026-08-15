@@ -60,13 +60,13 @@ const HealthSet = () => {
       birthDate: birth,
       gender: GENDER_VALUES[gender] ?? gender,
       diseases: customDisease.trim()
-        ? [...diseases.filter((d) => d !== '기타'), customDisease.trim()]
-        : diseases,
+      ? [...diseases.filter((d) => d !== '기타'), customDisease.trim()]
+      : diseases,
 
-      wellnessInterests: interests
-        .map((item) => INTEREST_VALUES[item])
-        .filter(Boolean),
-          });
+    wellnessInterests: interests
+      .map((item) => INTEREST_VALUES[item])
+      .filter(Boolean),
+        });
     if (!ok) {
       alert(error.message);
       return;
@@ -249,6 +249,7 @@ const HealthSet = () => {
                   />
                 )}
             </Card>
+            {/*
             <HighlightCard>
               <HighlightText>
                 특별한 건강 문제가 없으시다면, 평소 챙기고 싶은 게 있을까요?
@@ -260,7 +261,7 @@ const HealthSet = () => {
                 <Chip>수면 개선</Chip>
                 <Chip>식습관 개선</Chip>
               </ChipWrap>
-            </HighlightCard>
+            </HighlightCard>*/}
 
             <Card>
             <CardHeader>
