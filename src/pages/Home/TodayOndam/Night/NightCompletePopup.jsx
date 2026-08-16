@@ -1,83 +1,110 @@
 import styled from 'styled-components';
 
+// Figma 24: 저녁 건강체크 완료. 버튼이 '닫기'에서 '오늘의 건강일지 보러가기'로 바뀌었다.
 const Backdrop = styled.div`
   position: fixed;
   inset: 0;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: ${({ theme }) => theme.spacing.lg};
-  background: rgba(44, 44, 42, 0.4);
+  padding: 0 24px;
+  background: rgba(26, 23, 20, 0.55);
   z-index: ${({ theme }) => theme.zIndex.modal};
 `;
 
 const Card = styled.div`
   position: relative;
   width: 100%;
-  max-width: 320px;
-  padding: 32px 28px 28px;
-  border-radius: 24px;
-  background: ${({ theme }) => theme.colors.surface};
+  max-width: 377px;
+  padding: 36px 26px 34px;
+
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 14px;
+
+  border-radius: 10px;
+  border: 3px solid rgba(108, 67, 23, 0.7);
+  background: #fef3d5;
 `;
 
-const CheckCircle = styled.div`
-  width: 64px;
-  height: 64px;
-  border-radius: 32px;
-  background: #e0f2e3;
+const InnerBorder = styled.div`
+  position: absolute;
+  inset: 11px 8px;
+  border-radius: 10px;
+  border: 3px dashed rgba(108, 67, 23, 0.7);
+  pointer-events: none;
+`;
+
+const IconRing = styled.div`
+  width: 88px;
+  height: 88px;
+  border-radius: 44px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 28px;
-  font-weight: 600;
-  color: #339959;
+  background: #edf3d5;
+  border: 1.5px solid #cbd879;
+  font-size: 36px;
 `;
 
 const Title = styled.p`
   margin: 0;
-  font-size: 18px;
-  font-weight: 600;
   text-align: center;
-  color: ${({ theme }) => theme.colors.text};
-  max-width: 300px;
+  color: #4a3a2f;
+  font-family: 'Noto Sans KR';
+  font-size: 20px;
+  font-weight: 700;
 `;
 
 const Description = styled.p`
   margin: 0;
-  font-size: 14px;
   text-align: center;
-  color: ${({ theme }) => theme.colors.textMuted};
-  line-height: 1.5;
+  color: #8c8780;
+  font-family: 'Noto Sans KR';
+  font-size: 14px;
+  line-height: 1.6;
+`;
+
+const Highlight = styled.span`
+  color: #576b1a;
+  font-weight: 700;
 `;
 
 const PrimaryButton = styled.button`
   width: 100%;
-  max-width: 264px;
   height: 50px;
+  margin-top: 6px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
   border-radius: 10px;
-  background: ${({ theme }) => theme.colors.accent};
-  color: #fff;
-  font-size: 16px;
-  font-weight: 600;
+  border: 1.5px solid rgba(74, 58, 47, 0.55);
+  background: #dbe4a1;
+
+  color: #4a3a2f;
+  font-family: Jua;
+  font-size: 20px;
 `;
 
-function NightCompletePopup({ onClose }) {
+function NightCompletePopup({ onClose, onGoToJournal }) {
   return (
     <Backdrop onClick={onClose}>
       <Card onClick={(event) => event.stopPropagation()}>
-        <CheckCircle>✓</CheckCircle>
+        <InnerBorder />
+        <IconRing>✎</IconRing>
         <Title>오늘의 건강기록도 잘 남겨주셨어요!</Title>
         <Description>
-          매일의 건강기록은 '오늘의 온담'에서
+          매일의 건강기록은
           <br />
-          모아볼 수 있어요!
+          🌿 <Highlight>오늘의 건강일지</Highlight> 🌿
+          <br />
+          에서 모아볼 수 있어요!
         </Description>
-        <PrimaryButton type="button" onClick={onClose}>
-          닫기
+        <PrimaryButton type="button" onClick={onGoToJournal ?? onClose}>
+          오늘의 건강일지 보러가기
         </PrimaryButton>
       </Card>
     </Backdrop>
