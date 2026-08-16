@@ -126,16 +126,18 @@ const AlarmTime = () => {
               </MedicineHeader>
 
               <MedicineText>
-                {(medicationList ?? []).length > 0
-                  ? medicationList
-                      .map(
-                        (med) =>
-                          `${med.name} : ${med.schedules
-                            .map((schedule) => formatAlarmTime(schedule.scheduledTime))
-                            .join(', ')}`
-                      )
-                      .join(' / ')
-                  : '등록된 복용약이 없어요'}
+                {(medicationList ?? []).length > 0 ? (
+                  medicationList.map((med) => (
+                    <MedicineItem key={med.medicationId}>
+                      -{med.name} :{" "}
+                      {med.schedules
+                        .map((schedule) => formatAlarmTime(schedule.scheduledTime))
+                        .join(', ')}
+                    </MedicineItem>
+                  ))
+                ) : (
+                  '등록된 복용약이 없어요'
+                )}
               </MedicineText>
             </Card>
           </ScrollArea>
@@ -387,9 +389,9 @@ const MedicineHeader = styled.div`
 `;
 
 const MedicineText = styled.p`
-  margin: 12px 0 0;
+  margin: 12px 8px 0;
 
-  text-align: center;
+  text-align: left;
 
   color: #4A3A2F;
   font-family: "Noto Sans KR";
@@ -397,6 +399,13 @@ const MedicineText = styled.p`
   font-weight: 700;
 `;
 
+const MedicineItem = styled.div`
+  margin-bottom: 8px;
+
+  &:last-child {
+    margin-bottom: 0;
+  }
+`;
 const StartButton = styled.button`
   width: 100%;
   height: 56px;
