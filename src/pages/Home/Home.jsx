@@ -9,6 +9,7 @@ import HomeBottomNav from './HomeBottomNav';
 import DayQuestionPopup from './TodayOndam/Day/DayQuestionPopup';
 import MedicineCheckPopup from './TodayOndam/Medicine/MedicineCheckPopup';
 import NightIntroPopup from './TodayOndam/Night/NightIntroPopup';
+import EveningCheckPopup from './TodayOndam/Night/EveningCheckPopup';
 import NightCompletePopup from './TodayOndam/Night/NightCompletePopup';
 import Letterbox from './Letterbox/Letterbox';
 import { getHomeCtaSlot } from './TodayOndam/homeCtaFlow';
@@ -125,9 +126,20 @@ function Home() {
         />
       )}
       {activePopup === 'evening' && (
-        <NightIntroPopup onStart={() => navigate('/daily-health-check')} onClose={closePopup} />
+        <NightIntroPopup onStart={() => setActivePopup('eveningCheck')} onClose={closePopup} />
       )}
-      {activePopup === 'healthCheckDone' && <NightCompletePopup onClose={closePopup} />}
+      {activePopup === 'eveningCheck' && (
+        <EveningCheckPopup
+          onClose={closePopup}
+          onCompleted={() => setActivePopup('healthCheckDone')}
+        />
+      )}
+      {activePopup === 'healthCheckDone' && (
+        <NightCompletePopup
+          onClose={closePopup}
+          onGoToJournal={() => navigate('/home/today-report')}
+        />
+      )}
     </Stage>
   );
 }
