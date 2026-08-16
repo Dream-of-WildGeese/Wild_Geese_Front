@@ -7,16 +7,6 @@ import { toDateString } from '../../../utils/medication';
 
 const WEEKDAY_LABELS = ['일', '월', '화', '수', '목', '금', '토'];
 
-// 저녁 건강체크 항목별 아이콘. 서버의 metricType을 그대로 키로 쓴다.
-const METRIC_ICONS = {
-  CONDITION: '♥',
-  SLEEP: 'Z',
-  MEAL: 'M',
-  ACTIVITY: 'A',
-  BODY: 'B',
-  CUSTOM: '✦',
-};
-
 const MEDICATION_COLORS = [
   { color: '#fcd9d9', textColor: '#d94040' },
   { color: '#fce5c7', textColor: '#d98c26' },
@@ -61,6 +51,8 @@ const buildMedicationEntry = (medicationLog, medications) => {
     type: 'medication',
     time: '복약',
     medications: items,
+    // 안 챙긴 약이 있으면 카드 제목 옆에 느낌표 아이콘을 띄운다.
+    hasMissed: notTaken.length > 0,
     note:
       notTaken.length > 0
         ? `${notTaken.map((item) => item.name).join(', ')}은 아직 기록되지 않았어요`
@@ -90,11 +82,11 @@ const buildTimeline = ({ dailyLog, question, medicationLog, medications }) => {
     timeline.push({
       type: 'healthcheck',
       time: formatTimeLabel('저녁', eveningAnswers[0].answeredAt),
+      // 아이콘은 화면 쪽에서 metricType으로 고른다.
       lines: eveningAnswers.map((answer) => ({
-        icon: METRIC_ICONS[answer.metricType] ?? '✦',
+        metricType: answer.metricType,
         text: answer.textValue || answer.choiceValue || '',
       })),
-      aiComment: dailyLog?.summaryText ?? '',
     });
   }
 
@@ -143,6 +135,8 @@ export async function loadTodayReport(person, date = new Date()) {
     dateLabel: formatDateLabel(date),
     summary: buildSummary(dailyLog, medicationLog),
     aiComment: dailyLog?.summaryText ?? '',
+    // 타임라인 아래에 한 번 더 붙는 저녁 코멘트. 서버가 별도 필드를 주면 그때 채운다.
+    eveningComment: '',
     stepMessage: '',
     timeline: buildTimeline({
       dailyLog,
@@ -153,7 +147,7 @@ export async function loadTodayReport(person, date = new Date()) {
     cta: isMe
       ? null
       : {
-          title: '가족과 안부를 나눠볼까요?',
+          title: '이제 가족과 안부를 나눠볼까요?',
           suggestedMessage: dailyLog?.summaryText
             ? `"${dailyLog.summaryText}"`
             : '"오늘 하루는 어떠셨어요?"',
