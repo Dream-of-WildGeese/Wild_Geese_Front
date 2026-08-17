@@ -290,13 +290,17 @@ const [otherDiseases, setOtherDiseases] = useState(
                   {otherDiseases.length > 0 && (
                     <ChipWrap>
                       {otherDiseases.map((disease) => (
-                        <Chip
-                          key={disease}
-                          $active
-                          type="button"
-                          onClick={() => removeOtherDisease(disease)}
-                        >
-                          {disease} ×
+                        <Chip key={disease} $active type="button">
+                          {disease}
+                          <RemoveIcon
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              removeOtherDisease(disease);
+                            }}
+                          >
+                            ×
+                          </RemoveIcon>
                         </Chip>
                       ))}
                     </ChipWrap>
@@ -328,7 +332,7 @@ const [otherDiseases, setOtherDiseases] = useState(
             <Card>
             <CardHeader>
                 <CardTitle>복용약</CardTitle>
-                <Manage onClick={() => navigate('/onboarding/medication/manage')}>관리하기 ›</Manage>
+                <Manage onClick={() => navigate('/onboarding/medication/manage')}> ›</Manage>
             </CardHeader>
 
             <CardDesc>
@@ -696,8 +700,7 @@ const Manage = styled.button`
   background: none;
 
   color: #8C6E4B;
-  font-size: 18px;
-  font-weight: 700;
+ 
 
   cursor: pointer;
 `;
@@ -745,4 +748,17 @@ const HighlightText = styled.p`
   color: #C97158;
   font-size: 13px;
   line-height: 1.5;
+`;
+const RemoveIcon = styled.button`
+  margin-left: 8px;
+  padding: 0;
+  border: none;
+  background: transparent;
+
+  color: #4A3A2F;
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1;
+
+  cursor: pointer;
 `;
