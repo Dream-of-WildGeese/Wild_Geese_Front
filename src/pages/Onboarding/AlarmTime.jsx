@@ -60,9 +60,9 @@ const AlarmTime = () => {
         </Header>
 
         <ProgressWrapper>
-          <Progress active />
-          <Progress active />
-          <Progress active />
+          <Progress $active />
+          <Progress $active />
+          <Progress $active />
         </ProgressWrapper>
 
         <ProgressText>
@@ -238,7 +238,7 @@ const Progress = styled.div`
   flex: 1;
   height: 6px;
   border-radius: 999px;
-  background: ${({ active }) => (active ? '#DBE4A1' : '#DBE4A1')};
+  background: ${({ $active }) => ($active ? '#DBE4A1' : '#DBE4A1')};
 `;
 
 const ProgressText = styled.p`
@@ -388,7 +388,7 @@ const MedicineHeader = styled.div`
   gap: 8px;
 `;
 
-const MedicineText = styled.p`
+const MedicineText = styled.div`
   margin: 12px 8px 0;
 
   text-align: left;

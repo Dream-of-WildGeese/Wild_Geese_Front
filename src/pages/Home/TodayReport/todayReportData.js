@@ -41,6 +41,7 @@ const buildMedicationEntry = (medicationLog, medications) => {
   });
 
   const items = logs.map((log, index) => ({
+    scheduleId: log.scheduleId,
     name: nameBySchedule.get(log.scheduleId) ?? '복용약',
     taken: log.status === 'TAKEN',
     ...MEDICATION_COLORS[index % MEDICATION_COLORS.length],

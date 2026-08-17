@@ -290,14 +290,11 @@ const [otherDiseases, setOtherDiseases] = useState(
                   {otherDiseases.length > 0 && (
                     <ChipWrap>
                       {otherDiseases.map((disease) => (
-                        <Chip key={disease} $active type="button">
+                        <Chip key={disease} as="span" $active>
                           {disease}
                           <RemoveIcon
                             type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              removeOtherDisease(disease);
-                            }}
+                            onClick={() => removeOtherDisease(disease)}
                           >
                             ×
                           </RemoveIcon>
