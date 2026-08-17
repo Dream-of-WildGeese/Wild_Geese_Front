@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import styled from 'styled-components';
+import PopupPortal from './PopupPortal';
 
 // 아침 일지의 연월 선택 모달과 같은 톤. 연도 -> 월 -> 일 순서로 좁혀 고른다.
 // value/onConfirm 모두 "YYYY-MM-DD" 문자열을 쓴다.
@@ -8,7 +9,8 @@ const YEARS_PER_PAGE = 12;
 const WEEKDAY_LABELS = ['일', '월', '화', '수', '목', '금', '토'];
 
 const Backdrop = styled.div`
-  position: fixed;
+  /* Layout(폰 프레임)이 기준이 되도록 absolute를 쓴다. fixed면 브라우저 창 가운데에 뜬다. */
+  position: absolute;
   inset: 0;
   display: flex;
   align-items: center;
@@ -186,117 +188,119 @@ function BirthDatePickerModal({ value, minAge = 0, maxAge = 120, onConfirm, onCl
   const isDayDisabled = (candidate) => new Date(year, month - 1, candidate) > limit;
 
   return (
-    <Backdrop onClick={onClose}>
-      <Card onClick={(event) => event.stopPropagation()}>
-        <CloseButton type="button" aria-label="닫기" onClick={onClose}>
-          ✕
-        </CloseButton>
-        <Title>생년월일 선택</Title>
-        {/* 왜 2012년까지만 고를 수 있는지 알려주지 않으면 오류로 오해하기 쉽다 */}
-        <Guide>
-          만 {minAge}세 이상만 가입할 수 있어서 {latestYear}년까지 선택할 수 있어요
-        </Guide>
+    <PopupPortal>
+      <Backdrop onClick={onClose}>
+        <Card onClick={(event) => event.stopPropagation()}>
+          <CloseButton type="button" aria-label="닫기" onClick={onClose}>
+            ✕
+          </CloseButton>
+          <Title>생년월일 선택</Title>
+          {/* 왜 2012년까지만 고를 수 있는지 알려주지 않으면 오류로 오해하기 쉽다 */}
+          <Guide>
+            만 {minAge}세 이상만 가입할 수 있어서 {latestYear}년까지 선택할 수 있어요
+          </Guide>
 
-        <HeadRow>
-          <HeadButton type="button" $active={view === 'year'} onClick={() => setView('year')}>
-            {year}년
-          </HeadButton>
-          <HeadButton type="button" $active={view === 'month'} onClick={() => setView('month')}>
-            {month}월
-          </HeadButton>
-          <HeadButton type="button" $active={view === 'day'} onClick={() => setView('day')}>
-            {safeDay}일
-          </HeadButton>
-        </HeadRow>
+          <HeadRow>
+            <HeadButton type="button" $active={view === 'year'} onClick={() => setView('year')}>
+              {year}년
+            </HeadButton>
+            <HeadButton type="button" $active={view === 'month'} onClick={() => setView('month')}>
+              {month}월
+            </HeadButton>
+            <HeadButton type="button" $active={view === 'day'} onClick={() => setView('day')}>
+              {safeDay}일
+            </HeadButton>
+          </HeadRow>
 
-        {view === 'year' && (
-          <>
+          {view === 'year' && (
+            <>
+              <Grid $columns={4}>
+                {yearOptions.map((option) => (
+                  <OptionButton
+                    key={option}
+                    type="button"
+                    $active={option === year}
+                    onClick={() => {
+                      setYear(option);
+                      setView('month');
+                    }}
+                  >
+                    {option}
+                  </OptionButton>
+                ))}
+              </Grid>
+              <PageNav>
+                <PageButton
+                  type="button"
+                  disabled={windowEnd - YEARS_PER_PAGE < earliestYear}
+                  onClick={() => setYearPage((p) => p + 1)}
+                >
+                  ‹ 이전
+                </PageButton>
+                <PageButton
+                  type="button"
+                  disabled={yearPage === 0}
+                  onClick={() => setYearPage((p) => Math.max(0, p - 1))}
+                >
+                  다음 ›
+                </PageButton>
+              </PageNav>
+            </>
+          )}
+
+          {view === 'month' && (
             <Grid $columns={4}>
-              {yearOptions.map((option) => (
+              {Array.from({ length: 12 }, (_, i) => i + 1).map((option) => (
                 <OptionButton
                   key={option}
                   type="button"
-                  $active={option === year}
+                  $active={option === month}
                   onClick={() => {
-                    setYear(option);
-                    setView('month');
+                    setMonth(option);
+                    setView('day');
                   }}
+                >
+                  {option}월
+                </OptionButton>
+              ))}
+            </Grid>
+          )}
+
+          {view === 'day' && (
+            <Grid $columns={7}>
+              {WEEKDAY_LABELS.map((label) => (
+                <WeekdayCell key={label}>{label}</WeekdayCell>
+              ))}
+              {/* 1일이 무슨 요일인지에 맞춰 앞쪽을 비워둔다 */}
+              {Array.from({ length: firstWeekday }, (_, i) => (
+                <EmptyCell key={`empty-${i}`} />
+              ))}
+              {Array.from({ length: totalDays }, (_, i) => i + 1).map((option) => (
+                <OptionButton
+                  key={option}
+                  type="button"
+                  $active={option === safeDay}
+                  disabled={isDayDisabled(option)}
+                  onClick={() => setDay(option)}
                 >
                   {option}
                 </OptionButton>
               ))}
             </Grid>
-            <PageNav>
-              <PageButton
-                type="button"
-                disabled={windowEnd - YEARS_PER_PAGE < earliestYear}
-                onClick={() => setYearPage((p) => p + 1)}
-              >
-                ‹ 이전
-              </PageButton>
-              <PageButton
-                type="button"
-                disabled={yearPage === 0}
-                onClick={() => setYearPage((p) => Math.max(0, p - 1))}
-              >
-                다음 ›
-              </PageButton>
-            </PageNav>
-          </>
-        )}
+          )}
 
-        {view === 'month' && (
-          <Grid $columns={4}>
-            {Array.from({ length: 12 }, (_, i) => i + 1).map((option) => (
-              <OptionButton
-                key={option}
-                type="button"
-                $active={option === month}
-                onClick={() => {
-                  setMonth(option);
-                  setView('day');
-                }}
-              >
-                {option}월
-              </OptionButton>
-            ))}
-          </Grid>
-        )}
+          {isTooYoung && <Notice>만 {minAge}세 이상만 가입할 수 있어요.</Notice>}
 
-        {view === 'day' && (
-          <Grid $columns={7}>
-            {WEEKDAY_LABELS.map((label) => (
-              <WeekdayCell key={label}>{label}</WeekdayCell>
-            ))}
-            {/* 1일이 무슨 요일인지에 맞춰 앞쪽을 비워둔다 */}
-            {Array.from({ length: firstWeekday }, (_, i) => (
-              <EmptyCell key={`empty-${i}`} />
-            ))}
-            {Array.from({ length: totalDays }, (_, i) => i + 1).map((option) => (
-              <OptionButton
-                key={option}
-                type="button"
-                $active={option === safeDay}
-                disabled={isDayDisabled(option)}
-                onClick={() => setDay(option)}
-              >
-                {option}
-              </OptionButton>
-            ))}
-          </Grid>
-        )}
-
-        {isTooYoung && <Notice>만 {minAge}세 이상만 가입할 수 있어요.</Notice>}
-
-        <ConfirmButton
-          type="button"
-          disabled={isTooYoung}
-          onClick={() => onConfirm(`${year}-${pad(month)}-${pad(safeDay)}`)}
-        >
-          확인
-        </ConfirmButton>
-      </Card>
-    </Backdrop>
+          <ConfirmButton
+            type="button"
+            disabled={isTooYoung}
+            onClick={() => onConfirm(`${year}-${pad(month)}-${pad(safeDay)}`)}
+          >
+            확인
+          </ConfirmButton>
+        </Card>
+      </Backdrop>
+    </PopupPortal>
   );
 }
 

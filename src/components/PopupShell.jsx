@@ -1,9 +1,11 @@
 import styled from 'styled-components';
+import PopupPortal from './PopupPortal';
 
 // Figma 팝업(13~35)이 전부 공유하는 카드 틀.
 // 크림색 카드 + 안쪽 점선 테두리 + 연두색 CTA가 기본 형태다.
-export const PopupBackdrop = styled.div`
-  position: fixed;
+const BackdropBase = styled.div`
+  /* Layout(폰 프레임)이 기준이 되도록 absolute를 쓴다. fixed면 브라우저 창 가운데에 뜬다. */
+  position: absolute;
   inset: 0;
   display: flex;
   align-items: center;
@@ -12,6 +14,15 @@ export const PopupBackdrop = styled.div`
   background: rgba(26, 23, 20, 0.55);
   z-index: ${({ theme }) => theme.zIndex.modal};
 `;
+
+// 폰 프레임에 직접 붙여서, 어느 페이지에서 열든 같은 위치에 뜨게 한다.
+export function PopupBackdrop(props) {
+  return (
+    <PopupPortal>
+      <BackdropBase {...props} />
+    </PopupPortal>
+  );
+}
 
 export const PopupCard = styled.div`
   position: relative;

@@ -1,10 +1,12 @@
 import { useState } from 'react';
 import styled from 'styled-components';
+import PopupPortal from '../../components/PopupPortal';
 
 const YEARS_PER_PAGE = 6;
 
 const Backdrop = styled.div`
-  position: fixed;
+  /* Layout(폰 프레임)이 기준이 되도록 absolute를 쓴다. fixed면 브라우저 창 가운데에 뜬다. */
+  position: absolute;
   inset: 0;
   display: flex;
   align-items: center;
@@ -126,90 +128,92 @@ function MorningReportDatePicker({ year, month, onConfirm, onClose }) {
   const monthOptions = Array.from({ length: 12 }, (_, i) => i + 1);
 
   return (
-    <Backdrop onClick={onClose}>
-      <Card onClick={(event) => event.stopPropagation()}>
-        <CloseButton type="button" aria-label="닫기" onClick={onClose}>
-          ✕
-        </CloseButton>
+    <PopupPortal>
+      <Backdrop onClick={onClose}>
+        <Card onClick={(event) => event.stopPropagation()}>
+          <CloseButton type="button" aria-label="닫기" onClick={onClose}>
+            ✕
+          </CloseButton>
 
-        {view === 'root' && (
-          <>
-            <Title>연월 빠른 이동</Title>
-            <RootRow>
-              <RootButton type="button" onClick={() => setView('year')}>
-                {draftYear}
-              </RootButton>
-              <RootButton type="button" onClick={() => setView('month')}>
-                {draftMonth}월
-              </RootButton>
-            </RootRow>
-            <ConfirmButton type="button" onClick={() => onConfirm(draftYear, draftMonth)}>
-              확인
-            </ConfirmButton>
-          </>
-        )}
+          {view === 'root' && (
+            <>
+              <Title>연월 빠른 이동</Title>
+              <RootRow>
+                <RootButton type="button" onClick={() => setView('year')}>
+                  {draftYear}
+                </RootButton>
+                <RootButton type="button" onClick={() => setView('month')}>
+                  {draftMonth}월
+                </RootButton>
+              </RootRow>
+              <ConfirmButton type="button" onClick={() => onConfirm(draftYear, draftMonth)}>
+                확인
+              </ConfirmButton>
+            </>
+          )}
 
-        {view === 'year' && (
-          <>
-            <Title>연도 선택</Title>
-            <OptionGrid>
-              {yearOptions.map((y) => (
-                <OptionButton
-                  key={y}
+          {view === 'year' && (
+            <>
+              <Title>연도 선택</Title>
+              <OptionGrid>
+                {yearOptions.map((y) => (
+                  <OptionButton
+                    key={y}
+                    type="button"
+                    $active={y === draftYear}
+                    onClick={() => {
+                      setDraftYear(y);
+                      setView('root');
+                    }}
+                  >
+                    {y}
+                  </OptionButton>
+                ))}
+              </OptionGrid>
+              <YearPageNav>
+                <YearPageButton type="button" onClick={() => setYearPage((p) => p + 1)}>
+                  ‹ 더 이전 연도
+                </YearPageButton>
+                <YearPageButton
                   type="button"
-                  $active={y === draftYear}
-                  onClick={() => {
-                    setDraftYear(y);
-                    setView('root');
-                  }}
+                  disabled={yearPage === 0}
+                  onClick={() => setYearPage((p) => Math.max(0, p - 1))}
                 >
-                  {y}
-                </OptionButton>
-              ))}
-            </OptionGrid>
-            <YearPageNav>
-              <YearPageButton type="button" onClick={() => setYearPage((p) => p + 1)}>
-                ‹ 더 이전 연도
-              </YearPageButton>
-              <YearPageButton
-                type="button"
-                disabled={yearPage === 0}
-                onClick={() => setYearPage((p) => Math.max(0, p - 1))}
-              >
-                최근으로 ›
-              </YearPageButton>
-            </YearPageNav>
-            <BackToRoot type="button" onClick={() => setView('root')}>
-              ‹ 뒤로
-            </BackToRoot>
-          </>
-        )}
+                  최근으로 ›
+                </YearPageButton>
+              </YearPageNav>
+              <BackToRoot type="button" onClick={() => setView('root')}>
+                ‹ 뒤로
+              </BackToRoot>
+            </>
+          )}
 
-        {view === 'month' && (
-          <>
-            <Title>달 선택</Title>
-            <OptionGrid>
-              {monthOptions.map((m) => (
-                <OptionButton
-                  key={m}
-                  type="button"
-                  $active={m === draftMonth}
-                  onClick={() => {
-                    setDraftMonth(m);
-                    setView('root');
-                  }}
-                >
-                  {m}월
-                </OptionButton>
-              ))}
-            </OptionGrid>
-            <BackToRoot type="button" onClick={() => setView('root')}>
-              ‹ 뒤로
-            </BackToRoot>
-          </>
-        )}
-      </Card>
-    </Backdrop>
+          {view === 'month' && (
+            <>
+              <Title>달 선택</Title>
+              <OptionGrid>
+                {monthOptions.map((m) => (
+                  <OptionButton
+                    key={m}
+                    type="button"
+                    $active={m === draftMonth}
+                    onClick={() => {
+                      setDraftMonth(m);
+                      setView('root');
+                    }}
+                  >
+                    {m}월
+                  </OptionButton>
+                ))}
+              </OptionGrid>
+              <BackToRoot type="button" onClick={() => setView('root')}>
+                ‹ 뒤로
+              </BackToRoot>
+            </>
+          )}
+        </Card>
+      </Backdrop>
+    </PopupPortal>
   );
 }
 

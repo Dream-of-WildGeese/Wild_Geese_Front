@@ -6,8 +6,9 @@ import { toDateString } from '../../../utils/medication';
 const DAYS = ['월', '화', '수', '목', '금', '토', '일'];
 const PAST_WEEK_COUNT = 5;
 
-// 저녁 건강체크 선택지 점수를 도트 색으로 바꾼다. 1이 가장 좋은 상태라고 본다.
-const SCORE_COLOR = { 1: '#59a666', 2: '#f2bf59', 3: '#d96659' };
+// 저녁 건강체크 선택지 점수를 도트 색으로 바꾼다.
+// 서버가 주는 값은 좋았어요=3, 보통=2, 힘들었어요=1로 클수록 좋은 상태다.
+const SCORE_COLOR = { 3: '#59a666', 2: '#f2bf59', 1: '#d96659' };
 const scoreColor = (score) => SCORE_COLOR[Math.round(score)] ?? '#d9d4cc';
 
 // 주의 시작(월요일)을 구한다.

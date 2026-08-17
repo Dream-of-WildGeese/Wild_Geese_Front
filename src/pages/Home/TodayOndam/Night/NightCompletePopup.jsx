@@ -1,8 +1,10 @@
 import styled from 'styled-components';
+import PopupPortal from '../../../../components/PopupPortal';
 
 // Figma 24: 저녁 건강체크 완료. 버튼이 '닫기'에서 '오늘의 건강일지 보러가기'로 바뀌었다.
 const Backdrop = styled.div`
-  position: fixed;
+  /* Layout(폰 프레임)이 기준이 되도록 absolute를 쓴다. fixed면 브라우저 창 가운데에 뜬다. */
+  position: absolute;
   inset: 0;
   display: flex;
   align-items: center;
@@ -91,23 +93,25 @@ const PrimaryButton = styled.button`
 
 function NightCompletePopup({ onClose, onGoToJournal }) {
   return (
-    <Backdrop onClick={onClose}>
-      <Card onClick={(event) => event.stopPropagation()}>
-        <InnerBorder />
-        <IconRing>✎</IconRing>
-        <Title>오늘의 건강기록도 잘 남겨주셨어요!</Title>
-        <Description>
-          매일의 건강기록은
-          <br />
-          🌿 <Highlight>오늘의 건강일지</Highlight> 🌿
-          <br />
-          에서 모아볼 수 있어요!
-        </Description>
-        <PrimaryButton type="button" onClick={onGoToJournal ?? onClose}>
-          오늘의 건강일지 보러가기
-        </PrimaryButton>
-      </Card>
-    </Backdrop>
+    <PopupPortal>
+      <Backdrop onClick={onClose}>
+        <Card onClick={(event) => event.stopPropagation()}>
+          <InnerBorder />
+          <IconRing>✎</IconRing>
+          <Title>오늘의 건강기록도 잘 남겨주셨어요!</Title>
+          <Description>
+            매일의 건강기록은
+            <br />
+            🌿 <Highlight>오늘의 건강일지</Highlight> 🌿
+            <br />
+            에서 모아볼 수 있어요!
+          </Description>
+          <PrimaryButton type="button" onClick={onGoToJournal ?? onClose}>
+            오늘의 건강일지 보러가기
+          </PrimaryButton>
+        </Card>
+      </Backdrop>
+    </PopupPortal>
   );
 }
 

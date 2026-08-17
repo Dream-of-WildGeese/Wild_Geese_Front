@@ -12,8 +12,9 @@ import NightIntroPopup from './TodayOndam/Night/NightIntroPopup';
 import EveningCheckPopup from './TodayOndam/Night/EveningCheckPopup';
 import NightCompletePopup from './TodayOndam/Night/NightCompletePopup';
 import Letterbox from './Letterbox/Letterbox';
-import { getHomeCtaSlot } from './TodayOndam/homeCtaFlow';
-import { getDueMedications } from '../../api/medication';
+import { getMealLabel } from './TodayOndam/homeCtaFlow';
+import TodayOndamPicker from './TodayOndam/TodayOndamPicker';
+import { getDueMedications, getMedications } from '../../api/medication';
 import { getReceivedLetters, markLetterAsRead } from '../../api/letter';
 import { useApi, useApiAction } from '../../hooks/useApi';
 import { toLetterView } from '../../utils/letter';
@@ -49,6 +50,7 @@ function Home() {
   } = useApi(getReceivedLetters);
   const { execute: markRead } = useApiAction(markLetterAsRead);
   const { execute: fetchDueMedications } = useApiAction(getDueMedications);
+  const { execute: fetchAllMedications } = useApiAction(getMedications);
 
   // 받은 편지함은 페이지네이션 응답이라 content 배열만 꺼내 쓴다.
   const letters = (receivedLetters?.content ?? []).map(toLetterView);
@@ -80,13 +82,36 @@ function Home() {
     }
   }, [location, navigate]);
 
-  // 지금 복용 예정인 약이 있는지는 서버가 판단하므로, 배너를 누른 시점에 물어본다.
-  const handleCtaClick = async () => {
-    const { data } = await fetchDueMedications();
-    const slot = getHomeCtaSlot(data ?? []);
-    setCtaSlot(slot);
+  // 시연에서 원하는 단계를 바로 보여줄 수 있도록, 시간대로 자동 판단하지 않고
+  // 아침/복약/저녁 중에서 직접 고르게 한다.
+  const handleCtaClick = () => setActivePopup('picker');
+
+  const handlePickStep = async (type) => {
+    if (type !== 'medication') {
+      setActivePopup(type);
+      return;
+    }
+
+    // 복용 예정 약을 먼저 물어보고, 지금 시각에 해당하는 약이 없으면
+    // 등록된 약 전체를 대신 보여준다. (시연 시각과 복용 시각이 다를 수 있다)
+    const { data: due } = await fetchDueMedications();
+    let medications = due ?? [];
+
+    if (medications.length === 0) {
+      const { data: all } = await fetchAllMedications();
+      medications = (all ?? []).flatMap((med) =>
+        (med.schedules ?? []).slice(0, 1).map((schedule) => ({
+          medicationId: med.medicationId,
+          scheduleId: schedule.scheduleId,
+          name: med.name,
+          scheduledTime: schedule.scheduledTime,
+        })),
+      );
+    }
+
+    setCtaSlot({ medications, mealLabel: getMealLabel(new Date().getHours()) });
     // 상단 약 아이콘의 'medication'(복용약 관리) 팝업과 이름이 겹치지 않도록 구분한다.
-    setActivePopup(slot.type === 'medication' ? 'medication_check' : slot.type);
+    setActivePopup('medication_check');
   };
 
   return (
@@ -116,6 +141,9 @@ function Home() {
           onClose={closePopup}
           initialStep={letterboxInitialStep}
         />
+      )}
+      {activePopup === 'picker' && (
+        <TodayOndamPicker onSelect={handlePickStep} onClose={closePopup} />
       )}
       {activePopup === 'morning' && <DayQuestionPopup onClose={closePopup} />}
       {activePopup === 'medication_check' && (
