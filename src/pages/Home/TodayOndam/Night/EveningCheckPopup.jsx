@@ -1,11 +1,16 @@
-import { useState } from 'react';
-import styled from 'styled-components';
+import { useCallback, useState } from 'react';
+import styled, { keyframes } from 'styled-components';
 import PopupPortal from '../../../../components/PopupPortal';
 import faceGood from '../../../../assets/evening/face-good.png';
 import faceNormal from '../../../../assets/evening/face-normal.png';
 import faceBad from '../../../../assets/evening/face-bad.png';
-import { getTodayEveningQuestions, submitEveningAnswers } from '../../../../api/evening';
+import {
+  getTodayEveningQuestions,
+  submitEveningAnswers,
+  transcribeEveningAnswer,
+} from '../../../../api/evening';
 import { useApi, useApiAction } from '../../../../hooks/useApi';
+import { useVoiceRecorder } from '../../../../hooks/useVoiceRecorder';
 
 // Figma 22~22e: 저녁 건강체크가 별도 페이지에서 5단계 팝업으로 바뀌었다.
 // 선택지 아이콘은 좋음/보통/나쁨 세 장을 모든 질문이 공유한다(디자인에서도 같은 에셋).
@@ -124,6 +129,13 @@ const OptionIcon = styled.img`
   object-fit: contain;
 `;
 
+// 녹음 중에는 마이크 원이 커졌다 작아지며 듣고 있다는 걸 보여준다.
+const pulse = keyframes`
+  0% { transform: scale(1); }
+  50% { transform: scale(1.08); }
+  100% { transform: scale(1); }
+`;
+
 const VoiceButton = styled.button`
   width: 100%;
   height: 190px;
@@ -135,8 +147,12 @@ const VoiceButton = styled.button`
   gap: 14px;
 
   border-radius: 10px;
-  border: 1px solid #d8cbb8;
-  background: #fffbf1;
+  border: 1px solid ${({ $recording }) => ($recording ? '#e6a794' : '#d8cbb8')};
+  background: ${({ $recording }) => ($recording ? '#fdf0e8' : '#fffbf1')};
+
+  &:disabled {
+    opacity: 0.6;
+  }
 `;
 
 const MicCircle = styled.span`
@@ -146,15 +162,28 @@ const MicCircle = styled.span`
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #edf3d5;
-  border: 1.5px solid #cbd879;
+
+  background: ${({ $recording }) => ($recording ? '#f6d9cd' : '#edf3d5')};
+  border: 1.5px solid ${({ $recording }) => ($recording ? '#d97d65' : '#cbd879')};
+  color: ${({ $recording }) => ($recording ? '#c1553c' : 'inherit')};
   font-size: 40px;
+
+  animation: ${({ $recording }) => ($recording ? pulse : 'none')} 1.2s ease-in-out infinite;
 `;
 
 const VoiceLabel = styled.span`
   color: #8c8780;
   font-family: 'Noto Sans KR';
   font-size: 15px;
+`;
+
+const VoiceError = styled.p`
+  margin: 0;
+  width: 100%;
+  text-align: center;
+  color: #c1553c;
+  font-family: 'Noto Sans KR';
+  font-size: 13px;
 `;
 
 const NoteInput = styled.textarea`
@@ -206,7 +235,7 @@ const Message = styled.p`
   font-size: 18px;
 `;
 
-function EveningCheckPopup({ onClose, onCompleted }) {
+function EveningCheckPopup({ onClose, onCompleted, forceEdit = false }) {
   const [stepIndex, setStepIndex] = useState(0);
   const [answers, setAnswers] = useState({});
   const [note, setNote] = useState('');
@@ -219,13 +248,25 @@ function EveningCheckPopup({ onClose, onCompleted }) {
   const question = questions[stepIndex];
   const isLastStep = stepIndex === totalSteps - 1;
 
-  // 이미 답한 질문에 다시 제출하면 서버가 500을 낸다.
-  // 오늘치를 이미 채웠으면 5단계를 다시 돌리지 않고 완료 상태만 보여준다.
-  const alreadyDone = Boolean(data) && data.completedCount >= data.totalCount && data.totalCount > 0;
+  // 오늘치를 이미 채웠으면 완료 화면만 보여준다.
+  // 단 건강일지에서 '수정'으로 들어온 경우(forceEdit)는 다시 답할 수 있게 연다.
+  const alreadyDone =
+    !forceEdit && Boolean(data) && data.completedCount >= data.totalCount && data.totalCount > 0;
 
   // 선택지가 없는 질문(맞춤 질문)은 음성/자유 입력으로 답한다.
   const choices = question?.choices ?? [];
   const isVoiceStep = choices.length === 0;
+
+  // 녹음한 오디오를 서버 STT로 보내고, 돌아온 텍스트를 입력칸에 채운다.
+  const transcribe = useCallback(
+    (blob) => transcribeEveningAnswer(question.questionId, blob),
+    [question?.questionId],
+  );
+  const appendTranscript = useCallback(
+    (text) => setNote((prev) => (prev ? `${prev} ${text}` : text)),
+    [],
+  );
+  const voice = useVoiceRecorder(transcribe, appendTranscript);
 
   const selectOption = (optionIndex) => {
     setAnswers((prev) => ({ ...prev, [question.questionId]: optionIndex }));
@@ -305,11 +346,25 @@ function EveningCheckPopup({ onClose, onCompleted }) {
 
         {isVoiceStep ? (
           <>
-            {/* 음성 답변 STT API는 있지만 녹음 UI가 아직 없어 지금은 직접 입력으로 받는다 */}
-            <VoiceButton type="button">
-              <MicCircle>●</MicCircle>
-              <VoiceLabel>눌러서 말해보세요</VoiceLabel>
+            {/* 눌러서 녹음 → 다시 눌러 정지 → 서버 STT로 변환된 텍스트가 아래 칸에 채워진다 */}
+            <VoiceButton
+              type="button"
+              onClick={voice.toggle}
+              disabled={!voice.supported || voice.busy}
+              $recording={voice.recording}
+            >
+              <MicCircle $recording={voice.recording}>●</MicCircle>
+              <VoiceLabel>
+                {!voice.supported
+                  ? '이 브라우저는 녹음을 지원하지 않아요'
+                  : voice.busy
+                    ? '옮겨 적는 중이에요...'
+                    : voice.recording
+                      ? '듣고 있어요. 다 말씀하시면 눌러주세요'
+                      : '눌러서 말해보세요'}
+              </VoiceLabel>
             </VoiceButton>
+            {voice.error && <VoiceError>{voice.error.message}</VoiceError>}
             <NoteInput
               placeholder="또는 직접 적어주세요"
               value={note}

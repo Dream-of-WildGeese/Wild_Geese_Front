@@ -3,13 +3,19 @@ import { useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
 import { useAppData } from '../../../store/AppDataContext';
 import { clearUserId } from '../../../api/client/userId';
-import { getNotificationSetting, updateNotificationSetting, unsubscribePush } from '../../../api/user';
+import {
+  getMe,
+  getNotificationSetting,
+  updateNotificationSetting,
+  unsubscribePush,
+} from '../../../api/user';
 import { getMyFamily } from '../../../api/family';
 import { getUserId } from '../../../api/client';
 import { useApi, useApiAction } from '../../../hooks/useApi';
 import { formatAlarmTime, ROLE_LABEL } from './settingsUtils';
 import TimePickerModal from '../../../components/TimePickerModal';
 import ConfirmPopup from './ConfirmPopup';
+import NotificationListPopup from './NotificationListPopup';
 import { useWebPush } from '../../../hooks/useWebPush';
 
 const Page = styled.div`
@@ -159,6 +165,8 @@ function SettingsMain() {
   const { data: fetchedSetting, loading, setData: setSetting } = useApi(getNotificationSetting);
   const setting = fetchedSetting ?? (loading ? null : DEFAULT_NOTIFICATION_SETTING);
   const { data: family } = useApi(getMyFamily);
+  // 이름은 서버 값을 우선 쓰고, 아직 안 왔으면 온보딩 때 저장한 로컬 값을 보여준다.
+  const { data: me } = useApi(getMe);
   const { execute: saveSetting } = useApiAction(updateNotificationSetting);
 
   const myUserId = getUserId();
@@ -239,7 +247,7 @@ function SettingsMain() {
         <SectionLabel>내 정보</SectionLabel>
         <Row>
           <RowLabel>이름</RowLabel>
-          <RowValue>{data.profile.name || '이름을 등록해주세요'}</RowValue>
+          <RowValue>{me?.name || data.profile.name || '이름을 등록해주세요'}</RowValue>
         </Row>
         <Row>
           <RowLabel>역할</RowLabel>
@@ -290,6 +298,11 @@ function SettingsMain() {
           </ToggleRow>
         ))}
 
+        <ClickableRow type="button" onClick={() => setPopup('notifications')}>
+          <RowLabel>받은 알림 보기</RowLabel>
+          <Chevron>›</Chevron>
+        </ClickableRow>
+
         <SectionLabel>가족 연결</SectionLabel>
         <Row>
           <RowLabel>연결된 가족</RowLabel>
@@ -308,6 +321,7 @@ function SettingsMain() {
         </ClickableRow>
       </Content>
 
+      {popup === 'notifications' && <NotificationListPopup onClose={() => setPopup(null)} />}
       {(popup === 'logout' || popup === 'withdraw') && (
         <ConfirmPopup
           type={popup}

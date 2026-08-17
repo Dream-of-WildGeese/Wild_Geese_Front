@@ -1,7 +1,9 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
 import { useAppData } from '../../../store/AppDataContext';
+import { getMe, getHealthProfile, updateHealthProfile } from '../../../api/user';
+import { useApi, useApiAction } from '../../../hooks/useApi';
 
 const Page = styled.div`
   position: relative;
@@ -130,14 +132,47 @@ const SaveButton = styled.button`
 
 const INTEREST_LIST = ['수면', '활동량', '식사', '복약', '기분'];
 
+// 서버는 관심사를 enum으로만 주고받는다. 화면 라벨과 양방향으로 변환한다.
+const INTEREST_TO_ENUM = {
+  수면: 'SLEEP',
+  활동량: 'ACTIVITY',
+  식사: 'MEAL',
+  복약: 'MEDICINE',
+  기분: 'MOOD',
+};
+const ENUM_TO_INTEREST = Object.fromEntries(
+  Object.entries(INTEREST_TO_ENUM).map(([label, value]) => [value, label]),
+);
+
 function ProfileEdit() {
   const navigate = useNavigate();
-  const { data, setProfile, setInterests } = useAppData();
+  const { setProfile, setInterests } = useAppData();
 
-  const [name, setName] = useState(data.profile.name || '');
-  const [birth, setBirth] = useState(data.profile.birth || '');
-  const [gender, setGender] = useState(data.profile.gender || '');
-  const [interests, setLocalInterests] = useState(data.interests || []);
+  // 이름은 users/me, 나머지는 건강 프로필에서 가져온다.
+  const { data: me, loading: meLoading } = useApi(getMe);
+  const { data: profile, loading: profileLoading } = useApi(getHealthProfile);
+  const { execute: saveProfile, loading: saving } = useApiAction(updateHealthProfile);
+
+  const [name, setName] = useState('');
+  const [birth, setBirth] = useState('');
+  const [gender, setGender] = useState('');
+  const [interests, setLocalInterests] = useState([]);
+  const [diseases, setDiseases] = useState([]);
+
+  // 서버 값이 도착하면 입력 상태를 한 번 채운다.
+  const loadedRef = useRef(false);
+  useEffect(() => {
+    if (loadedRef.current || meLoading || profileLoading) return;
+    loadedRef.current = true;
+
+    setName(me?.name ?? '');
+    setBirth(profile?.birthDate ?? '');
+    setGender(profile?.gender ?? '');
+    setDiseases(profile?.diseases ?? []);
+    setLocalInterests(
+      (profile?.wellnessInterests ?? []).map((value) => ENUM_TO_INTEREST[value]).filter(Boolean),
+    );
+  }, [me, profile, meLoading, profileLoading]);
 
   const toggleInterest = (item) => {
     setLocalInterests((prev) =>
@@ -145,7 +180,21 @@ function ProfileEdit() {
     );
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
+    const { ok, error } = await saveProfile({
+      name: name.trim(),
+      birthDate: birth,
+      gender,
+      // 질병은 이 화면에서 수정하지 않으므로 서버 값을 그대로 돌려보낸다.
+      diseases,
+      wellnessInterests: interests.map((item) => INTEREST_TO_ENUM[item]).filter(Boolean),
+    });
+    if (!ok) {
+      alert(error.message);
+      return;
+    }
+
+    // 설정 화면이 아직 로컬 값을 쓰는 부분이 있어 함께 갱신해둔다.
     setProfile({ name: name.trim(), birth, gender });
     setInterests(interests);
     navigate('/home/settings');
@@ -170,10 +219,14 @@ function ProfileEdit() {
           <Input type="date" value={birth} onChange={(e) => setBirth(e.target.value)} />
           <Label>성별</Label>
           <GenderRow>
-            <GenderButton type="button" $active={gender === 'male'} onClick={() => setGender('male')}>
+            <GenderButton type="button" $active={gender === 'MALE'} onClick={() => setGender('MALE')}>
               남성
             </GenderButton>
-            <GenderButton type="button" $active={gender === 'female'} onClick={() => setGender('female')}>
+            <GenderButton
+              type="button"
+              $active={gender === 'FEMALE'}
+              onClick={() => setGender('FEMALE')}
+            >
               여성
             </GenderButton>
           </GenderRow>
@@ -191,8 +244,8 @@ function ProfileEdit() {
           </ChipRow>
         </Card>
 
-        <SaveButton type="button" onClick={handleSave}>
-          저장하기
+        <SaveButton type="button" onClick={handleSave} disabled={saving}>
+          {saving ? '저장 중...' : '저장하기'}
         </SaveButton>
       </Content>
     </Page>

@@ -20,6 +20,11 @@ import { loadTodayReport } from './todayReportData';
 import { useApi } from '../../../hooks/useApi';
 import { useFamilyRelation } from '../../../hooks/useFamilyRelation';
 import JournalCta from './JournalCta';
+import DayQuestionPopup from '../TodayOndam/Day/DayQuestionPopup';
+import MedicineLogEditPopup from '../TodayOndam/Medicine/MedicineLogEditPopup';
+import EveningCheckPopup from '../TodayOndam/Night/EveningCheckPopup';
+import PhoneNumberPopup from '../../../components/PhoneNumberPopup';
+import { callPhone, getFamilyPhone } from '../../../utils/call';
 
 // Figma 31 / 31b: '오늘의 온담'이 '오늘의 건강일지'로 이름이 바뀌고
 // 타임라인 카드 형태로 재설계됐다.
@@ -269,6 +274,21 @@ const EntryCard = styled.div`
   background: rgba(255, 255, 255, 0.55);
 `;
 
+// 카드 제목 오른쪽에 붙는 작은 수정 버튼
+const EditButton = styled.button`
+  margin-left: auto;
+  padding: 4px 10px;
+
+  border-radius: 8px;
+  border: 1px solid rgba(74, 58, 47, 0.35);
+  background: rgba(255, 255, 255, 0.7);
+
+  color: #8c8172;
+  font-family: 'Noto Sans KR';
+  font-size: 13px;
+  font-weight: 700;
+`;
+
 const CardHead = styled.div`
   display: flex;
   align-items: center;
@@ -390,10 +410,29 @@ const StatusText = styled.p`
 function TodayReport() {
   const navigate = useNavigate();
   const [person, setPerson] = useState('me');
-  const { data: report, loading, error } = useApi(loadTodayReport, { args: [person] });
+  const { data: report, loading, error, refetch } = useApi(loadTodayReport, { args: [person] });
   const { partnerLabel } = useFamilyRelation();
+  // 어떤 기록을 고치는 중인지 ('question' | 'medication' | 'healthcheck' | null)
+  const [editing, setEditing] = useState(null);
 
   const isMine = person === 'me';
+
+  // 팝업을 닫으면 일지를 다시 불러와 방금 고친 내용을 반영한다.
+  const closeEditor = () => {
+    setEditing(null);
+    refetch();
+  };
+
+  // 저장해둔 번호가 있으면 바로 걸고, 없으면 한 번 물어본 뒤 건다.
+  const [askingPhone, setAskingPhone] = useState(false);
+  const handleCall = () => {
+    const saved = getFamilyPhone();
+    if (saved) {
+      callPhone(saved);
+      return;
+    }
+    setAskingPhone(true);
+  };
 
   const renderEntryBody = (entry) => {
     if (entry.type === 'question') {
@@ -510,6 +549,12 @@ function TodayReport() {
                   <CardHead>
                     <CardHeadIcon src={ENTRY_ICONS[entry.type]} alt="" />
                     <CardTitle>{ENTRY_TITLES[entry.type]}</CardTitle>
+                    {/* 내 기록만 고칠 수 있다. 가족 기록은 보기만 한다 */}
+                    {isMine && (
+                      <EditButton type="button" onClick={() => setEditing(entry.type)}>
+                        수정
+                      </EditButton>
+                    )}
                     {entry.type === 'medication' && entry.hasMissed && (
                       <ExclaimIcon src={exclaimIcon} alt="" />
                     )}
@@ -535,12 +580,32 @@ function TodayReport() {
               <JournalCta
                 title={report.cta.title}
                 message={report.cta.suggestedMessage}
-                onCall={() => alert('전화 연결은 준비 중이에요.')}
+                onCall={handleCall}
                 onSendLetter={() => navigate('/home', { state: { openLetterbox: 'compose' } })}
               />
             </>
           )}
         </>
+      )}
+
+      {/* 백엔드가 재제출을 덮어쓰기로 바꿔줘서 기록을 다시 열어 고칠 수 있다 */}
+      {editing === 'question' && <DayQuestionPopup onClose={closeEditor} />}
+      {editing === 'medication' && (
+        <MedicineLogEditPopup onClose={closeEditor} onDone={closeEditor} />
+      )}
+      {editing === 'healthcheck' && (
+        <EveningCheckPopup forceEdit onClose={closeEditor} onCompleted={closeEditor} />
+      )}
+
+      {askingPhone && (
+        <PhoneNumberPopup
+          name={report?.personLabel}
+          onSaved={(phone) => {
+            setAskingPhone(false);
+            callPhone(phone);
+          }}
+          onClose={() => setAskingPhone(false)}
+        />
       )}
     </Page>
   );

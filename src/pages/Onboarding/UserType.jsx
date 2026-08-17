@@ -58,20 +58,7 @@ const UserType = () => {
           </OptionButton>
         </OptionList>
 
-        <NextButton
-          disabled={!userType}
-          onClick={() => {
-            if (userType === 'parent') {
-              setUserId(39); // 봉미선
-            } else {
-              setUserId(35); // 신짱구
-            }
-            setProfile({ role: userType });
-            navigate('/onboarding/step-guide', {
-              state: { role: userType },
-            });
-          }}
-        >
+        <NextButton disabled={!userType} onClick={handleNext}>
           다음
         </NextButton>
       </Content>

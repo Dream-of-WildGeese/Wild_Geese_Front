@@ -1,11 +1,15 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import styled from 'styled-components';
 import clockIcon from '../../../../assets/popup/clock.png';
 import medFlowerA from '../../../../assets/popup/med-flower-a.png';
 import medFlowerB from '../../../../assets/popup/med-flower-b.png';
 import medEmpty from '../../../../assets/popup/med-empty.png';
-import { getMedications, updateMedicationLogs } from '../../../../api/medication';
-import { saveMealLog } from '../../../../api/meal';
+import {
+  getMedications,
+  getMedicationLogs,
+  updateMedicationLogs,
+} from '../../../../api/medication';
+import { saveMealLog, getMealLogs } from '../../../../api/meal';
 import { useApi, useApiAction } from '../../../../hooks/useApi';
 import { parseTime, toDateString } from '../../../../utils/medication';
 import { formatKoreanTime } from '../homeCtaFlow';
@@ -110,10 +114,33 @@ function MedicineCheckPopup({ dueMedications, mealLabel, onClose }) {
     { id: 'meal', label: `${mealLabel} 드셨어요?` },
     ...dueMedications.map((med) => ({ id: med.scheduleId, label: `${med.name} 드셨어요?` })),
   ];
-  const [checks, setChecks] = useState(() => Object.fromEntries(rows.map((row) => [row.id, false])));
+  const [checks, setChecks] = useState({});
 
   const { execute: submitCheck, loading: submitting } = useApiAction(submitMedicationCheck);
   const { data: allMedications } = useApi(getMedications, { enabled: step === 'complete' });
+
+  // 오늘 이미 기록해둔 게 있으면 그대로 체크된 상태로 연다.
+  const { data: todayLog } = useApi(getMedicationLogs, { args: [toDateString()] });
+  const { data: todayMeals } = useApi(getMealLogs, { args: [toDateString()] });
+
+  const seededRef = useRef(false);
+  useEffect(() => {
+    if (seededRef.current || !todayLog || !todayMeals) return;
+    seededRef.current = true;
+
+    const takenBySchedule = new Map(
+      (todayLog.medications ?? []).map((item) => [item.scheduleId, item.status === 'TAKEN']),
+    );
+    const mealType = MEAL_TYPE_BY_LABEL[mealLabel];
+    const eatenMeal = (todayMeals ?? []).find((item) => item.mealType === mealType);
+
+    setChecks({
+      meal: Boolean(eatenMeal?.eaten),
+      ...Object.fromEntries(
+        dueMedications.map((med) => [med.scheduleId, takenBySchedule.get(med.scheduleId) ?? false]),
+      ),
+    });
+  }, [todayLog, todayMeals, dueMedications, mealLabel]);
 
   const { hour, minute } = parseTime(dueMedications[0]?.scheduledTime ?? '00:00');
   const timeLabel = formatKoreanTime(hour, minute);

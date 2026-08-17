@@ -1,7 +1,7 @@
 export { createUser } from './createUser';
 export { getMe } from './getMe';
-export { updateHealthProfile } from './updateHealthProfile';
 export { getHealthProfile } from './getHealthProfile';
+export { updateHealthProfile } from './updateHealthProfile';
 export { getNotificationSetting } from './getNotificationSetting';
 export { updateNotificationSetting } from './updateNotificationSetting';
 export { subscribePush } from './subscribePush';
