@@ -12,9 +12,7 @@ import NightIntroPopup from './TodayOndam/Night/NightIntroPopup';
 import EveningCheckPopup from './TodayOndam/Night/EveningCheckPopup';
 import NightCompletePopup from './TodayOndam/Night/NightCompletePopup';
 import Letterbox from './Letterbox/Letterbox';
-import { getMealLabel } from './TodayOndam/homeCtaFlow';
 import TodayOndamPicker from './TodayOndam/TodayOndamPicker';
-import { getDueMedications, getMedications } from '../../api/medication';
 import { getReceivedLetters, markLetterAsRead } from '../../api/letter';
 import { useApi, useApiAction } from '../../hooks/useApi';
 import { toLetterView } from '../../utils/letter';
@@ -40,7 +38,6 @@ function Home() {
   const navigate = useNavigate();
   const location = useLocation();
   const [activePopup, setActivePopup] = useState(null);
-  const [ctaSlot, setCtaSlot] = useState(null);
   const [letterboxInitialStep, setLetterboxInitialStep] = useState(null);
 
   const {
@@ -49,8 +46,6 @@ function Home() {
     refetch: refetchLetters,
   } = useApi(getReceivedLetters);
   const { execute: markRead } = useApiAction(markLetterAsRead);
-  const { execute: fetchDueMedications } = useApiAction(getDueMedications);
-  const { execute: fetchAllMedications } = useApiAction(getMedications);
 
   // 받은 편지함은 페이지네이션 응답이라 content 배열만 꺼내 쓴다.
   const letters = (receivedLetters?.content ?? []).map(toLetterView);
@@ -86,36 +81,12 @@ function Home() {
   // 아침/복약/저녁 중에서 직접 고르게 한다.
   const handleCtaClick = () => setActivePopup('picker');
 
-  const handlePickStep = async (type) => {
-    if (type !== 'medication') {
-      setActivePopup(type);
-      return;
-    }
-
-    // 복용 예정 약을 먼저 물어보고, 지금 시각에 해당하는 약이 없으면
-    // 등록된 약 전체를 대신 보여준다. (시연 시각과 복용 시각이 다를 수 있다)
-    const { data: due } = await fetchDueMedications();
-    let medications = due ?? [];
-
-    // 복용 예정이 비면 오늘 먹을 약 전체를 시간대까지 펼쳐서 보여준다.
-    // 시각에 따라 한 개만 골라 보여주면, 다시 열 때 다른 시간대가 떠서
-    // 저장한 기록이 사라진 것처럼 보인다.
-    const isAllDay = medications.length === 0;
-    if (isAllDay) {
-      const { data: all } = await fetchAllMedications();
-      medications = (all ?? []).flatMap((med) =>
-        (med.schedules ?? []).map((schedule) => ({
-          medicationId: med.medicationId,
-          scheduleId: schedule.scheduleId,
-          name: med.name,
-          scheduledTime: schedule.scheduledTime,
-        })),
-      );
-    }
-
-    setCtaSlot({ medications, isAllDay, mealLabel: getMealLabel(new Date().getHours()) });
+  const handlePickStep = (type) => {
+    // 복약 목록은 팝업이 직접 읽는다. 여기서 미리 만들어 넘기면
+    // 기록 수정 화면이 읽는 목록과 어긋나서 저장이 사라진 것처럼 보인다.
+    //
     // 상단 약 아이콘의 'medication'(복용약 관리) 팝업과 이름이 겹치지 않도록 구분한다.
-    setActivePopup('medication_check');
+    setActivePopup(type === 'medication' ? 'medication_check' : type);
   };
 
   return (
@@ -151,12 +122,7 @@ function Home() {
       )}
       {activePopup === 'morning' && <DayQuestionPopup onClose={closePopup} />}
       {activePopup === 'medication_check' && (
-        <MedicineCheckPopup
-          dueMedications={ctaSlot.medications}
-          mealLabel={ctaSlot.mealLabel}
-          isAllDay={ctaSlot.isAllDay}
-          onClose={closePopup}
-        />
+        <MedicineCheckPopup onClose={closePopup} />
       )}
       {activePopup === 'evening' && (
         <NightIntroPopup onStart={() => setActivePopup('eveningCheck')} onClose={closePopup} />
