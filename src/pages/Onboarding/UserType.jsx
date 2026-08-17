@@ -57,7 +57,7 @@ const UserType = () => {
             } else {
               setUserId(35); // 신짱구
             }
-            setProfile({ role: userType, name: userType === 'parent' ? '봉미선' : '신짱구' });
+            setProfile({ role: userType });
             navigate('/onboarding/step-guide', {
               state: { role: userType },
             });

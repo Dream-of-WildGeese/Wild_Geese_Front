@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
 import { useAppData } from '../../../store/AppDataContext';
 import { clearUserId } from '../../../api/client/userId';
-import { getNotificationSetting, updateNotificationSetting } from '../../../api/user';
+import { getNotificationSetting, updateNotificationSetting, unsubscribePush } from '../../../api/user';
 import { getMyFamily } from '../../../api/family';
 import { getUserId } from '../../../api/client';
 import { useApi, useApiAction } from '../../../hooks/useApi';
@@ -200,13 +200,25 @@ function SettingsMain() {
     setTimeEditor(null);
   };
 
-  const handleLogout = () => {
+  // 유저 식별 헤더가 빠지기 전에(clearUserId 이전에) 구독 삭제 요청을 보내야 한다.
+  // 실패해도 로그아웃/탈퇴 자체는 막지 않는다.
+  const handleLogout = async () => {
+    try {
+      await unsubscribePush();
+    } catch (error) {
+      console.error('푸시 구독 해제 실패:', error);
+    }
     clearUserId();
     setPopup(null);
     navigate('/');
   };
 
-  const handleWithdraw = () => {
+  const handleWithdraw = async () => {
+    try {
+      await unsubscribePush();
+    } catch (error) {
+      console.error('푸시 구독 해제 실패:', error);
+    }
     clearUserId();
     resetAppData();
     setPopup(null);

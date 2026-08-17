@@ -1,10 +1,10 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
 import { useLocation } from 'react-router-dom';
 import back from '../../assets/onboarding/back.svg';
 import { useAppData } from '../../store/AppDataContext';
-import { updateHealthProfile } from '../../api/user';
+import { getMe, updateHealthProfile } from '../../api/user';
 import { getMedications } from '../../api/medication';
 import { useApi, useApiAction } from '../../hooks/useApi';
 import BirthDatePickerModal from '../../components/BirthDatePickerModal';
@@ -51,6 +51,17 @@ const HealthSet = () => {
   const [agreed, setAgreed] = useState(false);
   const [isBirthPickerOpen, setIsBirthPickerOpen] = useState(false);
   const [interests, setInterests] = useState(data.interests || []);
+
+  // 로그인 대신 쓰는 임시 유저 선택 화면(UserType)에는 실제 이름이 없어서,
+  // 여기서 서버가 아는 내 이름을 받아와 채워준다.
+  const { data: me } = useApi(getMe);
+
+  useEffect(() => {
+    if (me?.name) {
+      setName(me.name);
+      setProfile({ name: me.name });
+    }
+  }, [me]);
 
   const { data: medicationList } = useApi(getMedications);
   const medications = (medicationList ?? []).map((med) => ({
