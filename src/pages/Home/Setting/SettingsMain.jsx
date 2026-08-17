@@ -3,7 +3,12 @@ import { useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
 import { useAppData } from '../../../store/AppDataContext';
 import { clearUserId } from '../../../api/client/userId';
-import { getMe, getNotificationSetting, updateNotificationSetting } from '../../../api/user';
+import {
+  getMe,
+  getNotificationSetting,
+  updateNotificationSetting,
+  unsubscribePush,
+} from '../../../api/user';
 import { getMyFamily } from '../../../api/family';
 import { getUserId } from '../../../api/client';
 import { useApi, useApiAction } from '../../../hooks/useApi';
@@ -11,6 +16,7 @@ import { formatAlarmTime, ROLE_LABEL } from './settingsUtils';
 import TimePickerModal from '../../../components/TimePickerModal';
 import ConfirmPopup from './ConfirmPopup';
 import NotificationListPopup from './NotificationListPopup';
+import { useWebPush } from '../../../hooks/useWebPush';
 
 const Page = styled.div`
   position: relative;
@@ -180,20 +186,47 @@ function SettingsMain() {
     }
   };
 
-  const handleToggle = (key) => applyChange({ [key]: !setting[key] });
+  const { enablePush } = useWebPush();
 
+  const handleToggle = async (key) => {
+    const nextValue = !setting[key];
+
+    // 알림을 ON할 때만 브라우저 Web Push 구독을 준비한다.
+    if (nextValue) {
+      try {
+        await enablePush();
+      } catch (error) {
+        alert(error.message);
+        return;
+      }
+    }
+    await applyChange({ [key]: nextValue });
+  };
+  
   const handleTimeConfirm = (nextTime) => {
     applyChange({ [timeEditor]: nextTime });
     setTimeEditor(null);
   };
 
-  const handleLogout = () => {
+  // 유저 식별 헤더가 빠지기 전에(clearUserId 이전에) 구독 삭제 요청을 보내야 한다.
+  // 실패해도 로그아웃/탈퇴 자체는 막지 않는다.
+  const handleLogout = async () => {
+    try {
+      await unsubscribePush();
+    } catch (error) {
+      console.error('푸시 구독 해제 실패:', error);
+    }
     clearUserId();
     setPopup(null);
     navigate('/');
   };
 
-  const handleWithdraw = () => {
+  const handleWithdraw = async () => {
+    try {
+      await unsubscribePush();
+    } catch (error) {
+      console.error('푸시 구독 해제 실패:', error);
+    }
     clearUserId();
     resetAppData();
     setPopup(null);

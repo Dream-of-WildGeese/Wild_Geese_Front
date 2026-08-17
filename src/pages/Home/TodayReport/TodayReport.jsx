@@ -18,6 +18,7 @@ import mActivity from '../../../assets/journal/m-activity.png';
 import mBody from '../../../assets/journal/m-body.png';
 import { loadTodayReport } from './todayReportData';
 import { useApi } from '../../../hooks/useApi';
+import { useFamilyRelation } from '../../../hooks/useFamilyRelation';
 import JournalCta from './JournalCta';
 import DayQuestionPopup from '../TodayOndam/Day/DayQuestionPopup';
 import MedicineLogEditPopup from '../TodayOndam/Medicine/MedicineLogEditPopup';
@@ -410,6 +411,7 @@ function TodayReport() {
   const navigate = useNavigate();
   const [person, setPerson] = useState('me');
   const { data: report, loading, error, refetch } = useApi(loadTodayReport, { args: [person] });
+  const { partnerLabel } = useFamilyRelation();
   // 어떤 기록을 고치는 중인지 ('question' | 'medication' | 'healthcheck' | null)
   const [editing, setEditing] = useState(null);
 
@@ -486,7 +488,7 @@ function TodayReport() {
           나
         </ToggleTab>
         <ToggleTab type="button" $active={!isMine} onClick={() => setPerson('family')}>
-          가족
+          {partnerLabel}
         </ToggleTab>
       </PersonToggle>
 

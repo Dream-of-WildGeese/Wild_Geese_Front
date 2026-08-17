@@ -70,7 +70,9 @@ const InviteCode = () => {
 
     setFamily({ connectedName: familyName, connectedRelation: getPartnerRelation(role) });
 
-    navigate('/onboarding/complete/1', { state: { role, familyName } });
+    navigate('/onboarding/complete/1', {
+      state: { role, familyName },
+    });
   };
 
   return (

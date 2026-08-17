@@ -5,6 +5,7 @@ import { loadWeeklyDetail } from './weeklyReportData';
 import { useApi } from '../../../hooks/useApi';
 import PhoneNumberPopup from '../../../components/PhoneNumberPopup';
 import { callPhone, getFamilyPhone } from '../../../utils/call';
+import { useFamilyRelation } from '../../../hooks/useFamilyRelation';
 
 const Page = styled.div`
   position: relative;
@@ -370,6 +371,7 @@ function WeeklyReportDetail() {
   const person = location.state?.person ?? 'me';
 
   const { data, loading, error } = useApi(loadWeeklyDetail, { args: [weekId, person] });
+  const { partnerLabel } = useFamilyRelation();
   // 훅은 조기 반환보다 앞에 있어야 해서 여기에 둔다.
   const [askingPhone, setAskingPhone] = useState(false);
 
@@ -397,7 +399,7 @@ function WeeklyReportDetail() {
     );
   }
 
-  const personLabel = person === 'me' ? '나' : '엄마';
+  const personLabel = person === 'me' ? '나' : partnerLabel;
 
   // 저장해둔 번호가 있으면 바로 걸고, 없으면 한 번 물어본 뒤 건다.
   const handleCall = () => {
@@ -555,7 +557,7 @@ function WeeklyReportDetail() {
 
       {person === 'mom' && (
         <CtaCard>
-          <CtaTitle>엄마에게 연락해볼까요?</CtaTitle>
+          <CtaTitle>{partnerLabel}에게 연락해볼까요?</CtaTitle>
           <SuggestedMessage>
             <SuggestedMessageText>{detail.contactMessage}</SuggestedMessageText>
           </SuggestedMessage>
