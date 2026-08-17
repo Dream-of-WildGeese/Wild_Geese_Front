@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import styled from 'styled-components';
 import micIcon from '../../../../assets/popup/mic.png';
 import likeIcon from '../../../../assets/reaction/like.png';
@@ -14,8 +14,11 @@ import {
   PopupInnerBorder,
   PopupTitle,
   PopupPrimaryButton,
+  PopupSecondaryButton,
+  PopupButtonRow,
   PopupIcon,
 } from '../../../../components/PopupShell';
+import ReactionSentPopup from './ReactionSentPopup';
 
 // Figma 13(공통질문) + 17 ver01(답변 비교).
 // ver01은 반응 아이콘이 '부모님 답변' 카드 안에 들어간다.
@@ -144,7 +147,7 @@ const EmptyAnswerBox = styled.div`
 `;
 
 function DayQuestionPopup({ onClose }) {
-  const [step, setStep] = useState('question'); // question | result
+  const [step, setStep] = useState(null); // null(판단 전) | question | result
   const [answer, setAnswer] = useState('');
   const [sentReaction, setSentReaction] = useState(null);
 
@@ -153,6 +156,12 @@ function DayQuestionPopup({ onClose }) {
 
   const questionText = question?.content ?? '';
   const myAnswer = question?.myAnswer ?? '';
+
+  // 이미 답한 날이면 답변 비교 화면부터 보여준다. (건강일지에서 '수정'으로 들어올 때도 동일)
+  useEffect(() => {
+    if (step !== null || loading) return;
+    setStep(myAnswer ? 'result' : 'question');
+  }, [step, loading, myAnswer]);
   const partnerAnswer = question?.familyAnswers?.[0] ?? null;
 
   const handleSubmit = async () => {
@@ -210,10 +219,30 @@ function DayQuestionPopup({ onClose }) {
             </EmptyAnswerBox>
           )}
 
-          <PopupPrimaryButton type="button" onClick={onClose}>
-            닫기
-          </PopupPrimaryButton>
+          <PopupButtonRow>
+            <PopupSecondaryButton
+              type="button"
+              onClick={() => {
+                setAnswer(myAnswer);
+                setStep('question');
+              }}
+            >
+              다시 답하기
+            </PopupSecondaryButton>
+            <PopupPrimaryButton type="button" onClick={onClose}>
+              닫기
+            </PopupPrimaryButton>
+          </PopupButtonRow>
         </PopupCard>
+
+        {/* 와이어프레임 '좋아요 팝업': 반응을 보내면 확인 화면이 뜬다 */}
+        {sentReaction && (
+          <ReactionSentPopup
+            reaction={REACTIONS.find((item) => item.key === sentReaction)}
+            partnerName={partnerAnswer?.name}
+            onClose={() => setSentReaction(null)}
+          />
+        )}
       </PopupBackdrop>
     );
   }

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import styled from 'styled-components';
 import pencilIcon from '../../../../assets/popup/pencil.png';
 import medFlowerA from '../../../../assets/popup/med-flower-a.png';
@@ -16,12 +16,12 @@ import {
   PopupIcon,
 } from '../../../../components/PopupShell';
 
-// Figma 19: 오늘 복약 기록을 스케줄 단위로 다시 체크하는 팝업.
-// 등록된 약의 모든 시간대를 한 줄씩 펼쳐놓고, 눌러서 먹음/안먹음을 토글한다.
+// Figma 19: 오늘 복약 기록 수정.
+// 같은 약이 하루에 여러 번이면 카드를 여러 개 만들지 않고, 한 카드 안에서
+// 시간대별로 체크한다.
 const MED_FLOWERS = [medFlowerA, medFlowerB];
 
-// 약 목록과 오늘 기록을 합쳐 화면이 쓸 한 줄짜리 항목으로 만든다.
-async function loadTodayMedicationRows() {
+async function loadTodayMedications() {
   const recordDate = toDateString();
   const [medications, log] = await Promise.all([
     getMedications(),
@@ -32,24 +32,17 @@ async function loadTodayMedicationRows() {
     (log?.medications ?? []).map((item) => [item.scheduleId, item.status]),
   );
 
-  const rows = [];
-  (medications ?? []).forEach((medication) => {
-    const schedules = medication.schedules ?? [];
-    schedules.forEach((schedule) => {
-      rows.push({
-        scheduleId: schedule.scheduleId,
-        // 같은 약이 여러 번이면 '혈압약 (아침)'처럼 시간대를 덧붙인다.
-        name:
-          schedules.length > 1
-            ? `${medication.name} (${timeToLabel(schedule.scheduledTime).split(' ')[0]})`
-            : medication.name,
-        timeLabel: timeToLabel(schedule.scheduledTime),
-        taken: statusBySchedule.get(schedule.scheduleId) === 'TAKEN',
-      });
-    });
-  });
+  const items = (medications ?? []).map((medication) => ({
+    medicationId: medication.medicationId,
+    name: medication.name,
+    schedules: (medication.schedules ?? []).map((schedule) => ({
+      scheduleId: schedule.scheduleId,
+      timeLabel: timeToLabel(schedule.scheduledTime),
+      taken: statusBySchedule.get(schedule.scheduleId) === 'TAKEN',
+    })),
+  }));
 
-  return { recordDate, rows };
+  return { recordDate, items };
 }
 
 const SubtitleRow = styled.div`
@@ -67,38 +60,85 @@ const SubtitleText = styled.span`
   font-weight: 500;
 `;
 
-const MedRow = styled.button`
+const CardList = styled.div`
   width: 100%;
-  height: 68px;
-  padding: 0 8px 0 14px;
-
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-
-  border-radius: 10px;
-  border: 1px solid ${({ $taken }) => ($taken ? '#cbd879' : '#d8cbb8')};
-  background: ${({ $taken }) => ($taken ? '#edf3d5' : '#fffbf1')};
-  text-align: left;
-`;
-
-const TextCol = styled.div`
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 12px;
+
+  max-height: 340px;
+  overflow-y: auto;
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
+`;
+
+const MedCard = styled.div`
+  width: 100%;
+  padding: 14px;
+
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+
+  border-radius: 12px;
+  border: 1px solid #d8cbb8;
+  background: #fffbf1;
+`;
+
+const CardHead = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 10px;
 `;
 
 const MedName = styled.span`
+  flex: 1;
+  min-width: 0;
   color: #4a3a2f;
   font-family: 'Noto Sans KR';
   font-size: 18px;
   font-weight: 700;
 `;
 
-const MedTime = styled.span`
-  color: #8c8780;
+const TakenCount = styled.span`
+  flex-shrink: 0;
+  color: #576b1a;
+  font-family: 'Noto Sans KR';
+  font-size: 14px;
+  font-weight: 700;
+`;
+
+const TimeRow = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+`;
+
+// 시간대 하나가 곧 체크 대상. 누르면 먹음/안먹음이 토글된다.
+const TimeChip = styled.button`
+  height: 40px;
+  padding: 0 14px;
+
+  display: flex;
+  align-items: center;
+  gap: 6px;
+
+  border-radius: 20px;
+  border: 1.5px solid ${({ $taken }) => ($taken ? 'rgba(87, 107, 26, 0.5)' : '#d8cbb8')};
+  background: ${({ $taken }) => ($taken ? '#cbd879' : '#fff')};
+  color: ${({ $taken }) => ($taken ? '#364310' : '#8c8780')};
+
   font-family: 'Noto Sans KR';
   font-size: 15px;
+  font-weight: 700;
+  white-space: nowrap;
+`;
+
+const CheckMark = styled.span`
+  font-size: 13px;
+  line-height: 1;
 `;
 
 const EmptyText = styled.p`
@@ -111,24 +151,33 @@ const EmptyText = styled.p`
 `;
 
 function MedicineLogEditPopup({ onClose, onDone }) {
-  const { data, loading, error } = useApi(loadTodayMedicationRows);
+  const { data, loading, error } = useApi(loadTodayMedications);
   const { execute: saveLogs, loading: saving } = useApiAction(updateMedicationLogs);
   const [taken, setTaken] = useState({});
 
-  // 서버 기록이 도착하면 토글 초기 상태를 한 번 맞춰준다.
+  // 서버 기록이 도착하면 체크 상태를 한 번 맞춰준다.
+  const seededRef = useRef(false);
   useEffect(() => {
-    if (!data) return;
-    setTaken(Object.fromEntries(data.rows.map((row) => [row.scheduleId, row.taken])));
+    if (seededRef.current || !data) return;
+    seededRef.current = true;
+    setTaken(
+      Object.fromEntries(
+        data.items.flatMap((item) =>
+          item.schedules.map((schedule) => [schedule.scheduleId, schedule.taken]),
+        ),
+      ),
+    );
   }, [data]);
 
   const handleSave = async () => {
-    const { ok, error: saveError } = await saveLogs({
-      recordDate: data.recordDate,
-      logs: data.rows.map((row) => ({
-        scheduleId: row.scheduleId,
-        status: taken[row.scheduleId] ? 'TAKEN' : 'NOT_RECORDED',
+    const logs = data.items.flatMap((item) =>
+      item.schedules.map((schedule) => ({
+        scheduleId: schedule.scheduleId,
+        status: taken[schedule.scheduleId] ? 'TAKEN' : 'NOT_RECORDED',
       })),
-    });
+    );
+
+    const { ok, error: saveError } = await saveLogs({ recordDate: data.recordDate, logs });
     if (!ok) {
       alert(saveError.message);
       return;
@@ -151,30 +200,49 @@ function MedicineLogEditPopup({ onClose, onDone }) {
 
         {loading && <EmptyText>불러오는 중이에요...</EmptyText>}
         {error && <EmptyText>{error.message}</EmptyText>}
-        {!loading && !error && data?.rows.length === 0 && (
+        {!loading && !error && data?.items.length === 0 && (
           <EmptyText>등록된 복용약이 없어요.</EmptyText>
         )}
 
-        {(data?.rows ?? []).map((row, index) => (
-          <MedRow
-            key={row.scheduleId}
-            type="button"
-            $taken={taken[row.scheduleId]}
-            onClick={() =>
-              setTaken((prev) => ({ ...prev, [row.scheduleId]: !prev[row.scheduleId] }))
-            }
-          >
-            <TextCol>
-              <MedName>{row.name}</MedName>
-              <MedTime>{row.timeLabel}</MedTime>
-            </TextCol>
-            <PopupIcon
-              $size={60}
-              src={taken[row.scheduleId] ? MED_FLOWERS[index % MED_FLOWERS.length] : medEmpty}
-              alt=""
-            />
-          </MedRow>
-        ))}
+        <CardList>
+          {(data?.items ?? []).map((item, index) => {
+            const takenCount = item.schedules.filter((s) => taken[s.scheduleId]).length;
+            return (
+              <MedCard key={item.medicationId}>
+                <CardHead>
+                  <PopupIcon
+                    $size={40}
+                    src={takenCount > 0 ? MED_FLOWERS[index % MED_FLOWERS.length] : medEmpty}
+                    alt=""
+                  />
+                  <MedName>{item.name}</MedName>
+                  <TakenCount>
+                    {takenCount}/{item.schedules.length}
+                  </TakenCount>
+                </CardHead>
+
+                <TimeRow>
+                  {item.schedules.map((schedule) => (
+                    <TimeChip
+                      key={schedule.scheduleId}
+                      type="button"
+                      $taken={taken[schedule.scheduleId]}
+                      onClick={() =>
+                        setTaken((prev) => ({
+                          ...prev,
+                          [schedule.scheduleId]: !prev[schedule.scheduleId],
+                        }))
+                      }
+                    >
+                      {taken[schedule.scheduleId] && <CheckMark>✓</CheckMark>}
+                      {schedule.timeLabel}
+                    </TimeChip>
+                  ))}
+                </TimeRow>
+              </MedCard>
+            );
+          })}
+        </CardList>
 
         <PopupPrimaryButton type="button" onClick={handleSave} disabled={saving || !data}>
           {saving ? '저장 중...' : '완료'}

@@ -115,7 +115,7 @@ function Letterbox({ letters, loading, onMarkRead, onSent, onClose, initialStep 
               recipientName={recipientName}
             />
           )}
-          {step === 'sent' && <LetterSent onClose={backToList} />}
+          {step === 'sent' && <LetterSent onClose={backToList} recipientName={recipientName} />}
         </div>
       </Backdrop>
     </PopupPortal>

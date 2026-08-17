@@ -1,7 +1,10 @@
+import { useState } from 'react';
 import { useNavigate, useLocation, useParams } from 'react-router-dom';
 import styled from 'styled-components';
 import { loadWeeklyDetail } from './weeklyReportData';
 import { useApi } from '../../../hooks/useApi';
+import PhoneNumberPopup from '../../../components/PhoneNumberPopup';
+import { callPhone, getFamilyPhone } from '../../../utils/call';
 
 const Page = styled.div`
   position: relative;
@@ -367,6 +370,9 @@ function WeeklyReportDetail() {
   const person = location.state?.person ?? 'me';
 
   const { data, loading, error } = useApi(loadWeeklyDetail, { args: [weekId, person] });
+  // 훅은 조기 반환보다 앞에 있어야 해서 여기에 둔다.
+  const [askingPhone, setAskingPhone] = useState(false);
+
   const week = data?.week;
   const detail = data?.detail;
 
@@ -392,6 +398,16 @@ function WeeklyReportDetail() {
   }
 
   const personLabel = person === 'me' ? '나' : '엄마';
+
+  // 저장해둔 번호가 있으면 바로 걸고, 없으면 한 번 물어본 뒤 건다.
+  const handleCall = () => {
+    const saved = getFamilyPhone();
+    if (saved) {
+      callPhone(saved);
+      return;
+    }
+    setAskingPhone(true);
+  };
 
   const handleSendLetter = () => {
     navigate('/home', { state: { openLetterbox: 'compose' } });
@@ -544,7 +560,9 @@ function WeeklyReportDetail() {
             <SuggestedMessageText>{detail.contactMessage}</SuggestedMessageText>
           </SuggestedMessage>
           <CtaButtonRow>
-            <CallButton type="button">전화하기</CallButton>
+            <CallButton type="button" onClick={handleCall}>
+              전화하기
+            </CallButton>
             <LetterButton type="button" onClick={handleSendLetter}>
               편지 보내기
             </LetterButton>
@@ -561,6 +579,17 @@ function WeeklyReportDetail() {
           </DayButton>
         ))}
       </DayJumpRow>
+
+      {askingPhone && (
+        <PhoneNumberPopup
+          name={personLabel}
+          onSaved={(phone) => {
+            setAskingPhone(false);
+            callPhone(phone);
+          }}
+          onClose={() => setAskingPhone(false)}
+        />
+      )}
     </Page>
   );
 }

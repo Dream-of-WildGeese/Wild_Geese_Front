@@ -1,4 +1,6 @@
 export { createUser } from './createUser';
+export { getMe } from './getMe';
+export { getHealthProfile } from './getHealthProfile';
 export { updateHealthProfile } from './updateHealthProfile';
 export { getNotificationSetting } from './getNotificationSetting';
 export { updateNotificationSetting } from './updateNotificationSetting';
