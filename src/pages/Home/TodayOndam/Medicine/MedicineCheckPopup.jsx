@@ -4,7 +4,7 @@ import clockIcon from '../../../../assets/popup/clock.png';
 import medFlowerA from '../../../../assets/popup/med-flower-a.png';
 import medFlowerB from '../../../../assets/popup/med-flower-b.png';
 import medEmpty from '../../../../assets/popup/med-empty.png';
-import { getMedications, createMedicationLog } from '../../../../api/medication';
+import { getMedications, updateMedicationLogs } from '../../../../api/medication';
 import { saveMealLog } from '../../../../api/meal';
 import { useApi, useApiAction } from '../../../../hooks/useApi';
 import { parseTime, toDateString } from '../../../../utils/medication';
@@ -24,18 +24,18 @@ import MedicineLogEditPopup from './MedicineLogEditPopup';
 const MEAL_TYPE_BY_LABEL = { 아침: 'BREAKFAST', 점심: 'LUNCH', 저녁: 'DINNER' };
 const MED_FLOWERS = [medFlowerA, medFlowerB];
 
+// 생성(POST)은 기록이 이미 있으면 '이미 복약 기록이 존재합니다'로 거부당한다.
+// 수정(PUT)은 덮어쓰기라 몇 번을 눌러도 안전해서 이쪽을 쓴다.
 async function submitMedicationCheck({ dueMedications, checks, mealLabel }) {
   const recordDate = toDateString();
 
-  await Promise.all(
-    dueMedications.map((med) =>
-      createMedicationLog({
-        scheduleId: med.scheduleId,
-        recordDate,
-        status: checks[med.scheduleId] ? 'TAKEN' : 'NOT_RECORDED',
-      }),
-    ),
-  );
+  await updateMedicationLogs({
+    recordDate,
+    logs: dueMedications.map((med) => ({
+      scheduleId: med.scheduleId,
+      status: checks[med.scheduleId] ? 'TAKEN' : 'NOT_RECORDED',
+    })),
+  });
 
   const mealType = MEAL_TYPE_BY_LABEL[mealLabel];
   if (mealType) {
@@ -64,16 +64,19 @@ const CheckLabel = styled.span`
   font-weight: 500;
 `;
 
+// Figma는 padding 12/22에 16px이지만 행(54px)을 거의 채워서 답답해 보인다.
+// 행 안에서 여백이 남도록 한 단계 줄였다.
 const CheckButton = styled.button`
-  padding: 12px 22px;
-  border-radius: 10px;
+  height: 34px;
+  padding: 0 14px;
+  border-radius: 8px;
 
   border: 1.5px solid ${({ $on }) => ($on ? 'rgba(87, 107, 26, 0.5)' : '#d8cbb8')};
   background: ${({ $on }) => ($on ? '#cbd879' : '#fff')};
   color: ${({ $on }) => ($on ? '#364310' : '#8c8780')};
 
   font-family: 'Noto Sans KR';
-  font-size: 16px;
+  font-size: 14px;
   font-weight: 700;
   white-space: nowrap;
 `;

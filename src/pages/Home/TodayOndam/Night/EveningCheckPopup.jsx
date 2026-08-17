@@ -219,6 +219,10 @@ function EveningCheckPopup({ onClose, onCompleted }) {
   const question = questions[stepIndex];
   const isLastStep = stepIndex === totalSteps - 1;
 
+  // 이미 답한 질문에 다시 제출하면 서버가 500을 낸다.
+  // 오늘치를 이미 채웠으면 5단계를 다시 돌리지 않고 완료 상태만 보여준다.
+  const alreadyDone = Boolean(data) && data.completedCount >= data.totalCount && data.totalCount > 0;
+
   // 선택지가 없는 질문(맞춤 질문)은 음성/자유 입력으로 답한다.
   const choices = question?.choices ?? [];
   const isVoiceStep = choices.length === 0;
@@ -252,7 +256,7 @@ function EveningCheckPopup({ onClose, onCompleted }) {
     onCompleted();
   };
 
-  if (loading || error || totalSteps === 0) {
+  if (loading || error || totalSteps === 0 || alreadyDone) {
     return (
       <PopupPortal>
         <Backdrop onClick={onClose}>
@@ -266,8 +270,15 @@ function EveningCheckPopup({ onClose, onCompleted }) {
                 ? '질문을 불러오는 중이에요...'
                 : error
                   ? error.message
-                  : '오늘은 준비된 질문이 없어요.'}
+                  : alreadyDone
+                    ? '오늘 건강 체크는 이미 마치셨어요!'
+                    : '오늘은 준비된 질문이 없어요.'}
             </Message>
+            {alreadyDone && (
+              <PrimaryButton type="button" onClick={onCompleted}>
+                오늘의 건강일지 보기
+              </PrimaryButton>
+            )}
           </Card>
         </Backdrop>
       </PopupPortal>
