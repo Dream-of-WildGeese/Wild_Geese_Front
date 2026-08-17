@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
 import back from '../../../assets/onboarding/back.svg';
 import AddHealthCheck from './AddHealthCheck';
+import { useFamilyRelation } from '../../../hooks/useFamilyRelation';
 
 const WEEKDAYS = ['일', '월', '화', '수', '목', '금', '토'];
 
@@ -74,6 +75,7 @@ const HealthCheck = () => {
   const navigate = useNavigate();
   const [person, setPerson] = useState('me');
   const [showAddModal, setShowAddModal] = useState(false);
+  const { partnerLabel } = useFamilyRelation();
 
   const today = useMemo(() => new Date(2026, 8, 15), []);
   const year = today.getFullYear();
@@ -93,6 +95,8 @@ const HealthCheck = () => {
   }
 
   const current = MOCK_HEALTH_CHECKS[person];
+  // 검진 데이터는 아직 목업이지만, 상대방 호칭만은 실제 role/gender를 따른다.
+  const displayName = person === 'me' ? current.name : partnerLabel;
 
   return (
     <Page>
@@ -125,7 +129,7 @@ const HealthCheck = () => {
             $variant="family"
             onClick={() => setPerson('family')}
           >
-            엄마
+            {partnerLabel}
           </ToggleButton>
         </ToggleWrap>
 
@@ -176,7 +180,7 @@ const HealthCheck = () => {
 
         <UpcomingBanner>
           <UpcomingTitle>
-            {current.name}의 다음 검진까지 D-{current.upcoming.daysLeft}
+            {displayName}의 다음 검진까지 D-{current.upcoming.daysLeft}
           </UpcomingTitle>
 
           <UpcomingMeta>
@@ -202,7 +206,7 @@ const HealthCheck = () => {
 
         <InsightCard>
           <InsightIntro>
-            {current.name}의 최근 건강기록에서 눈에 띄는 변화예요.
+            {displayName}의 최근 건강기록에서 눈에 띄는 변화예요.
           </InsightIntro>
 
           <InsightList>

@@ -18,6 +18,7 @@ import mActivity from '../../../assets/journal/m-activity.png';
 import mBody from '../../../assets/journal/m-body.png';
 import { loadTodayReport } from './todayReportData';
 import { useApi } from '../../../hooks/useApi';
+import { useFamilyRelation } from '../../../hooks/useFamilyRelation';
 import JournalCta from './JournalCta';
 
 // Figma 31 / 31b: '오늘의 온담'이 '오늘의 건강일지'로 이름이 바뀌고
@@ -390,6 +391,7 @@ function TodayReport() {
   const navigate = useNavigate();
   const [person, setPerson] = useState('me');
   const { data: report, loading, error } = useApi(loadTodayReport, { args: [person] });
+  const { partnerLabel } = useFamilyRelation();
 
   const isMine = person === 'me';
 
@@ -447,7 +449,7 @@ function TodayReport() {
           나
         </ToggleTab>
         <ToggleTab type="button" $active={!isMine} onClick={() => setPerson('family')}>
-          가족
+          {partnerLabel}
         </ToggleTab>
       </PersonToggle>
 

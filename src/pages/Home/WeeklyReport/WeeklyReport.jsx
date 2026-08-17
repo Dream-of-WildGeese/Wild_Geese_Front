@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
 import { loadWeeklyList } from './weeklyReportData';
 import { useApi } from '../../../hooks/useApi';
+import { useFamilyRelation } from '../../../hooks/useFamilyRelation';
 
 const Page = styled.div`
   position: relative;
@@ -192,6 +193,7 @@ function WeeklyReport() {
   const navigate = useNavigate();
   const [person, setPerson] = useState('me');
   const { data, loading, error } = useApi(loadWeeklyList, { args: [person] });
+  const { partnerLabel } = useFamilyRelation();
 
   const currentWeek = data?.current ?? null;
   const pastWeeks = useMemo(() => data?.past ?? [], [data]);
@@ -221,14 +223,14 @@ function WeeklyReport() {
   return (
     <Page>
       <Title>주간 리포트</Title>
-      <Subtitle>{person === 'me' ? '매주 일요일에 새로운 리포트가 만들어져요' : '엄마의 리포트가 매주 일요일에 만들어져요'}</Subtitle>
+      <Subtitle>{person === 'me' ? '매주 일요일에 새로운 리포트가 만들어져요' : `${partnerLabel}의 리포트가 매주 일요일에 만들어져요`}</Subtitle>
 
       <ToggleWrap>
         <ToggleTab type="button" $active={person === 'me'} onClick={() => setPerson('me')}>
           나
         </ToggleTab>
         <ToggleTab type="button" $active={person === 'mom'} onClick={() => setPerson('mom')}>
-          엄마
+          {partnerLabel}
         </ToggleTab>
       </ToggleWrap>
 

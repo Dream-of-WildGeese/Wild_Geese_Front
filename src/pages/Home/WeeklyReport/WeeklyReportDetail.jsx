@@ -2,6 +2,7 @@ import { useNavigate, useLocation, useParams } from 'react-router-dom';
 import styled from 'styled-components';
 import { loadWeeklyDetail } from './weeklyReportData';
 import { useApi } from '../../../hooks/useApi';
+import { useFamilyRelation } from '../../../hooks/useFamilyRelation';
 
 const Page = styled.div`
   position: relative;
@@ -367,6 +368,7 @@ function WeeklyReportDetail() {
   const person = location.state?.person ?? 'me';
 
   const { data, loading, error } = useApi(loadWeeklyDetail, { args: [weekId, person] });
+  const { partnerLabel } = useFamilyRelation();
   const week = data?.week;
   const detail = data?.detail;
 
@@ -391,7 +393,7 @@ function WeeklyReportDetail() {
     );
   }
 
-  const personLabel = person === 'me' ? '나' : '엄마';
+  const personLabel = person === 'me' ? '나' : partnerLabel;
 
   const handleSendLetter = () => {
     navigate('/home', { state: { openLetterbox: 'compose' } });
@@ -539,7 +541,7 @@ function WeeklyReportDetail() {
 
       {person === 'mom' && (
         <CtaCard>
-          <CtaTitle>엄마에게 연락해볼까요?</CtaTitle>
+          <CtaTitle>{partnerLabel}에게 연락해볼까요?</CtaTitle>
           <SuggestedMessage>
             <SuggestedMessageText>{detail.contactMessage}</SuggestedMessageText>
           </SuggestedMessage>
