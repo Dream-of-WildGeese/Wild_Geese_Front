@@ -57,11 +57,13 @@ const EVERY_OTHER_DAY = ['MONDAY', 'WEDNESDAY', 'FRIDAY', 'SUNDAY'];
 
 // 서버는 '이틀에 한 번' 같은 주기를 모르고 요일 목록만 받는다.
 // 그래서 주기를 요일로 근사해서 보낸다(이틀에 한 번 = 월수금일).
+//
+// 빈 배열을 보내면 서버가 '어느 요일에도 해당 없음'으로 처리해서
+// 복약 기록 자체가 저장되지 않는다. 그래서 기본값을 매일로 둔다.
 export const repeatToDays = (repeat) => {
-  if (repeat === '매일') return ALL_DAYS;
   if (repeat === '주 3회') return THREE_TIMES_A_WEEK;
   if (repeat === '이틀에 한 번') return EVERY_OTHER_DAY;
-  return [];
+  return ALL_DAYS;
 };
 
 export const daysToRepeat = (days) => {
