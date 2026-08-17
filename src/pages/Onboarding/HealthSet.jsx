@@ -735,20 +735,7 @@ const AddDiseaseRow = styled.div`
   margin-top: 16px;
 `;
 
-const HighlightCard = styled.div`
-  padding: 16px;
-  margin-bottom: 16px;
-  border-radius: 18px;
-  border: 1px solid rgba(201,113,88,.35);
-  background: #FFF3EC;
-`;
 
-const HighlightText = styled.p`
-  margin: 0 0 12px;
-  color: #C97158;
-  font-size: 13px;
-  line-height: 1.5;
-`;
 const RemoveIcon = styled.button`
   margin-left: 8px;
   padding: 0;
