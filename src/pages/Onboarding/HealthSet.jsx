@@ -8,6 +8,7 @@ import { updateHealthProfile } from '../../api/user';
 import { getMedications } from '../../api/medication';
 import { useApi, useApiAction } from '../../hooks/useApi';
 import BirthDatePickerModal from '../../components/BirthDatePickerModal';
+import heart from '../../assets/onboarding/heart.svg';
 
 // "1856-03-02" -> "1856년 3월 2일"
 const formatBirthLabel = (value) => {
@@ -64,9 +65,10 @@ const HealthSet = () => {
       name: name.trim(),
       birthDate: birth,
       gender: GENDER_VALUES[gender] ?? gender,
-      diseases: customDisease.trim()
-      ? [...selectedDiseases.filter((d) => d !== '기타'), customDisease.trim()]
-      : selectedDiseases,
+      diseases: [
+        ...selectedDiseases.filter((d) => d !== '기타'),
+        ...otherDiseases,
+      ],
 
     wellnessInterests: interests
       .map((item) => INTEREST_VALUES[item])
@@ -88,11 +90,42 @@ const HealthSet = () => {
   };
 
   const toggleDisease = (disease) => {
-      setConditions(
-        selectedDiseases.includes(disease)
-          ? selectedDiseases.filter((d) => d !== disease)
-          : [...selectedDiseases, disease]
-      );
+        if (disease === '기타' && selectedDiseases.includes('기타')) {
+          setOtherDiseases([]);
+          setOtherDiseaseInput('');
+        }
+
+        setConditions(
+          selectedDiseases.includes(disease)
+            ? selectedDiseases.filter((d) => d !== disease)
+            : [...selectedDiseases, disease]
+        );
+      };
+    const addOtherDisease = () => {
+      const value = otherDiseaseInput.trim();
+
+      if (!value || otherDiseases.includes(value)) return;
+
+      const updated = [...otherDiseases, value];
+
+      setOtherDiseases(updated);
+      setOtherDiseaseInput('');
+
+      setConditions([
+        ...selectedDiseases.filter((d) => d !== '기타'),
+        '기타',
+        ...updated,
+      ]);
+    };
+    const removeOtherDisease = (target) => {
+      const updated = otherDiseases.filter((d) => d !== target);
+
+      setOtherDiseases(updated);
+
+      setConditions([
+        ...selectedDiseases.filter((d) => d !== '기타' && d !== target),
+        ...(updated.length ? ['기타', ...updated] : []),
+      ]);
     };
   const diseaseList = [
     '고혈압',
@@ -102,15 +135,16 @@ const HealthSet = () => {
     '관절·허리 통증',
     '골다공증',
     '기타',
+    '없음',
   ];
   
 
   const selectedDiseases = data.conditions || [];
-  const [customDisease, setCustomDisease] = useState(
-  data.conditions?.find(
-    (d) => !diseaseList.includes(d)
-  ) || ''
+  const [otherDiseaseInput, setOtherDiseaseInput] = useState('');
+const [otherDiseases, setOtherDiseases] = useState(
+  data.conditions?.filter((d) => !diseaseList.includes(d)) || []
 );
+
 
   const handleNameChange = (e) => {
     setName(e.target.value);
@@ -157,16 +191,24 @@ const HealthSet = () => {
         </ProgressWrapper>
 
         <SubText>전체 3단계 중 2단계예요</SubText>
+        <StageBlock>
+          <StageTitleRow>
+            <StageIcon src={heart} alt="" />
+            <StageTitle>2단계. 건강 프로필 설정</StageTitle>
+          </StageTitleRow>
+
+          <StageDesc>가족과 나누고 싶은 건강 정보를 알려주세요</StageDesc>
+        </StageBlock>
         <ScrollArea>
             <Card>
             <CardHeader>
                 <CardTitle>기본 정보</CardTitle>
                 <RoleBadge>{role === 'parent' ? '부모' : '자녀'}</RoleBadge>
             </CardHeader>
-            <CardDesc><Required>*</Required> 표시는 모두 입력해야 다음으로 넘어갈 수 있어요</CardDesc>
+           
 
             <InputGroup>
-                <Label>이름 <Required>*</Required></Label>
+                <Label>이름</Label>
                 <Input
                 value={name}
                 onChange={handleNameChange}
@@ -174,15 +216,14 @@ const HealthSet = () => {
             </InputGroup>
 
             <InputGroup>
-                <Label>생년월일 <Required>*</Required></Label>
+                <Label>생년월일 </Label>
                 <DateSelectButton type="button" onClick={() => setIsBirthPickerOpen(true)}>
                   {birth ? formatBirthLabel(birth) : '생년월일을 선택해주세요'}
                 </DateSelectButton>
-                <FieldHint>만 {MIN_AGE}세 이상만 가입할 수 있어요</FieldHint>
             </InputGroup>
 
             <InputGroup>
-                <Label>성별 <Required>*</Required></Label>
+                <Label>성별 </Label>
 
                 <GenderWrap>
                 <GenderButton
@@ -234,23 +275,34 @@ const HealthSet = () => {
                 ))}
               </ChipWrap>
               {selectedDiseases.includes('기타') && (
-                  <DiseaseInput
-                    value={customDisease}
-                    onChange={(e) => {
-                      const value = e.target.value;
-                      setCustomDisease(value);
+                <>
+                  <AddDiseaseRow>
+                    <DiseaseInput
+                      value={otherDiseaseInput}
+                      onChange={(e) => setOtherDiseaseInput(e.target.value)}
+                      placeholder="예: 갑상선 질환"
+                    />
+                    <AddChip type="button" onClick={addOtherDisease}>
+                      +
+                    </AddChip>
+                  </AddDiseaseRow>
 
-                      setConditions([
-                        ...selectedDiseases.filter(
-                          (d) => d !== "기타" && d !== customDisease
-                        ),
-                        "기타",
-                        value,
-                      ]);
-                    }}
-                    placeholder="예: 갑상선 질환"
-                  />
-                )}
+                  {otherDiseases.length > 0 && (
+                    <ChipWrap>
+                      {otherDiseases.map((disease) => (
+                        <Chip
+                          key={disease}
+                          $active
+                          type="button"
+                          onClick={() => removeOtherDisease(disease)}
+                        >
+                          {disease} ×
+                        </Chip>
+                      ))}
+                    </ChipWrap>
+                  )}
+                </>
+              )}
             </Card>
             <Card>
             <CardTitle>건강 관심사를 골라주세요!</CardTitle>
@@ -280,7 +332,7 @@ const HealthSet = () => {
             </CardHeader>
 
             <CardDesc>
-                복용 중인 약이 있으면 적어주세요
+                잊지 않게 알림을 보내드릴게요.
             </CardDesc>
 
             <ChipWrap>
@@ -350,12 +402,10 @@ const ScrollArea = styled.div`
   scrollbar-width: none;
 `;
 
-
 const Header = styled.div`
   display: flex;
   align-items: center;
   justify-content: center;
-
   height: 40px;
 `;
 
@@ -367,7 +417,6 @@ const BackButton = styled.button`
 
   width: 40px;
   height: 40px;
-
   padding: 0;
   border: none;
   background: transparent;
@@ -385,43 +434,76 @@ const BackIcon = styled.img`
 
 const Title = styled.h1`
   margin: 0;
-
-  color: #000;
-  font-size: 20px;
-  font-weight: 600;
+  color: #4A3A2F;
+  font-family: Jua;
+  font-size: 36px;
+  font-weight: 400;
 `;
 
 const ProgressWrapper = styled.div`
   display: flex;
   gap: 8px;
-
   margin-top: 14px;
 `;
 
 const Progress = styled.div`
   flex: 1;
   height: 6px;
-
   border-radius: 999px;
-
-  background: ${({ $active }) =>
-    $active ? '#E8734A' : '#D9D4CC'};
+  background: ${({ $active }) => ($active ? '#CBD879' : '#E7E1D6')};
 `;
 
 const SubText = styled.p`
-  margin: 8px 0 20px;
+  margin: 8px 0 18px;
+  text-align: center;
+  color: #A79C8E;
+  font-size: 13px;
+  font-weight: 500;
+`;
 
-  color: #999;
-  font-size: 14px;
+const StageBlock = styled.div`
+  margin: 0 0 18px;
+`;
+
+const StageTitleRow = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 4px;
+`;
+
+const StageIcon = styled.img`
+  width: 40px;
+  height: 40px;
+`;
+
+const StageTitle = styled.h2`
+  margin: 0;
+  color: #4A3A2F;
+font-family: Jua;
+font-size: 28px;
+font-style: normal;
+font-weight: 400;
+line-height: normal;
+`;
+
+const StageDesc = styled.p`
+  margin: 0 3px 0;
+  color: #A79C8E;
+font-family: "Noto Sans KR";
+font-size: 18px;
+font-style: normal;
+font-weight: 400;
+line-height: normal;
+flex-direction: column;
+justify-content: center;
 `;
 
 const Card = styled.div`
-  padding: 16px;
-  margin-bottom: 16px;
-
-  border-radius: 14px;
-
-  background: #F7F5F0;
+  padding: 18px;
+  margin-bottom: 18px;
+  border-radius: 20px;
+  border: 1.5px solid rgba(74,58,47,.28);
+  background: #FFFDF8;
 `;
 
 const CardHeader = styled.div`
@@ -432,22 +514,19 @@ const CardHeader = styled.div`
 
 const CardTitle = styled.h3`
   margin: 0;
-
-  color: #111;
-
-  font-size: 16px;
-  font-weight: 600;
+  color: #4A3A2F;
+  font-size: 17px;
+  font-weight: 700;
 `;
 
 const RoleBadge = styled.span`
-  padding: 4px 10px;
-
-  border-radius: 999px;
-
-  background: #F8E2D3;
-  color: #E8734A;
-
-  font-size: 12px;
+  padding: 5px 12px;
+  border-radius: 14px;
+  border: 1.2px solid rgba(74, 58, 47, 0.55);
+ background: #F6EBC7;
+  color: #4A3A2F;
+  font-size: 13px;
+  font-weight: 700;
 `;
 
 const InputGroup = styled.div`
@@ -456,44 +535,34 @@ const InputGroup = styled.div`
 
 const Label = styled.label`
   display: block;
-
   margin-bottom: 10px;
-
-  color: #6B6661;
+  color: #4A3A2F;
   font-size: 14px;
+  font-weight: 600;
 `;
 
-// 브라우저 기본 <input type="date"> 대신 앱 톤에 맞춘 달력 모달을 띄우는 버튼.
 const DateSelectButton = styled.button`
   width: 100%;
   height: 48px;
-
   box-sizing: border-box;
   padding: 0 14px;
 
-  border: 1px solid #D9D4CC;
-  border-radius: 12px;
-  background: #FFF;
+  border: 1.5px solid #CFC7BC;
+  border-radius: 14px;
+  background: #FFFDF8;
 
-  color: ${({ children }) => (String(children).includes('선택해주세요') ? '#A79C8E' : '#111')};
+  color: ${({ children }) =>
+    String(children).includes('선택해주세요') ? '#A79C8E' : '#4A3A2F'};
+
   font-size: 15px;
   text-align: left;
   cursor: pointer;
 `;
 
-const Required = styled.span`
-  color: #E8734A;
-  font-weight: 700;
-`;
 
-const FieldHint = styled.p`
-  margin: 6px 0 0;
-  font-size: 12px;
-  color: #A79C8E;
-`;
 
 const RequirementHint = styled.p`
-  margin: 0 0 8px;
+  margin: 0 0 10px;
   text-align: center;
   font-size: 13px;
   color: #A79C8E;
@@ -502,45 +571,47 @@ const RequirementHint = styled.p`
 const Input = styled.input`
   width: 100%;
   height: 48px;
-
   box-sizing: border-box;
-
   padding: 0 14px;
 
-  border: 1px solid #D9D4CC;
-  border-radius: 12px;
+  border: 1.5px solid #CFC7BC;
+  border-radius: 14px;
+  background: #FFFDF8;
 
-  background: #FFF;
-
-  color: #111;
+  color: #4A3A2F;
   font-size: 15px;
-
   outline: none;
 
   &:focus {
-    border-color: #E8734A;
+    border-color: #B89A54;
   }
 `;
 
 const GenderWrap = styled.div`
   display: flex;
-  gap: 8px;
+  gap: 10px;
 `;
 
 const GenderButton = styled.button`
   flex: 1;
   height: 48px;
+  border-radius: 14px;
 
-  border-radius: 12px;
   border: ${({ $active }) =>
-    $active ? '2px solid #E8734A' : '1px solid #D9D4CC'};
+    $active
+      ? '1.2px solid rgba(74, 58, 47, 0.55)'
+      : '1.2px dashed rgba(74, 58, 47, 0.35)'};
 
-  background: #FFF;
-  color: ${({ $active }) =>
-    $active ? '#E8734A' : '#111'};
+  background: ${({ $active }) =>
+    $active ? ' #F6EBC7;' : 'rgba(255, 255, 255, 0.60)'};
 
-  font-size: 15px;
-  font-weight: 500;
+  color: #4A3A2F;
+text-align: center;
+font-family: "Noto Sans KR";
+font-size: 16px;
+font-style: normal;
+font-weight: 700;
+line-height: normal;
 
   cursor: pointer;
 `;
@@ -549,7 +620,6 @@ const AgreeBox = styled.label`
   display: flex;
   align-items: flex-start;
   gap: 8px;
-
   margin-bottom: 16px;
 
   input {
@@ -559,78 +629,75 @@ const AgreeBox = styled.label`
   span {
     color: #777;
     font-size: 11px;
-    line-height: 1.4;
+    line-height: 1.5;
   }
 `;
 
 const CardDesc = styled.p`
   margin: 6px 0 0;
-
-  color: #777;
+  color: #8C8780;
   font-size: 14px;
-  line-height: 1.4;
+  line-height: 1.5;
 `;
 
 const ChipWrap = styled.div`
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
-
+  gap: 10px;
   margin-top: 14px;
 `;
 
 const Chip = styled.button`
   padding: 8px 14px;
 
-  border: 1px solid
-    ${({ $active }) =>
-      $active ? '#E8734A' : '#D9D4CC'};
+  border: ${({ $active }) =>
+    $active
+      ? '1.5px solid #B89A54'
+      : '1.5px dashed #D8D0C7'};
+
   border-radius: 999px;
 
   background: ${({ $active }) =>
-    $active ? '#F8E2D3' : '#FFF'};
+    $active ? ' #F6EBC7;' : 'rgba(255, 255, 255, 0.60)'};
 
-  color: ${({ $active }) =>
-    $active ? '#E8734A' : '#111'};
+  color: #4A3A2F;
 
   font-size: 14px;
+  font-weight: 600;
 
   cursor: pointer;
 `;
 
 const MedChip = styled.div`
   padding: 8px 14px;
-
   border-radius: 999px;
-
-  background: #F8E2D3;
-  color: #E8734A;
-
+  border: 1px solid rgba(74,58,47,.2);
+  background: #E8DEB6;
+  color: #4A3A2F;
   font-size: 14px;
+  font-weight: 600;
 `;
 
 const AddChip = styled.button`
   padding: 8px 14px;
-
-  border: 1px dashed #D9D4CC;
+  border: 1.5px solid #D8D0C7;
   border-radius: 999px;
+  background: rgba(255,255,255,0.6);
 
-  background: #FFF;
-
+  color: #8C8780;
   font-size: 14px;
-
+  font-weight: 600;
   cursor: pointer;
 `;
 
 const Manage = styled.button`
   padding: 0;
-
   border: none;
   background: none;
 
-  color: #E8734A;
-
-  font-size: 13px;
+  color: #8C6E4B;
+  font-size: 18px;
+  font-weight: 700;
 
   cursor: pointer;
 `;
@@ -641,34 +708,41 @@ const NextButton = styled.button`
 
   margin-top: 8px;
 
-  border-radius: 16px;
-  border: 1.5px solid rgba(74, 58, 47, 0.55);
+  border-radius: 18px;
+  border: 1.5px solid rgba(74,58,47,.45);
 
   background: #CBD879;
   color: #4A3A2F;
 
   font-family: Jua, sans-serif;
-  font-size: 18px;
+  font-size: 22px;
   font-weight: 400;
 
   cursor: pointer;
 `;
 
 const DiseaseInput = styled(Input)`
+  flex: 1;
+  margin-top: 0;
+`;
+const AddDiseaseRow = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 10px;
   margin-top: 16px;
 `;
 
 const HighlightCard = styled.div`
   padding: 16px;
   margin-bottom: 16px;
-  border-radius: 14px;
-  border: 1px solid #f2c3a8;
-  background: #fff3ec;
+  border-radius: 18px;
+  border: 1px solid rgba(201,113,88,.35);
+  background: #FFF3EC;
 `;
 
 const HighlightText = styled.p`
   margin: 0 0 12px;
-  color: #e8734a;
+  color: #C97158;
   font-size: 13px;
-  line-height: 1.4;
+  line-height: 1.5;
 `;
