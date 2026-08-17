@@ -1,198 +1,150 @@
 import { useState } from 'react';
 import styled from 'styled-components';
-import mascotImg from '../../../../assets/mascot.png';
-import avatarCheering from '../../../../assets/avatar-cheering.png';
-import avatarHeartHug from '../../../../assets/avatar-heart-hug.png';
+import micIcon from '../../../../assets/popup/mic.png';
+import likeIcon from '../../../../assets/reaction/like.png';
+import cheerIcon from '../../../../assets/reaction/cheer.png';
+import funnyIcon from '../../../../assets/reaction/funny.png';
+import bestIcon from '../../../../assets/reaction/best.png';
+import congratsIcon from '../../../../assets/reaction/congrats.png';
 import { getTodayQuestion, submitMorningAnswer } from '../../../../api/morning';
 import { useApi, useApiAction } from '../../../../hooks/useApi';
+import {
+  PopupBackdrop,
+  PopupCard,
+  PopupInnerBorder,
+  PopupTitle,
+  PopupPrimaryButton,
+  PopupIcon,
+} from '../../../../components/PopupShell';
 
-const REACTIONS = ['좋아요', '힘내요', '웃겨요', '최고', '축하해요'];
-
-const Backdrop = styled.div`
-  position: fixed;
-  inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: ${({ theme }) => theme.spacing.lg};
-  background: rgba(44, 44, 42, 0.4);
-  z-index: ${({ theme }) => theme.zIndex.modal};
-`;
-
-const Card = styled.div`
-  position: relative;
-  width: 100%;
-  max-width: ${({ $wide }) => ($wide ? '354px' : '320px')};
-  padding: ${({ $wide }) => ($wide ? '28px 24px' : '32px 28px 28px')};
-  border-radius: 24px;
-  background: ${({ theme }) => theme.colors.surface};
-  display: flex;
-  flex-direction: column;
-  align-items: ${({ $wide }) => ($wide ? 'stretch' : 'center')};
-  gap: 14px;
-`;
-
-const CharacterCircle = styled.div`
-  width: 64px;
-  height: 64px;
-  border-radius: 32px;
-  overflow: hidden;
-  background: ${({ theme }) => theme.colors.accentSoft};
-  align-self: center;
-
-  img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-  }
-`;
-
-const Message = styled.p`
-  margin: 0;
-  font-size: 20px;
-  font-weight: 600;
-  text-align: center;
-  color: ${({ theme }) => theme.colors.text};
-  line-height: 1.4;
-`;
-
-const QuestionTitle = styled.p`
-  margin: 0;
-  font-size: ${({ $small }) => ($small ? '18px' : '21px')};
-  font-weight: 600;
-  text-align: center;
-  color: ${({ theme }) => theme.colors.text};
-  line-height: 1.4;
-`;
+// Figma 13(공통질문) + 17 ver01(답변 비교).
+// ver01은 반응 아이콘이 '부모님 답변' 카드 안에 들어간다.
+const REACTIONS = [
+  { key: 'LIKE', label: '좋아요', icon: likeIcon },
+  { key: 'CHEER', label: '힘내요', icon: cheerIcon },
+  { key: 'FUNNY', label: '웃겨요', icon: funnyIcon },
+  { key: 'BEST', label: '최고', icon: bestIcon },
+  { key: 'CONGRATS', label: '축하해요', icon: congratsIcon },
+];
 
 const Input = styled.input`
-  height: 48px;
-  padding: 0 14px;
+  width: 100%;
+  height: 68px;
+  padding: 0 18px;
+
   border-radius: 10px;
-  border: 1px solid ${({ theme }) => theme.colors.border};
-  font-size: 17px;
-  color: ${({ theme }) => theme.colors.text};
+  border: 1px solid #d8cbb8;
+  background: #fff;
+
+  color: #4a3a2f;
+  font-family: 'Noto Sans KR';
+  font-size: 21px;
 
   &::placeholder {
-    color: ${({ theme }) => theme.colors.textSub};
+    color: #8c8780;
   }
 `;
 
 const VoiceButton = styled.button`
+  width: 100%;
+  padding: 14px 12px;
+
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
   gap: 8px;
-  height: 42px;
+
   border-radius: 10px;
-  background: ${({ theme }) => theme.colors.accentSoft};
-  border: 1px solid ${({ theme }) => theme.colors.border};
-  color: ${({ theme }) => theme.colors.text};
-  font-size: 16px;
+  border: 1px solid #d8cbb8;
+  background: #fffbf1;
+`;
+
+const VoiceLabel = styled.span`
+  color: #8c8780;
+  font-family: 'Noto Sans KR';
+  font-size: 14px;
   font-weight: 500;
-`;
-
-const PrimaryButton = styled.button`
-  align-self: center;
-  width: 100%;
-  max-width: ${({ $wide }) => ($wide ? '100%' : '264px')};
-  height: 50px;
-  border-radius: 10px;
-  background: ${({ theme }) => theme.colors.accent};
-  color: #fff;
-  font-size: 17px;
-  font-weight: 600;
-
-  &:disabled {
-    opacity: 0.5;
-  }
-`;
-
-const GhostText = styled.button`
-  color: ${({ theme }) => theme.colors.textMuted};
-  font-size: 15px;
 `;
 
 const HintText = styled.p`
   margin: 0;
-  font-size: 14px;
+  width: 100%;
   text-align: center;
-  color: ${({ theme }) => theme.colors.accent};
+  color: #576b1a;
+  font-family: Jua;
+  font-size: 16px;
 `;
 
-const AnswerBox = styled.div`
+const AnswerCard = styled.div`
+  width: 100%;
+  padding: 16px;
+
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  padding: 16px;
-  border-radius: 14px;
-  background: ${({ theme }) => theme.colors.accentSoft};
+  gap: 12px;
+
+  border-radius: 10px;
+  border: 1px solid #d8cbb8;
+  background: #fffbf1;
 `;
 
 const Badge = styled.span`
   align-self: flex-start;
   padding: 4px 10px;
-  border-radius: 8px;
-  font-size: 14px;
-  font-weight: 500;
-  background: ${({ theme, $mine }) => ($mine ? theme.colors.accent : '#fae5d9')};
-  color: ${({ $mine }) => ($mine ? '#fff' : '#e8734a')};
-`;
-
-const AnswerRow = styled.div`
-  display: flex;
-  align-items: flex-start;
-  gap: 10px;
-`;
-
-const AnswerAvatar = styled.img`
-  width: 32px;
-  height: 32px;
-  border-radius: 16px;
-  object-fit: cover;
-  flex-shrink: 0;
+  border-radius: 20px;
+  background: ${({ $mine }) => ($mine ? '#edf3d5' : '#f6ebc7')};
+  color: ${({ $mine }) => ($mine ? '#576b1a' : '#8a6b3e')};
+  font-family: 'Noto Sans KR';
+  font-size: 13px;
+  font-weight: 700;
 `;
 
 const AnswerText = styled.p`
   margin: 0;
-  font-size: 16px;
-  color: ${({ theme }) => theme.colors.text};
+  padding: 12px 14px;
+  border-radius: 10px;
+  background: #fff;
+  border: 1px solid #e8dcc4;
+
+  color: #4a3a2f;
+  font-family: 'Noto Sans KR';
+  font-size: 15px;
   line-height: 1.5;
 `;
 
 const ReactionRow = styled.div`
   display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
+  gap: 10px;
+  align-items: center;
+  justify-content: center;
 `;
 
 const ReactionButton = styled.button`
-  height: 34px;
-  padding: 0 12px;
-  border-radius: 17px;
-  background: ${({ theme, $active }) => ($active ? theme.colors.accent : theme.colors.surface)};
-  border: 1px solid ${({ theme }) => theme.colors.border};
-  color: ${({ theme, $active }) => ($active ? '#fff' : theme.colors.text)};
-  font-size: 13px;
-  font-weight: 500;
+  width: 50px;
+  height: 50px;
+  border-radius: 25px;
+  padding: 3px;
+  border: 2px solid ${({ $active }) => ($active ? '#cbd879' : 'transparent')};
+  background: ${({ $active }) => ($active ? '#edf3d5' : 'transparent')};
 `;
 
 const EmptyAnswerBox = styled.div`
-  padding: 16px;
-  border-radius: 14px;
-  background: ${({ theme }) => theme.colors.accentSoft};
-`;
+  width: 100%;
+  padding: 20px 16px;
+  border-radius: 10px;
+  border: 1px dashed #d8cbb8;
+  background: #fffbf1;
 
-const EmptyAnswerText = styled.p`
-  margin: 0;
-  font-size: 14px;
-  color: ${({ theme }) => theme.colors.textMuted};
-  line-height: 1.6;
   text-align: center;
+  color: #8c8780;
+  font-family: 'Noto Sans KR';
+  font-size: 14px;
+  line-height: 1.6;
 `;
 
 function DayQuestionPopup({ onClose }) {
-  const [step, setStep] = useState('intro'); // intro | question | result
+  const [step, setStep] = useState('question'); // question | result
   const [answer, setAnswer] = useState('');
   const [sentReaction, setSentReaction] = useState(null);
 
@@ -201,7 +153,6 @@ function DayQuestionPopup({ onClose }) {
 
   const questionText = question?.content ?? '';
   const myAnswer = question?.myAnswer ?? '';
-  // 가족 답변은 여러 명일 수 있지만 화면은 한 명분만 보여준다.
   const partnerAnswer = question?.familyAnswers?.[0] ?? null;
 
   const handleSubmit = async () => {
@@ -214,109 +165,90 @@ function DayQuestionPopup({ onClose }) {
       alert(submitError.message);
       return;
     }
-    // 내 답변을 저장하면 그제서야 가족 답변이 함께 내려오므로 다시 조회한다.
     refetch();
     setStep('result');
   };
 
-  if (step === 'intro') {
+  if (step === 'result') {
     return (
-      <Backdrop onClick={onClose}>
-        <Card onClick={(event) => event.stopPropagation()}>
-          <CharacterCircle>
-            <img src={mascotImg} alt="" />
-          </CharacterCircle>
-          <Message>
-            좋은 아침이에요~
-            <br />
-            오늘의 질문에 답해보세요~!
-          </Message>
-          <PrimaryButton type="button" onClick={() => setStep('question')}>
-            답하러 갈게요
-          </PrimaryButton>
-          <GhostText type="button" onClick={onClose}>
-            나중에 할게요
-          </GhostText>
-        </Card>
-      </Backdrop>
-    );
-  }
+      <PopupBackdrop onClick={onClose}>
+        <PopupCard $gap={16} onClick={(event) => event.stopPropagation()}>
+          <PopupInnerBorder />
+          <PopupTitle $center $size={22}>
+            답변 확인하기
+          </PopupTitle>
 
-  if (step === 'question') {
-    return (
-      <Backdrop onClick={onClose}>
-        <Card $wide onClick={(event) => event.stopPropagation()}>
-          <QuestionTitle>
-            {loading ? '질문을 불러오는 중이에요...' : error ? error.message : questionText}
-          </QuestionTitle>
-          <Input
-            placeholder="입력해주세요"
-            value={answer}
-            onChange={(event) => setAnswer(event.target.value)}
-          />
-          {/* 음성 인식은 아침 질문용 STT API가 아직 없어서 표시만 한다 */}
-          <VoiceButton type="button">● 음성으로 인식하기</VoiceButton>
-          <PrimaryButton
-            $wide
-            type="button"
-            onClick={handleSubmit}
-            disabled={!answer.trim() || submitting || !question}
-          >
-            {submitting ? '보내는 중...' : '완료'}
-          </PrimaryButton>
-          <HintText>답변을 남기면 부모님 답변도 보러갈 수 있어요</HintText>
-        </Card>
-      </Backdrop>
+          <AnswerCard>
+            <Badge $mine>내 답변</Badge>
+            <AnswerText>{myAnswer || answer}</AnswerText>
+          </AnswerCard>
+
+          {partnerAnswer ? (
+            <AnswerCard>
+              <Badge>{partnerAnswer.name} 답변</Badge>
+              <AnswerText>{partnerAnswer.textValue}</AnswerText>
+              {/* ver01: 반응 아이콘이 상대 답변 카드 안에 들어간다 */}
+              <ReactionRow>
+                {REACTIONS.map((reaction) => (
+                  <ReactionButton
+                    key={reaction.key}
+                    type="button"
+                    aria-label={reaction.label}
+                    $active={sentReaction === reaction.key}
+                    onClick={() => setSentReaction(reaction.key)}
+                  >
+                    <PopupIcon $size={44} src={reaction.icon} alt="" />
+                  </ReactionButton>
+                ))}
+              </ReactionRow>
+            </AnswerCard>
+          ) : (
+            <EmptyAnswerBox>
+              아직 가족의 답변이 없어요.
+              <br />
+              답변이 도착하면 질문함에서 확인할 수 있어요.
+            </EmptyAnswerBox>
+          )}
+
+          <PopupPrimaryButton type="button" onClick={onClose}>
+            닫기
+          </PopupPrimaryButton>
+        </PopupCard>
+      </PopupBackdrop>
     );
   }
 
   return (
-    <Backdrop onClick={onClose}>
-      <Card $wide onClick={(event) => event.stopPropagation()}>
-        <QuestionTitle $small>{questionText}</QuestionTitle>
-        <AnswerBox>
-          <Badge $mine>내 답변</Badge>
-          <AnswerRow>
-            <AnswerAvatar src={avatarCheering} alt="" />
-            <AnswerText>{myAnswer || answer}</AnswerText>
-          </AnswerRow>
-        </AnswerBox>
+    <PopupBackdrop onClick={onClose}>
+      <PopupCard $center $gap={16} onClick={(event) => event.stopPropagation()}>
+        <PopupInnerBorder />
+        <PopupTitle $center $size={24}>
+          {loading ? '질문을 불러오는 중이에요...' : error ? error.message : questionText}
+        </PopupTitle>
 
-        {partnerAnswer ? (
-          <AnswerBox>
-            <Badge>{partnerAnswer.name} 답변</Badge>
-            <AnswerRow>
-              <AnswerAvatar src={avatarHeartHug} alt="" />
-              <AnswerText>{partnerAnswer.textValue}</AnswerText>
-            </AnswerRow>
-            <ReactionRow>
-              {REACTIONS.map((reaction) => (
-                <ReactionButton
-                  key={reaction}
-                  type="button"
-                  $active={sentReaction === reaction}
-                  onClick={() => setSentReaction(reaction)}
-                >
-                  {reaction}
-                </ReactionButton>
-              ))}
-            </ReactionRow>
-          </AnswerBox>
-        ) : (
-          <EmptyAnswerBox>
-            <EmptyAnswerText>
-              아직 부모님 답변이 없어요.
-              <br />
-              답변이 도착하면 질문함에서 확인할 수 있어요.
-            </EmptyAnswerText>
-          </EmptyAnswerBox>
-        )}
+        <Input
+          placeholder="답변을 적어주세요"
+          value={answer}
+          onChange={(event) => setAnswer(event.target.value)}
+        />
 
-        <PrimaryButton $wide type="button" onClick={onClose}>
-          닫기
-        </PrimaryButton>
-      </Card>
-    </Backdrop>
+        {/* 아침 질문용 STT API가 아직 없어서 버튼만 노출한다 */}
+        <VoiceButton type="button">
+          <PopupIcon $size={100} src={micIcon} alt="" />
+          <VoiceLabel>음성으로 인식하기</VoiceLabel>
+        </VoiceButton>
+
+        <PopupPrimaryButton
+          type="button"
+          onClick={handleSubmit}
+          disabled={!answer.trim() || submitting || !question}
+        >
+          {submitting ? '보내는 중...' : '완료'}
+        </PopupPrimaryButton>
+
+        <HintText>답변을 남기면 부모님 답변도 볼 수 있어요</HintText>
+      </PopupCard>
+    </PopupBackdrop>
   );
 }
 

@@ -8,7 +8,7 @@ const Page = styled.div`
   width: 100%;
   height: 100%;
   overflow-y: auto;
-  background: #fff;
+  background: #FFF8ED;
 
   &::-webkit-scrollbar {
     display: none;
@@ -24,7 +24,7 @@ const Header = styled.div`
   align-items: center;
   justify-content: space-between;
   padding-bottom: 12px;
-  border-bottom: 1px solid #e5e0d9;
+  border-bottom: 1.3px solid rgba(74,58,47,.25);
 `;
 
 const BackButton = styled.button`
@@ -49,7 +49,7 @@ const Card = styled.div`
   margin-top: 20px;
   padding: 16px;
   border-radius: 14px;
-  background: #f7f5f0;
+  background: #F8F5EE;
 `;
 
 const CardTitle = styled.p`
@@ -80,8 +80,8 @@ const Input = styled.input`
   height: 50px;
   padding: 0 14px;
   border-radius: 10px;
-  border: 1px solid #e5e0d9;
-  background: #fff;
+  border: 1.3px solid rgba(74,58,47,.4);
+  background: #FFF8ED;
   font-size: 16px;
   color: #000;
 `;
@@ -96,7 +96,7 @@ const GenderButton = styled.button`
   height: 50px;
   border-radius: 10px;
   border: ${({ $active }) => ($active ? '2px solid #e8734a' : '1px solid #e5e0d9')};
-  background: #fff;
+  background: #FFF8ED;
   color: ${({ $active }) => ($active ? '#e8734a' : '#000')};
   font-size: 15px;
   font-weight: 500;
@@ -122,7 +122,7 @@ const SaveButton = styled.button`
   height: 54px;
   margin-top: 28px;
   border-radius: 14px;
-  background: #e8734a;
+  background: #DBE4A1;
   color: #fff;
   font-size: 16px;
   font-weight: 600;

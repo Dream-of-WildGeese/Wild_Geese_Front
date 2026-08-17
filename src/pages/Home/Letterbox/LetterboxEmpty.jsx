@@ -1,61 +1,70 @@
 import styled from 'styled-components';
-import envelopeEmpty from '../../../assets/letterbox/envelope-empty.svg';
+import envelopeEmpty from '../../../assets/letterbox/envelope-empty-img.png';
+import pencilBtn from '../../../assets/letterbox/pencil-btn.png';
+import {
+  PopupCard,
+  PopupInnerBorder,
+  PopupClose,
+  PopupPrimaryButton,
+  PopupIcon,
+} from '../../../components/PopupShell';
 
-const Card = styled.div`
+// Figma 35c ver02: 받은 편지가 없을 때. 35a와 같은 틀이지만 봉투 그림과 문구가 다르다.
+const EnvelopeBlock = styled.div`
+  width: 208px;
+  height: 168px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+`;
+
+const TextBlock = styled.div`
   width: 100%;
-  max-width: 300px;
-  padding: 32px 28px 28px;
-  border-radius: 24px;
-  background: #fff;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 14px;
-`;
-
-const EnvelopeImage = styled.img`
-  width: 140px;
-  height: 100px;
+  gap: 2px;
+  text-align: center;
 `;
 
 const Title = styled.p`
   margin: 0;
-  font-size: 19px;
-  font-weight: 600;
-  color: #000;
+  color: #4a3a2f;
+  font-family: 'Noto Sans KR';
+  font-size: 24px;
+  font-weight: 700;
 `;
 
-const Desc = styled.p`
+const Subtitle = styled.p`
   margin: 0;
-  font-size: 14px;
-  color: #8c8780;
+  color: #a79c8e;
+  font-family: 'Noto Sans KR';
+  font-size: 16px;
+  font-weight: 500;
 `;
 
-const WriteButton = styled.button`
-  width: 240px;
-  height: 50px;
-  border-radius: 10px;
-  background: #e8734a;
-  color: #fff;
-  font-size: 15px;
-  font-weight: 600;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-`;
-
-function LetterboxEmpty({ onWrite }) {
+function LetterboxEmpty({ onWrite, onClose }) {
   return (
-    <Card>
-      <EnvelopeImage src={envelopeEmpty} alt="" />
-      <Title>아직 편지가 없어요!</Title>
-      <Desc>편지를 남겨볼까요?</Desc>
-      <WriteButton type="button" onClick={onWrite}>
-        <span>+</span>
-        <span>편지 쓰기</span>
-      </WriteButton>
-    </Card>
+    <PopupCard $center $gap={18} $padTop={36} onClick={(event) => event.stopPropagation()}>
+      <PopupInnerBorder />
+      <PopupClose type="button" aria-label="닫기" onClick={onClose}>
+        ✕
+      </PopupClose>
+
+      <EnvelopeBlock>
+        <PopupIcon $size={168} src={envelopeEmpty} alt="" />
+      </EnvelopeBlock>
+
+      <TextBlock>
+        <Title>아직 편지가 없어요!</Title>
+        <Subtitle>편지를 남겨볼까요?</Subtitle>
+      </TextBlock>
+
+      <PopupPrimaryButton type="button" onClick={onWrite}>
+        <PopupIcon $size={30} src={pencilBtn} alt="" />
+        편지 쓰러가기
+      </PopupPrimaryButton>
+    </PopupCard>
   );
 }
 

@@ -7,16 +7,6 @@ import { toDateString } from '../../../utils/medication';
 
 const WEEKDAY_LABELS = ['일', '월', '화', '수', '목', '금', '토'];
 
-// 저녁 건강체크 항목별 아이콘. 서버의 metricType을 그대로 키로 쓴다.
-const METRIC_ICONS = {
-  CONDITION: '♥',
-  SLEEP: 'Z',
-  MEAL: 'M',
-  ACTIVITY: 'A',
-  BODY: 'B',
-  CUSTOM: '✦',
-};
-
 const MEDICATION_COLORS = [
   { color: '#fcd9d9', textColor: '#d94040' },
   { color: '#fce5c7', textColor: '#d98c26' },
@@ -61,6 +51,8 @@ const buildMedicationEntry = (medicationLog, medications) => {
     type: 'medication',
     time: '복약',
     medications: items,
+    // 안 챙긴 약이 있으면 카드 제목 옆에 느낌표 아이콘을 띄운다.
+    hasMissed: notTaken.length > 0,
     note:
       notTaken.length > 0
         ? `${notTaken.map((item) => item.name).join(', ')}은 아직 기록되지 않았어요`
@@ -90,11 +82,11 @@ const buildTimeline = ({ dailyLog, question, medicationLog, medications }) => {
     timeline.push({
       type: 'healthcheck',
       time: formatTimeLabel('저녁', eveningAnswers[0].answeredAt),
+      // 아이콘은 화면 쪽에서 metricType으로 고른다.
       lines: eveningAnswers.map((answer) => ({
-        icon: METRIC_ICONS[answer.metricType] ?? '✦',
+        metricType: answer.metricType,
         text: answer.textValue || answer.choiceValue || '',
       })),
-      aiComment: dailyLog?.summaryText ?? '',
     });
   }
 
@@ -123,7 +115,6 @@ export async function loadTodayReport(person, date = new Date()) {
   const partner = (family?.members ?? []).find(
     (member) => String(member.userId) !== String(myUserId),
   );
-  const partnerLabel = partner?.name ?? partner?.relationship ?? '가족';
 
   const isMe = person === 'me';
   if (!isMe && !partner) {
@@ -140,48 +131,26 @@ export async function loadTodayReport(person, date = new Date()) {
   ]);
 
   return {
-  partnerLabel: '엄마',
-  dateLabel: formatDateLabel(date),
-  summary: {
-    questionStatus: '완료',
-    medication: '2/3',
-    condition: '좋음',
-  },
-  aiComment: '오늘은 걸음수도 늘고 컨디션도 좋아 보여요. 이런 흐름 쭉 이어가봐요!',
-  stepMessage: '오늘 6,200보 걸었어요. 어제보다 800보 더 걸었네요.',
-  timeline: [
-    {
-      type: 'question',
-      time: '아침 · 오전 8:32',
-      question: '오늘 가장 먹고 싶은 음식은?',
-      answer: '칼국수',
-    },
-    {
-      type: 'medication',
-      time: '복약 · 오후 2:05',
-      medications: [
-        { name: '혈압약', taken: true, color: '#FCD9D9', textColor: '#D94040' },
-        { name: '비타민D', taken: true, color: '#FCE5C7', textColor: '#D98C26' },
-        { name: '저녁약', taken: false },
-      ],
-      note: '저녁약은 아직 기록되지 않았어요',
-    },
-    {
-      type: 'healthcheck',
-      time: '저녁 · 오후 8:10',
-      lines: [
-        { icon: '♥', text: '컨디션이 좋았어요' },
-        { icon: 'Z', text: '6시간 정도 푹 주무셨어요' },
-        { icon: 'M', text: '식사도 잘 챙기셨어요' },
-        { icon: 'A', text: '가볍게 산책도 다녀오셨어요' },
-        { icon: 'B', text: '몸 상태도 괜찮았다고 하셨어요' },
-      ],
-      aiComment: '산책 다녀오신 덕분에 컨디션이 더 좋으셨나 봐요.',
-    },
-  ],
-  cta: {
-    title: '엄마와 안부를 나눠볼까요?',
-    suggestedMessage: '"오늘 컨디션 좋으시다니 저도 기분 좋네요!"',
-  },
-};
+    personLabel: isMe ? '나' : '가족',
+    dateLabel: formatDateLabel(date),
+    summary: buildSummary(dailyLog, medicationLog),
+    aiComment: dailyLog?.summaryText ?? '',
+    // 타임라인 아래에 한 번 더 붙는 저녁 코멘트. 서버가 별도 필드를 주면 그때 채운다.
+    eveningComment: '',
+    stepMessage: '',
+    timeline: buildTimeline({
+      dailyLog,
+      question: (history ?? [])[0],
+      medicationLog,
+      medications: medications ?? [],
+    }),
+    cta: isMe
+      ? null
+      : {
+          title: '이제 가족과 안부를 나눠볼까요?',
+          suggestedMessage: dailyLog?.summaryText
+            ? `"${dailyLog.summaryText}"`
+            : '"오늘 하루는 어떠셨어요?"',
+        },
+  };
 }

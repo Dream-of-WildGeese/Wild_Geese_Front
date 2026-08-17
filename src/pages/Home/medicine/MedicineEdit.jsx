@@ -10,7 +10,7 @@ const Page = styled.div`
   width: 100%;
   height: 100%;
   overflow-y: auto;
-  background: #fff;
+  background: #FFF8ED;
 
   &::-webkit-scrollbar {
     display: none;
@@ -26,7 +26,7 @@ const Header = styled.div`
   align-items: center;
   justify-content: space-between;
   padding-bottom: 12px;
-  border-bottom: 1px solid #e5e0d9;
+  border-bottom: 1.3px solid rgba(74,58,47,.25);
 `;
 
 const BackButton = styled.button`
@@ -58,7 +58,7 @@ const Input = styled.input`
   height: 50px;
   padding: 0 14px;
   border-radius: 10px;
-  border: 1px solid #e5e0d9;
+  border: 1.3px solid rgba(74,58,47,.4);
   font-size: 16px;
   color: #000;
 `;
@@ -88,17 +88,17 @@ const Select = styled.select`
   height: 50px;
   padding: 0 10px;
   border-radius: 10px;
-  border: 1px solid #e5e0d9;
+  border: 1.3px solid rgba(74,58,47,.4);
   font-size: 15px;
   color: #000;
-  background: #fff;
+  background: #FFF8ED;
 `;
 
 const AddTimeButton = styled.button`
   width: 50px;
   height: 50px;
   border-radius: 10px;
-  border: 1px solid #e5e0d9;
+  border: 1.3px solid rgba(74,58,47,.4);
   font-size: 18px;
   font-weight: 500;
 `;
@@ -108,10 +108,10 @@ const RepeatSelect = styled.select`
   height: 50px;
   padding: 0 14px;
   border-radius: 10px;
-  border: 1px solid #e5e0d9;
+  border: 1.3px solid rgba(74,58,47,.4);
   font-size: 16px;
   color: #000;
-  background: #fff;
+  background: #FFF8ED;
 `;
 
 const SaveButton = styled.button`
@@ -119,7 +119,7 @@ const SaveButton = styled.button`
   height: 54px;
   margin-top: 28px;
   border-radius: 14px;
-  background: #e8734a;
+  background: #DBE4A1;
   color: #fff;
   font-size: 16px;
   font-weight: 600;
@@ -130,7 +130,7 @@ const DeleteButton = styled.button`
   height: 50px;
   margin-top: 12px;
   border-radius: 12px;
-  border: 1px solid #e5e0d9;
+  border: 1.3px solid rgba(74,58,47,.4);
   color: #cc4d4d;
   font-size: 15px;
   font-weight: 500;

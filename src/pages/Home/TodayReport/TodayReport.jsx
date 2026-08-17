@@ -1,258 +1,247 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
+import closeIcon from '../../../assets/journal/close.png';
+import aiIcon from '../../../assets/journal/ai.png';
+import stepsIcon from '../../../assets/journal/steps.png';
+import sunIcon from '../../../assets/journal/sun.png';
+import pillIcon from '../../../assets/journal/pill.png';
+import exclaimIcon from '../../../assets/journal/exclaim.png';
+import moonIcon from '../../../assets/journal/moon.png';
+import flowerA from '../../../assets/journal/flower-a.png';
+import flowerB from '../../../assets/journal/flower-b.png';
+import medEmpty from '../../../assets/journal/med-empty.png';
+import mCondition from '../../../assets/journal/m-condition.png';
+import mSleep from '../../../assets/journal/m-sleep.png';
+import mMeal from '../../../assets/journal/m-meal.png';
+import mActivity from '../../../assets/journal/m-activity.png';
+import mBody from '../../../assets/journal/m-body.png';
 import { loadTodayReport } from './todayReportData';
 import { useApi } from '../../../hooks/useApi';
+import JournalCta from './JournalCta';
 
-import back from '../../../assets/onboarding/back.svg';
-import aiIcon from '../../../assets/TodayReport/ai아이콘.svg';
-import sunIcon from '../../../assets/TodayReport/해아이콘.svg';
-import moonIcon from '../../../assets/TodayReport/달아이콘.svg';
-import checkIcon from '../../../assets/TodayReport/체크아이콘.svg';
-import flowerPink from '../../../assets/TodayReport/Flower-pink.svg';
-import flowerYellow from '../../../assets/TodayReport/Flower-yellow.svg';
-import sleepIcon from '../../../assets/TodayReport/잠 아이콘.svg';
-import mealIcon from '../../../assets/TodayReport/식사 아이콘.svg';
-import walkIcon from '../../../assets/TodayReport/산책 아이콘.svg';
-import bodyIcon from '../../../assets/TodayReport/몸상태 아이콘.svg';
-import conditionIcon from '../../../assets/TodayReport/컨디션 아이콘.svg';
-import pillIcon from '../../../assets/TodayReport/pill.svg';
+// Figma 31 / 31b: '오늘의 온담'이 '오늘의 건강일지'로 이름이 바뀌고
+// 타임라인 카드 형태로 재설계됐다.
+const MED_FLOWERS = [flowerA, flowerB];
+const METRIC_ICONS = {
+  CONDITION: mCondition,
+  SLEEP: mSleep,
+  MEAL: mMeal,
+  ACTIVITY: mActivity,
+  BODY: mBody,
+  CUSTOM: mBody,
+};
+const ENTRY_ICONS = { question: sunIcon, medication: pillIcon, healthcheck: moonIcon };
+const ENTRY_TITLES = { question: '오늘의 질문', medication: '복약 체크', healthcheck: '건강 체크' };
 
 const Page = styled.div`
   position: relative;
   width: 100%;
   height: 100%;
   overflow-y: auto;
-  background: #FFF8ED;
-  padding: 16px 20px 30px;
   box-sizing: border-box;
+
+  padding: 16px 20px 28px;
+  background: #fff8ed;
+
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
 
   &::-webkit-scrollbar {
     display: none;
   }
 `;
-const BackButton = styled.button`
-  position: absolute;
-  top: 18px;
-  left: 20px;
 
-  width: 36px;
-  height: 36px;
-  padding: 0;
-
-  display: flex;
-  align-items: center;
-  justify-content: center;
-
-  background: transparent;
-  z-index: 10;
+const CloseButton = styled.button`
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+  align-self: flex-start;
 `;
-const Header = styled.div`
-  margin-top: 40px;
+
+const CloseIcon = styled.img`
+  width: 40px;
+  height: 40px;
+  object-fit: contain;
+`;
+
+const HeaderBlock = styled.div`
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 6px;
-`;
-
-const BackIcon = styled.img`
-  width: 36px;
-  height: 36px;
+  gap: 4px;
 `;
 
 const DateLabel = styled.p`
   margin: 0;
-  font-size: 14px;
-  color: #8c8780;
-  text-align: center;
-`;
-
-const Title = styled.h1`
-  margin: 0;
-  font-size: 25px;
-  font-weight: 700;
-  color: #4a3a2f;
-  text-align: center;
-`
-
-const Divider = styled.div`
   width: 100%;
-  border-top: 2px dashed #D8D0C7;
-  margin: 12px 0 20px;
-`;
-
-const ToggleWrap = styled.div`
-  display: flex;
-  gap: 10px;
-  margin-top: 18px;
-`;
-
-const ToggleTab = styled.button`
-  flex: 1;
-  height: 56px;
-  border-radius: 20px;
-  border: 1.5px solid ${({ $active }) => ($active ? '#D9B4A3' : '#E9E3A8')};
-
-  background: #FFFDF8;
-  color: ${({ $active }) => ($active ? '#B66C54' : '#B89A36')};
-
-  font-family: "Noto Sans KR";
+  text-align: center;
+  color: #a79c8e;
+  font-family: 'Noto Sans KR';
   font-size: 18px;
   font-weight: 700;
 `;
 
-const SummaryRow = styled.div`
+const Title = styled.h1`
+  margin: 0;
+  width: 100%;
+  text-align: center;
+  color: #4a3a2f;
+  font-family: Jua;
+  font-size: 40px;
+  font-weight: 400;
+`;
+
+const TitleDivider = styled.div`
+  margin-top: 10px;
+  width: 100%;
+  height: 2px;
+  background: rgba(74, 58, 47, 0.25);
+`;
+
+const PersonToggle = styled.div`
+  display: flex;
+  gap: 4px;
+  height: 56px;
+  padding: 4px;
+  border-radius: 16px;
+  background: #f8f5ee;
+`;
+
+// 나는 살구색, 가족은 노란색 계열로 토글 색이 다르다.
+const ToggleTab = styled.button`
+  flex: 1;
+  height: 48px;
+  border-radius: 12px;
+
+  border: 2px solid ${({ $mine }) => ($mine ? '#e6a794' : 'rgba(232, 205, 115, 0.7)')};
+  background: ${({ $active, $mine }) =>
+    $active ? ($mine ? '#fbe3d0' : '#f7edc8') : 'transparent'};
+  color: ${({ $mine }) => ($mine ? '#c97158' : '#b9862e')};
+
+  font-family: 'Noto Sans KR';
+  font-size: 17px;
+  font-weight: 700;
+`;
+
+const SummaryChips = styled.div`
   display: flex;
   justify-content: space-between;
-  margin-top: 22px;
-  gap: 12px;
 `;
 
 const SummaryChip = styled.div`
-  flex: 1;
-  aspect-ratio: 1;
-  max-width: 92px;
-
-  border-radius: 50%;
-  border: 1.5px solid #CFC6BA;
-  background: #FFFDF8;
+  width: 92px;
+  height: 92px;
+  border-radius: 46px;
+  border: 1.5px solid rgba(138, 109, 75, 0.75);
 
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 6px;
-`;
-
-const SummaryValue = styled.span`
-  font-size: 24px;
-  font-weight: 700;
-  line-height: 1;
-`;
-
-const SummaryLabel = styled.span`
-  font-size: 13px;
-  font-weight: 600;
-  color: #7A6B5D;
-`;
-
-const AiInsightCard = styled.div`
-  display: flex;
-  gap: 12px;
-  align-items: center;
-  margin-top: 20px;
-  padding: 18px 16px;
-  border-radius: 20px;
-  background: #E8F4E8;
-`;
-
-const AiBadge = styled.div`
-  flex-shrink: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-`;
-
-const AiBadgeImg = styled.img`
-  width: 42px;
-  height: 42px;
-`;
-
-const AiTextCol = styled.div`
-  display: flex;
-  flex-direction: column;
   gap: 2px;
 `;
 
-const AiLabel = styled.p`
-  margin: 0;
+const ChipLabel = styled.span`
+  color: rgba(138, 109, 75, 0.75);
+  font-family: 'Noto Sans KR';
   font-size: 13px;
-  font-weight: 600;
-  color: #5BAA6A;
-`;
-
-const AiComment = styled.p`
-  margin: 0;
-  font-size: 15px;
-  line-height: 1.5;
-  color: #2F2F2F;
   font-weight: 500;
 `;
 
-const StepRow = styled.div`
+const ChipValue = styled.span`
+  color: #8a6d4b;
+  font-family: 'Noto Sans KR';
+  font-size: 20px;
+  font-weight: 700;
+`;
+
+const InfoCard = styled.div`
   display: flex;
   align-items: center;
   gap: 12px;
-
-  margin-top: 18px;
   padding: 16px;
+  border-radius: ${({ $tone }) => ($tone === 'step' ? 14 : 18)}px;
 
-  border-radius: 20px;
-  background: #E8F4E8;
+  border: 1.5px solid
+    ${({ $tone }) => ($tone === 'step' ? 'rgba(124, 154, 58, 0.7)' : 'rgba(143, 174, 74, 0.5)')};
+  background: ${({ $tone }) => ($tone === 'step' ? '#cbd879' : '#edf2d4')};
 `;
 
-const StepIconBadge = styled.div`
+const InfoIcon = styled.img`
+  width: 44px;
+  height: 44px;
   flex-shrink: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-
-  img {
-    width: 42px;
-    height: 42px;
-  }
+  object-fit: contain;
 `;
 
-const StepText = styled.p`
-  margin: 0;
+const InfoTextCol = styled.div`
   flex: 1;
-
-  font-size: 15px;
-  line-height: 1.5;
-  font-weight: 500;
-
-  color: #2F2F2F;
-`;
-
-const Timeline = styled.div`
-  margin-top: 28px;
+  min-width: 0;
   display: flex;
   flex-direction: column;
+  gap: 4px;
+`;
+
+const InfoLabel = styled.p`
+  margin: 0;
+  color: ${({ $tone }) => ($tone === 'step' ? '#3f5a1b' : '#5b7a2e')};
+  font-family: 'Noto Sans KR';
+  font-size: 16px;
+  font-weight: 700;
+`;
+
+const InfoText = styled.p`
+  margin: 0;
+  color: ${({ $tone }) => ($tone === 'step' ? '#3f3320' : '#4a3a2f')};
+  font-family: 'Noto Sans KR';
+  font-size: ${({ $small }) => ($small ? 13 : 16)}px;
+  font-weight: 500;
+  line-height: 1.4;
+`;
+
+const SectionDivider = styled.div`
+  width: 100%;
+  height: 2px;
+  background: rgba(74, 58, 47, 0.25);
 `;
 
 const TimelineEntry = styled.div`
   display: flex;
   gap: 14px;
+  align-items: stretch;
+`;
 
-  & + & {
-    margin-top: 20px;
+// 왼쪽 세로선: 위에 점 하나, 아래로 선이 이어진다.
+const Rail = styled.div`
+  position: relative;
+  width: 12px;
+  flex-shrink: 0;
+
+  &::before {
+    content: '';
+    position: absolute;
+    left: 1px;
+    top: 0;
+    width: 10px;
+    height: 10px;
+    border-radius: 5px;
+    background: #c9bda8;
+  }
+
+  &::after {
+    content: '';
+    position: absolute;
+    left: 5px;
+    top: 10px;
+    bottom: 0;
+    width: 2px;
+    background: #ded4c2;
   }
 `;
 
-const Rail = styled.div`
-  width: 12px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  flex-shrink: 0;
-`;
-
-const RailDot = styled.div`
-  width: 14px;
-  height: 14px;
-  border-radius: 50%;
-  background: #7DBA67;
-  flex-shrink: 0;
-`;
-
-const RailLine = styled.div`
-  width: 2px;
-  flex: 1;
-  margin-top: 6px;
-  background: #D7E8D2;
-`;
-
-const TimelineContent = styled.div`
+const EntryContent = styled.div`
   flex: 1;
   min-width: 0;
   display: flex;
@@ -260,22 +249,23 @@ const TimelineContent = styled.div`
   gap: 8px;
 `;
 
-const TimeLabel = styled.p`
+const EntryTime = styled.p`
   margin: 0;
-  font-size: 13px;
-  font-weight: 600;
-  color: #8C8780;
+  color: #a79c8e;
+  font-family: 'Noto Sans KR';
+  font-size: 16px;
+  font-weight: 500;
 `;
 
 const EntryCard = styled.div`
-  padding: 18px 16px;
-  border-radius: 20px;
-  background: #FFF;
-  border: 1px solid #ECE7DF;
-
   display: flex;
   flex-direction: column;
   gap: 12px;
+  padding: 16px;
+
+  border-radius: 18px;
+  border: 1.5px solid rgba(74, 58, 47, 0.4);
+  background: rgba(255, 255, 255, 0.55);
 `;
 
 const CardHead = styled.div`
@@ -284,107 +274,74 @@ const CardHead = styled.div`
   gap: 8px;
 `;
 
-const CardIconBadge = styled.div`
+const CardHeadIcon = styled.img`
   width: 28px;
   height: 28px;
-  border-radius: 50%;
-
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-
-  background: ${({ $type }) => {
-    switch ($type) {
-      case 'question':
-        return '#FFF3D9';
-      case 'medication':
-        return 'transparent'; // 체크 아이콘 자체에 원이 있어서 배경 제거
-      case 'health':
-        return '#E9E1F8';
-      default:
-        return '#F7F5F0';
-    }
-  }};
+  object-fit: contain;
 `;
 
-const CardIconImg = styled.img`
-  width: 28px;
-  height: 28px;
-`;
 const CardTitle = styled.p`
   margin: 0;
-  font-size: 15px;
-  font-weight: 500;
-  color: #000;
+  color: #4a3a2f;
+  font-family: 'Noto Sans KR';
+  font-size: 18px;
+  font-weight: 700;
+`;
+
+const ExclaimIcon = styled.img`
+  width: 30px;
+  height: 30px;
+  object-fit: contain;
 `;
 
 const QuestionRow = styled.div`
   display: flex;
   align-items: center;
-  
+  justify-content: center;
+  gap: 10px;
+  flex-wrap: wrap;
 `;
 
 const QuestionLabel = styled.span`
-  font-size: 13px;
   color: #6b6661;
+  font-family: 'Noto Sans KR';
+  font-size: 16px;
 `;
 
 const QuestionAnswer = styled.span`
-  font-size: 14px;
-  font-weight: 500;
-  color: #000;
-  margin-left:6px;
+  color: #4a3a2f;
+  font-family: 'Noto Sans KR';
+  font-size: 17px;
+  font-weight: 700;
 `;
 
-const MedRow = styled.div`
+const MedCircleRow = styled.div`
   display: flex;
-  gap: 22px;
-  margin: 6px 0;
+  gap: 32px;
+  justify-content: center;
+  flex-wrap: wrap;
 `;
 
-const MedItem = styled.div`
+const MedIconWrap = styled.div`
+  width: 56px;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 4px;
+  gap: 6px;
 `;
 
-const MedCircle = styled.div`
-  width: 44px;
-  height: 44px;
-
-  display: flex;
-  align-items: center;
-  justify-content: center;
-
-  ${({ $taken }) =>
-    !$taken &&
-    `
-      border: 2px dashed #DDD3C8;
-      border-radius: 50%;
-    `}
-
-  img {
-    width: 28px;
-    height: 28px;
-  }
+const MedIcon = styled.img`
+  width: ${({ $taken }) => ($taken ? 52 : 40)}px;
+  height: ${({ $taken }) => ($taken ? 52 : 40)}px;
+  object-fit: contain;
 `;
 
-const MedLabel = styled.p`
-  margin: 0;
-  font-size: 13px;
+const MedName = styled.span`
+  color: ${({ $taken }) => ($taken ? '#2e2117' : '#8c8780')};
+  font-family: 'Noto Sans KR';
+  font-size: 14px;
   font-weight: 700;
-
-  color: ${({ $textColor, $taken }) =>
-    $taken ? $textColor : '#8C8780'};
-`;
-
-const MedNote = styled.p`
-  margin: 0;
-  font-size: 13px;
-  font-weight: 500;
-  color: #6E9A3A;;
+  white-space: nowrap;
 `;
 
 const SentenceLine = styled.div`
@@ -394,353 +351,194 @@ const SentenceLine = styled.div`
 `;
 
 const MiniBadge = styled.div`
-  width: 24px;
-  height: 24px;
-  border-radius: 50%;
-
-  background: #EEF3D8;
+  width: 26px;
+  height: 26px;
+  border-radius: 13px;
+  flex-shrink: 0;
 
   display: flex;
   align-items: center;
   justify-content: center;
-
-  flex-shrink: 0;
+  background: #edf2d4;
 `;
 
-const MiniIcon = styled.img`
-  width: 14px;
-  height: 14px;
+const MiniBadgeIcon = styled.img`
+  width: 20px;
+  height: 20px;
+  object-fit: contain;
 `;
+
 const SentenceText = styled.p`
   margin: 0;
   flex: 1;
-  font-size: 14px;
-  color: #6b6661;
-`;
-
-const EntryAiComment = styled.div`
-  margin-top: 4px;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-`;
-
-const EntryAiIcon = styled.span`
-  display: flex;
-  align-items: center;
-
-  img {
-    width: 14px;
-    height: 14px;
-  }
-`;
-
-const EntryAiText = styled.p`
-  margin: 0;
-  flex: 1;
-  font-size: 13px;
-  font-weight: 500;
-  color: #6E9A3A;
-`;
-
-const CtaCard = styled.div`
-  margin-top: 24px;
-  padding: 20px;
-  border-radius: 16px;
-  background: #fae5d9;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 12px;
-`;
-
-const CtaTitle = styled.p`
-  margin: 0;
-  font-size: 16px;
-  font-weight: 500;
-  color: #e8734a;
+  min-width: 0;
   text-align: center;
-`;
-
-const SuggestedMessage = styled.div`
-  width: 100%;
-  padding: 10px 14px;
-  border-radius: 10px;
-  background: #fff;
-  border: 1px solid #e5e0d9;
-  box-sizing: border-box;
-`;
-
-const SuggestedMessageText = styled.p`
-  margin: 0;
-  font-size: 13px;
   color: #6b6661;
+  font-family: 'Noto Sans KR';
+  font-size: 16px;
 `;
 
-const CtaButtonRow = styled.div`
-  display: flex;
-  gap: 10px;
-  width: 100%;
-`;
-
-const CallButton = styled.button`
-  flex: 1;
-  height: 48px;
-  border-radius: 10px;
-  background: #fff;
-  border: 1.5px solid #e8734a;
-  color: #e8734a;
+const StatusText = styled.p`
+  margin: 40px 0 0;
+  text-align: center;
+  color: #a79c8e;
+  font-family: 'Noto Sans KR';
   font-size: 15px;
-  font-weight: 600;
-`;
-
-const LetterButton = styled.button`
-  flex: 1;
-  height: 48px;
-  border-radius: 10px;
-  background: #e8734a;
-  color: #fff;
-  font-size: 15px;
-  font-weight: 600;
 `;
 
 function TodayReport() {
   const navigate = useNavigate();
-  const handleBack = () => {
-    navigate(-1);
-  };
   const [person, setPerson] = useState('me');
   const { data: report, loading, error } = useApi(loadTodayReport, { args: [person] });
 
-  const handleSendLetter = () => {
-    navigate('/home', { state: { openLetterbox: 'compose' } });
-  };
+  const isMine = person === 'me';
 
-  if (loading || error || !report) {
-    return (
-      <Page>
-        <Title>오늘의 건강일지</Title>
-        <AiComment>
-          {loading
-            ? '리포트를 불러오는 중이에요...'
-            : error
-            ? error.message
-            : '아직 연결된 가족이 없어요.'}
-        </AiComment>
-      </Page>
-    );
-  }
+  const renderEntryBody = (entry) => {
+    if (entry.type === 'question') {
+      return (
+        <QuestionRow>
+          <QuestionLabel>{entry.question}</QuestionLabel>
+          <QuestionAnswer>{entry.answer}</QuestionAnswer>
+        </QuestionRow>
+      );
+    }
+
+    if (entry.type === 'medication') {
+      return (
+        <MedCircleRow>
+          {entry.medications.map((med, index) => (
+            <MedIconWrap key={med.name}>
+              <MedIcon
+                $taken={med.taken}
+                src={med.taken ? MED_FLOWERS[index % MED_FLOWERS.length] : medEmpty}
+                alt=""
+              />
+              <MedName $taken={med.taken}>{med.name}</MedName>
+            </MedIconWrap>
+          ))}
+        </MedCircleRow>
+      );
+    }
+
+    return entry.lines.map((line) => (
+      <SentenceLine key={line.text}>
+        <MiniBadge>
+          <MiniBadgeIcon src={METRIC_ICONS[line.metricType] ?? mBody} alt="" />
+        </MiniBadge>
+        <SentenceText>{line.text}</SentenceText>
+      </SentenceLine>
+    ));
+  };
 
   return (
     <Page>
-      <BackButton type="button" onClick={handleBack}>
-        <BackIcon src={back} alt="뒤로가기" />
-      </BackButton>
-        <Header>
-      <DateLabel>{report.dateLabel}</DateLabel>
-      <Title>오늘의 건강일지</Title>
-    </Header>
-      <Divider />
+      <CloseButton type="button" aria-label="닫기" onClick={() => navigate('/home')}>
+        <CloseIcon src={closeIcon} alt="" />
+      </CloseButton>
 
-      <ToggleWrap>
-        <ToggleTab
-          type="button"
-          $active={person === 'me'}
-          onClick={() => setPerson('me')}
-        >
+      <HeaderBlock>
+        <DateLabel>{report?.dateLabel ?? ''}</DateLabel>
+        <Title>오늘의 건강일지</Title>
+        <TitleDivider />
+      </HeaderBlock>
+
+      <PersonToggle>
+        <ToggleTab type="button" $mine $active={isMine} onClick={() => setPerson('me')}>
           나
         </ToggleTab>
-
-        <ToggleTab
-          type="button"
-          $active={person === 'family'}
-          onClick={() => setPerson('family')}
-        >
-          {report.partnerLabel}
+        <ToggleTab type="button" $active={!isMine} onClick={() => setPerson('family')}>
+          가족
         </ToggleTab>
-      </ToggleWrap>
+      </PersonToggle>
 
-      <SummaryRow>
-        <SummaryChip $color="#7A6B5D">
-          <SummaryLabel>질문 답변</SummaryLabel>
-          <SummaryValue>{report.summary.questionStatus}</SummaryValue>
-        </SummaryChip>
+      {loading || error || !report ? (
+        <StatusText>
+          {loading
+            ? '기록을 불러오는 중이에요...'
+            : error
+              ? error.message
+              : '아직 연결된 가족이 없어요.'}
+        </StatusText>
+      ) : (
+        <>
+          <SummaryChips>
+            <SummaryChip>
+              <ChipLabel>질문 답변</ChipLabel>
+              <ChipValue>{report.summary.questionStatus}</ChipValue>
+            </SummaryChip>
+            <SummaryChip>
+              <ChipLabel>복약</ChipLabel>
+              <ChipValue>{report.summary.medication}</ChipValue>
+            </SummaryChip>
+            <SummaryChip>
+              <ChipLabel>컨디션</ChipLabel>
+              <ChipValue>{report.summary.condition}</ChipValue>
+            </SummaryChip>
+          </SummaryChips>
 
-        <SummaryChip $color="#7A6B5D">
-          <SummaryLabel>복약</SummaryLabel>
-          <SummaryValue>{report.summary.medication}</SummaryValue>
-        </SummaryChip>
+          {report.aiComment && (
+            <InfoCard>
+              <InfoIcon src={aiIcon} alt="" />
+              <InfoTextCol>
+                <InfoLabel>온담 한마디</InfoLabel>
+                <InfoText>{report.aiComment}</InfoText>
+              </InfoTextCol>
+            </InfoCard>
+          )}
 
-        <SummaryChip $color="#7A6B5D">
-          <SummaryLabel>컨디션</SummaryLabel>
-          <SummaryValue>{report.summary.condition}</SummaryValue>
-        </SummaryChip>
-      </SummaryRow>
+          {/* 걸음수는 헬스케어 연동이 없어 서버가 주지 않는다. 값이 생기면 노출된다. */}
+          {report.stepMessage && (
+            <InfoCard $tone="step">
+              <InfoIcon src={stepsIcon} alt="" />
+              <InfoTextCol>
+                <InfoLabel $tone="step">오늘의 걸음수</InfoLabel>
+                <InfoText $tone="step">{report.stepMessage}</InfoText>
+              </InfoTextCol>
+            </InfoCard>
+          )}
 
-      {report.aiComment && (
-        <AiInsightCard>
-          <AiBadge>
-            <AiBadgeImg src={aiIcon} alt="AI" />
-          </AiBadge>
+          <SectionDivider />
 
-          <AiTextCol>
-            <AiLabel>온담 한마디</AiLabel>
-            <AiComment>{report.aiComment}</AiComment>
-          </AiTextCol>
-        </AiInsightCard>
-      )}
-
-      {report.stepMessage && (
-        <StepRow>
-          <StepIconBadge>
-            <img src={walkIcon} alt="" />
-          </StepIconBadge>
-
-          <StepText>{report.stepMessage}</StepText>
-        </StepRow>
-      )}
-
-      <Timeline>
-        {report.timeline.map((entry, index) => {
-          const isLast = index === report.timeline.length - 1;
-
-          return (
-            <TimelineEntry key={`${entry.type}-${entry.time}-${index}`}>
-              <Rail>
-                <RailDot />
-                {!isLast && <RailLine />}
-              </Rail>
-
-              <TimelineContent>
-                <TimeLabel>{entry.time}</TimeLabel>
-
+          {report.timeline.map((entry) => (
+            <TimelineEntry key={entry.time}>
+              <Rail />
+              <EntryContent>
+                <EntryTime>{entry.time}</EntryTime>
                 <EntryCard>
-                  {entry.type === 'question' && (
-                    <>
-                      <CardHead>
-                        <CardIconBadge $type="question">
-                          <CardIconImg src={sunIcon} alt="" />
-                        </CardIconBadge>
-
-                        <CardTitle>오늘의 질문</CardTitle>
-                      </CardHead>
-
-                      <QuestionRow>
-                        <QuestionLabel>{entry.question}</QuestionLabel>
-                        <QuestionAnswer>{entry.answer}</QuestionAnswer>
-                      </QuestionRow>
-                    </>
-                  )}
-
-                  {entry.type === 'medication' && (
-                    <>
-                      <CardHead>
-                        <CardIconBadge $type="medication">
-                          <CardIconImg src={pillIcon} alt="복약" />
-                        </CardIconBadge>
-
-                        <CardTitle>복약 체크</CardTitle>
-                      </CardHead>
-
-                      <MedRow>
-                        {entry.medications.map((med, i) => (
-                          <MedItem key={`${med.name}-${i}`}>
-                            <MedCircle
-                              $taken={med.taken}
-                              $color={med.color}
-                              $textColor={med.textColor}
-                            >
-                              {med.taken ? (
-                                <img
-                                  src={i % 2 === 0 ? flowerYellow : flowerPink}
-                                  alt=""
-                                />
-                              ) : (
-                                ''
-                              )}
-                            </MedCircle>
-
-                            <MedLabel
-                              $taken={med.taken}
-                              $textColor={med.textColor}
-                            >
-                              {med.name}
-                            </MedLabel>
-                          </MedItem>
-                        ))}
-                      </MedRow>
-
-                      <MedNote>{entry.note}</MedNote>
-                    </>
-                  )}
-
-                  {entry.type === 'healthcheck' && (
-                    <>
-                      <CardHead>
-                        <CardIconBadge $type="health">
-                          <CardIconImg src={moonIcon} alt="" />
-                        </CardIconBadge>
-
-                        <CardTitle>건강 체크</CardTitle>
-                      </CardHead>
-
-                      {entry.lines.map((line, i) => {
-                        const iconMap = {
-                          '♥': conditionIcon,
-                          Z: sleepIcon,
-                          M: mealIcon,
-                          A: walkIcon,
-                          B: bodyIcon,
-                        };
-
-                        return (
-                          <SentenceLine key={`${line.text}-${i}`}>
-                            <MiniBadge>
-                              <MiniIcon
-                                src={iconMap[line.icon] ?? aiIcon}
-                                alt=""
-                              />
-                            </MiniBadge>
-
-                            <SentenceText>{line.text}</SentenceText>
-                          </SentenceLine>
-                        );
-                      })}
-
-                      <EntryAiComment>
-                        <EntryAiIcon>
-                          <img src={aiIcon} alt="" />
-                        </EntryAiIcon>
-
-                        <EntryAiText>{entry.aiComment}</EntryAiText>
-                      </EntryAiComment>
-                    </>
-                  )}
+                  <CardHead>
+                    <CardHeadIcon src={ENTRY_ICONS[entry.type]} alt="" />
+                    <CardTitle>{ENTRY_TITLES[entry.type]}</CardTitle>
+                    {entry.type === 'medication' && entry.hasMissed && (
+                      <ExclaimIcon src={exclaimIcon} alt="" />
+                    )}
+                  </CardHead>
+                  {renderEntryBody(entry)}
                 </EntryCard>
-              </TimelineContent>
+              </EntryContent>
             </TimelineEntry>
-          );
-        })}
-      </Timeline>
+          ))}
 
-      {report.cta && (
-        <CtaCard>
-          <CtaTitle>{report.cta.title}</CtaTitle>
+          {report.eveningComment && (
+            <InfoCard>
+              <InfoIcon src={aiIcon} alt="" />
+              <InfoTextCol>
+                <InfoText $small>{report.eveningComment}</InfoText>
+              </InfoTextCol>
+            </InfoCard>
+          )}
 
-          <SuggestedMessage>
-            <SuggestedMessageText>
-              {report.cta.suggestedMessage}
-            </SuggestedMessageText>
-          </SuggestedMessage>
-
-          <CtaButtonRow>
-            <CallButton type="button">전화하기</CallButton>
-
-            <LetterButton type="button" onClick={handleSendLetter}>
-              편지 보내기
-            </LetterButton>
-          </CtaButtonRow>
-        </CtaCard>
+          {report.cta && (
+            <>
+              <SectionDivider />
+              <JournalCta
+                title={report.cta.title}
+                message={report.cta.suggestedMessage}
+                onCall={() => alert('전화 연결은 준비 중이에요.')}
+                onSendLetter={() => navigate('/home', { state: { openLetterbox: 'compose' } })}
+              />
+            </>
+          )}
+        </>
       )}
     </Page>
   );

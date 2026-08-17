@@ -9,7 +9,7 @@ const Page = styled.div`
   width: 100%;
   height: 100%;
   overflow-y: auto;
-  background: #fff;
+  background: #FFF8ED;
 
   &::-webkit-scrollbar {
     display: none;
@@ -25,7 +25,7 @@ const Header = styled.div`
   align-items: center;
   justify-content: space-between;
   padding-bottom: 12px;
-  border-bottom: 1px solid #e5e0d9;
+  border-bottom: 1.3px solid rgba(74,58,47,.25);
 `;
 
 const BackButton = styled.button`
@@ -49,15 +49,16 @@ const HeaderSpacer = styled.div`
 const Summary = styled.div`
   margin-top: 16px;
   padding: 16px;
-  border-radius: 14px;
-  background: #e0f2e3;
+  border-radius: 18px;
+  background: rgba(255,255,255,.55);
+  border: 1.3px solid rgba(74,58,47,.4);
 `;
 
 const SummaryTitle = styled.p`
   margin: 0 0 6px;
   font-size: 16px;
   font-weight: 500;
-  color: #339959;
+  color: #4A3A2F;
 `;
 
 const SummarySub = styled.p`
@@ -76,9 +77,9 @@ const MedList = styled.div`
 const MedCard = styled.button`
   width: 100%;
   padding: 16px;
-  border-radius: 14px;
+  border-radius: 18px;
   border: 1px solid #e5e0d9;
-  background: #fff;
+  background: #FFF8ED;
   text-align: left;
 `;
 
@@ -109,7 +110,8 @@ const ChipRow = styled.div`
 const TimeChip = styled.span`
   padding: 5px 12px;
   border-radius: 8px;
-  background: #f7f5f0;
+  background: #F8F5EE;
+  border: 1.2px solid rgba(74,58,47,.35);
   font-size: 14px;
   color: #000;
 `;
@@ -125,9 +127,9 @@ const AddButton = styled.button`
   width: 100%;
   height: 54px;
   margin-top: 12px;
-  border-radius: 12px;
+  border-radius: 16px;
   border: 2px solid #e8734a;
-  background: #fff;
+  background: #FFF8ED;
   color: #e8734a;
   font-size: 16px;
   font-weight: 500;

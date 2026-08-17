@@ -9,15 +9,14 @@ import { getUserId } from '../../../api/client';
 import { useApi, useApiAction } from '../../../hooks/useApi';
 import { formatAlarmTime, ROLE_LABEL } from './settingsUtils';
 import TimePickerModal from '../../../components/TimePickerModal';
-import LogoutConfirmPopup from './LogoutConfirmPopup';
-import WithdrawConfirmPopup from './WithdrawConfirmPopup';
+import ConfirmPopup from './ConfirmPopup';
 
 const Page = styled.div`
   position: relative;
   width: 100%;
   height: 100%;
   overflow-y: auto;
-  background: #fff;
+  background: #FFF8ED;
 
   &::-webkit-scrollbar {
     display: none;
@@ -33,7 +32,7 @@ const Header = styled.div`
   align-items: center;
   justify-content: space-between;
   padding-bottom: 12px;
-  border-bottom: 1px solid #e5e0d9;
+  border-bottom: 1.3px solid rgba(74,58,47,.25);
 `;
 
 const BackButton = styled.button`
@@ -72,7 +71,7 @@ const Row = styled.div`
   height: 52px;
   padding: 0 16px;
   border-radius: 12px;
-  background: #f7f5f0;
+  background: #F8F5EE;
   margin-bottom: 8px;
 `;
 
@@ -103,7 +102,7 @@ const ToggleRow = styled.div`
   height: 44px;
   padding: 0 16px;
   border-radius: 12px;
-  background: #f7f5f0;
+  background: #F8F5EE;
   margin-bottom: 8px;
 `;
 
@@ -123,7 +122,7 @@ const ToggleThumb = styled.span`
   width: 20px;
   height: 20px;
   border-radius: 10px;
-  background: #fff;
+  background: #FFF8ED;
   transition: left 0.15s ease;
 `;
 
@@ -281,11 +280,13 @@ function SettingsMain() {
         </ClickableRow>
       </Content>
 
-      {popup === 'logout' && (
-        <LogoutConfirmPopup onCancel={() => setPopup(null)} onConfirm={handleLogout} />
-      )}
-      {popup === 'withdraw' && (
-        <WithdrawConfirmPopup onCancel={() => setPopup(null)} onConfirm={handleWithdraw} />
+      {(popup === 'logout' || popup === 'withdraw') && (
+        <ConfirmPopup
+          type={popup}
+          gender={data.profile.gender}
+          onCancel={() => setPopup(null)}
+          onConfirm={popup === 'logout' ? handleLogout : handleWithdraw}
+        />
       )}
       {timeEditor && (
         <TimePickerModal

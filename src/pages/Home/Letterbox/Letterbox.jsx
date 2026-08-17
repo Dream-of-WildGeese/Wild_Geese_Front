@@ -56,6 +56,9 @@ function Letterbox({ letters, loading, onMarkRead, onSent, onClose, initialStep 
     setStep('read');
   };
 
+  // 가족 조회 응답에는 이름이 없어서, 받은 편지의 보낸 사람 이름을 대신 쓴다.
+  const recipientName = letters.find((letter) => letter.sender)?.sender ?? '';
+
   const handleSend = async (content) => {
     if (!recipient) {
       alert('편지를 보낼 가족이 아직 연결되지 않았어요.');
@@ -80,16 +83,34 @@ function Letterbox({ letters, loading, onMarkRead, onSent, onClose, initialStep 
   return (
     <Backdrop onClick={onClose}>
       <div onClick={(event) => event.stopPropagation()} style={{ width: '100%', display: 'flex', justifyContent: 'center' }}>
-        {step === 'arrived' && <LetterArrived unreadCount={unreadCount} onOpen={handleArrivedOpen} />}
-        {step === 'list' && (
-          <LetterboxList letters={letters} onSelectLetter={openLetter} onWrite={() => setStep('compose')} />
+        {step === 'arrived' && (
+          <LetterArrived
+            unreadCount={unreadCount}
+            onOpen={handleArrivedOpen}
+            onClose={onClose}
+          />
         )}
-        {step === 'empty' && <LetterboxEmpty onWrite={() => setStep('compose')} />}
+        {step === 'list' && (
+          <LetterboxList
+            letters={letters}
+            onSelectLetter={openLetter}
+            onWrite={() => setStep('compose')}
+            onClose={onClose}
+          />
+        )}
+        {step === 'empty' && (
+          <LetterboxEmpty onWrite={() => setStep('compose')} onClose={onClose} />
+        )}
         {step === 'read' && selectedLetter && (
           <LetterRead letter={selectedLetter} onReply={() => setStep('compose')} onClose={backToList} />
         )}
         {step === 'compose' && (
-          <LetterCompose onBack={backToList} onSend={handleSend} sending={sending} />
+          <LetterCompose
+            onBack={backToList}
+            onSend={handleSend}
+            sending={sending}
+            recipientName={recipientName}
+          />
         )}
         {step === 'sent' && <LetterSent onClose={backToList} />}
       </div>

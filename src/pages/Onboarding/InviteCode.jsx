@@ -12,7 +12,7 @@ import heart from '../../assets/onboarding/heart.svg';
 // 테스트 유저 6명 중 부모/자녀 한 쌍만 온보딩에 연결돼 있어서, 상대방 이름을
 // role 기준으로 고정해둔다. 실제 유저가 붙으면 joinFamily/가족 조회 응답에서
 // 상대방 이름을 받아오는 방식으로 바꿔야 한다.
-const FAMILY_MEMBER_NAME = { parent: '신짱구', child: '봉미선' };
+//const FAMILY_MEMBER_NAME = { parent: '신짱구', child: '봉미선' };
 
 const InviteCode = () => {
   const navigate = useNavigate();
@@ -63,17 +63,23 @@ const InviteCode = () => {
       return;
     }
 
-    const { ok, error } = await join({ inviteCode: code.trim() });
+        const { ok, data, error } = await join({ inviteCode: code.trim() });
+
     if (!ok) {
       alert(error.message);
       return;
     }
 
-    const familyName = FAMILY_MEMBER_NAME[role] || '가족';
-  
-    setFamily({ connectedName: familyName, connectedRelation: role === 'parent' ? '자녀' : '부모' });
+    const familyName = data.connectedUserName;
 
-    navigate('/onboarding/complete/1', { state: { role, familyName } });
+    setFamily({
+      connectedName: familyName,
+      connectedRelation: role === 'parent' ? '자녀' : '부모',
+    });
+
+    navigate('/onboarding/complete/1', {
+      state: { role, familyName },
+    });
   };
 
   return (
