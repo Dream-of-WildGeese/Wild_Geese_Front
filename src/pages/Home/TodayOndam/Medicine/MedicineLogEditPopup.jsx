@@ -4,9 +4,8 @@ import pencilIcon from '../../../../assets/popup/pencil.png';
 import medFlowerA from '../../../../assets/popup/med-flower-a.png';
 import medFlowerB from '../../../../assets/popup/med-flower-b.png';
 import medEmpty from '../../../../assets/popup/med-empty.png';
-import { getMedications, getMedicationLogs, updateMedicationLogs } from '../../../../api/medication';
 import { useApi, useApiAction } from '../../../../hooks/useApi';
-import { toDateString, timeToLabel } from '../../../../utils/medication';
+import { loadTodayMedications, saveMedicationChecks, flattenAll } from './medicationData';
 import {
   PopupBackdrop,
   PopupCard,
@@ -18,32 +17,8 @@ import {
 
 // Figma 19: 오늘 복약 기록 수정.
 // 같은 약이 하루에 여러 번이면 카드를 여러 개 만들지 않고, 한 카드 안에서
-// 시간대별로 체크한다.
+// 시간대별로 체크한다. 목록은 약 체크 팝업과 같은 로더에서 가져온다.
 const MED_FLOWERS = [medFlowerA, medFlowerB];
-
-async function loadTodayMedications() {
-  const recordDate = toDateString();
-  const [medications, log] = await Promise.all([
-    getMedications(),
-    getMedicationLogs(recordDate).catch(() => null),
-  ]);
-
-  const statusBySchedule = new Map(
-    (log?.medications ?? []).map((item) => [item.scheduleId, item.status]),
-  );
-
-  const items = (medications ?? []).map((medication) => ({
-    medicationId: medication.medicationId,
-    name: medication.name,
-    schedules: (medication.schedules ?? []).map((schedule) => ({
-      scheduleId: schedule.scheduleId,
-      timeLabel: timeToLabel(schedule.scheduledTime),
-      taken: statusBySchedule.get(schedule.scheduleId) === 'TAKEN',
-    })),
-  }));
-
-  return { recordDate, items };
-}
 
 const SubtitleRow = styled.div`
   display: flex;
@@ -152,7 +127,7 @@ const EmptyText = styled.p`
 
 function MedicineLogEditPopup({ onClose, onDone }) {
   const { data, loading, error } = useApi(loadTodayMedications);
-  const { execute: saveLogs, loading: saving } = useApiAction(updateMedicationLogs);
+  const { execute: saveChecks, loading: saving } = useApiAction(saveMedicationChecks);
   const [taken, setTaken] = useState({});
 
   // 서버 기록이 도착하면 체크 상태를 한 번 맞춰준다.
@@ -170,14 +145,11 @@ function MedicineLogEditPopup({ onClose, onDone }) {
   }, [data]);
 
   const handleSave = async () => {
-    const logs = data.items.flatMap((item) =>
-      item.schedules.map((schedule) => ({
-        scheduleId: schedule.scheduleId,
-        status: taken[schedule.scheduleId] ? 'TAKEN' : 'NOT_RECORDED',
-      })),
-    );
-
-    const { ok, error: saveError } = await saveLogs({ recordDate: data.recordDate, logs });
+    const { ok, error: saveError } = await saveChecks({
+      recordDate: data.recordDate,
+      scheduleIds: flattenAll(data.items).map((med) => med.scheduleId),
+      checks: taken,
+    });
     if (!ok) {
       alert(saveError.message);
       return;
