@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import styled from 'styled-components';
+import PopupPortal from '../../../components/PopupPortal';
 import { getMyFamily } from '../../../api/family';
 import { sendLetter } from '../../../api/letter';
 import { getUserId } from '../../../api/client';
@@ -12,7 +13,8 @@ import LetterSent from './LetterSent';
 import LetterboxEmpty from './LetterboxEmpty';
 
 const Backdrop = styled.div`
-  position: fixed;
+  /* Layout(폰 프레임)이 기준이 되도록 absolute를 쓴다. fixed면 브라우저 창 가운데에 뜬다. */
+  position: absolute;
   inset: 0;
   display: flex;
   align-items: center;
@@ -81,40 +83,42 @@ function Letterbox({ letters, loading, onMarkRead, onSent, onClose, initialStep 
   const backToList = () => setStep(letters.length === 0 ? 'empty' : 'list');
 
   return (
-    <Backdrop onClick={onClose}>
-      <div onClick={(event) => event.stopPropagation()} style={{ width: '100%', display: 'flex', justifyContent: 'center' }}>
-        {step === 'arrived' && (
-          <LetterArrived
-            unreadCount={unreadCount}
-            onOpen={handleArrivedOpen}
-            onClose={onClose}
-          />
-        )}
-        {step === 'list' && (
-          <LetterboxList
-            letters={letters}
-            onSelectLetter={openLetter}
-            onWrite={() => setStep('compose')}
-            onClose={onClose}
-          />
-        )}
-        {step === 'empty' && (
-          <LetterboxEmpty onWrite={() => setStep('compose')} onClose={onClose} />
-        )}
-        {step === 'read' && selectedLetter && (
-          <LetterRead letter={selectedLetter} onReply={() => setStep('compose')} onClose={backToList} />
-        )}
-        {step === 'compose' && (
-          <LetterCompose
-            onBack={backToList}
-            onSend={handleSend}
-            sending={sending}
-            recipientName={recipientName}
-          />
-        )}
-        {step === 'sent' && <LetterSent onClose={backToList} />}
-      </div>
-    </Backdrop>
+    <PopupPortal>
+      <Backdrop onClick={onClose}>
+        <div onClick={(event) => event.stopPropagation()} style={{ width: '100%', display: 'flex', justifyContent: 'center' }}>
+          {step === 'arrived' && (
+            <LetterArrived
+              unreadCount={unreadCount}
+              onOpen={handleArrivedOpen}
+              onClose={onClose}
+            />
+          )}
+          {step === 'list' && (
+            <LetterboxList
+              letters={letters}
+              onSelectLetter={openLetter}
+              onWrite={() => setStep('compose')}
+              onClose={onClose}
+            />
+          )}
+          {step === 'empty' && (
+            <LetterboxEmpty onWrite={() => setStep('compose')} onClose={onClose} />
+          )}
+          {step === 'read' && selectedLetter && (
+            <LetterRead letter={selectedLetter} onReply={() => setStep('compose')} onClose={backToList} />
+          )}
+          {step === 'compose' && (
+            <LetterCompose
+              onBack={backToList}
+              onSend={handleSend}
+              sending={sending}
+              recipientName={recipientName}
+            />
+          )}
+          {step === 'sent' && <LetterSent onClose={backToList} />}
+        </div>
+      </Backdrop>
+    </PopupPortal>
   );
 }
 

@@ -1,8 +1,10 @@
 import styled from 'styled-components';
+import PopupPortal from '../../../../components/PopupPortal';
 import mascotImg from '../../../../assets/mascot.png';
 
 const Backdrop = styled.div`
-  position: fixed;
+  /* Layout(폰 프레임)이 기준이 되도록 absolute를 쓴다. fixed면 브라우저 창 가운데에 뜬다. */
+  position: absolute;
   inset: 0;
   display: flex;
   align-items: center;
@@ -61,21 +63,23 @@ const PrimaryButton = styled.button`
 
 function NightIntroPopup({ onStart, onClose }) {
   return (
-    <Backdrop onClick={onClose}>
-      <Card onClick={(event) => event.stopPropagation()}>
-        <CharacterCircle>
-          <img src={mascotImg} alt="" />
-        </CharacterCircle>
-        <Message>
-          오늘 하루는 어떠셨어요?
-          <br />
-          건강체크도 잊지 마세요!
-        </Message>
-        <PrimaryButton type="button" onClick={onStart}>
-          시작할게요
-        </PrimaryButton>
-      </Card>
-    </Backdrop>
+    <PopupPortal>
+      <Backdrop onClick={onClose}>
+        <Card onClick={(event) => event.stopPropagation()}>
+          <CharacterCircle>
+            <img src={mascotImg} alt="" />
+          </CharacterCircle>
+          <Message>
+            오늘 하루는 어떠셨어요?
+            <br />
+            건강체크도 잊지 마세요!
+          </Message>
+          <PrimaryButton type="button" onClick={onStart}>
+            시작할게요
+          </PrimaryButton>
+        </Card>
+      </Backdrop>
+    </PopupPortal>
   );
 }
 

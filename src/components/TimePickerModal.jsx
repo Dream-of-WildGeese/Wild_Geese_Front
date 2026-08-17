@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import styled from 'styled-components';
+import PopupPortal from './PopupPortal';
 
 // 아침 일지의 연월 선택 모달과 같은 톤으로 맞춘 시간 선택 모달.
 // value/onConfirm 모두 "HH:mm" 24시간 문자열을 쓴다.
@@ -7,7 +8,8 @@ import styled from 'styled-components';
 const MINUTE_STEP = 10;
 
 const Backdrop = styled.div`
-  position: fixed;
+  /* Layout(폰 프레임)이 기준이 되도록 absolute를 쓴다. fixed면 브라우저 창 가운데에 뜬다. */
+  position: absolute;
   inset: 0;
   display: flex;
   align-items: center;
@@ -131,64 +133,66 @@ function TimePickerModal({ title = '시간 선택', value, onConfirm, onClose })
   const minutes = Array.from({ length: 60 / MINUTE_STEP }, (_, i) => i * MINUTE_STEP);
 
   return (
-    <Backdrop onClick={onClose}>
-      <Card onClick={(event) => event.stopPropagation()}>
-        <CloseButton type="button" aria-label="닫기" onClick={onClose}>
-          ✕
-        </CloseButton>
-        <Title>{title}</Title>
+    <PopupPortal>
+      <Backdrop onClick={onClose}>
+        <Card onClick={(event) => event.stopPropagation()}>
+          <CloseButton type="button" aria-label="닫기" onClick={onClose}>
+            ✕
+          </CloseButton>
+          <Title>{title}</Title>
 
-        <Preview>
-          {period} {hour12}:{String(minute).padStart(2, '0')}
-        </Preview>
+          <Preview>
+            {period} {hour12}:{String(minute).padStart(2, '0')}
+          </Preview>
 
-        <PeriodRow>
-          {['오전', '오후'].map((option) => (
-            <OptionButton
-              key={option}
-              type="button"
-              $tall
-              $active={period === option}
-              onClick={() => setPeriod(option)}
-            >
-              {option}
-            </OptionButton>
-          ))}
-        </PeriodRow>
+          <PeriodRow>
+            {['오전', '오후'].map((option) => (
+              <OptionButton
+                key={option}
+                type="button"
+                $tall
+                $active={period === option}
+                onClick={() => setPeriod(option)}
+              >
+                {option}
+              </OptionButton>
+            ))}
+          </PeriodRow>
 
-        <SectionLabel>시</SectionLabel>
-        <OptionGrid>
-          {hours.map((option) => (
-            <OptionButton
-              key={option}
-              type="button"
-              $active={hour12 === option}
-              onClick={() => setHour12(option)}
-            >
-              {option}
-            </OptionButton>
-          ))}
-        </OptionGrid>
+          <SectionLabel>시</SectionLabel>
+          <OptionGrid>
+            {hours.map((option) => (
+              <OptionButton
+                key={option}
+                type="button"
+                $active={hour12 === option}
+                onClick={() => setHour12(option)}
+              >
+                {option}
+              </OptionButton>
+            ))}
+          </OptionGrid>
 
-        <SectionLabel>분</SectionLabel>
-        <OptionGrid>
-          {minutes.map((option) => (
-            <OptionButton
-              key={option}
-              type="button"
-              $active={minute === option}
-              onClick={() => setMinute(option)}
-            >
-              {String(option).padStart(2, '0')}
-            </OptionButton>
-          ))}
-        </OptionGrid>
+          <SectionLabel>분</SectionLabel>
+          <OptionGrid>
+            {minutes.map((option) => (
+              <OptionButton
+                key={option}
+                type="button"
+                $active={minute === option}
+                onClick={() => setMinute(option)}
+              >
+                {String(option).padStart(2, '0')}
+              </OptionButton>
+            ))}
+          </OptionGrid>
 
-        <ConfirmButton type="button" onClick={() => onConfirm(toValue(period, hour12, minute))}>
-          확인
-        </ConfirmButton>
-      </Card>
-    </Backdrop>
+          <ConfirmButton type="button" onClick={() => onConfirm(toValue(period, hour12, minute))}>
+            확인
+          </ConfirmButton>
+        </Card>
+      </Backdrop>
+    </PopupPortal>
   );
 }
 

@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import styled from 'styled-components';
+import PopupPortal from '../../../../components/PopupPortal';
 import faceGood from '../../../../assets/evening/face-good.png';
 import faceNormal from '../../../../assets/evening/face-normal.png';
 import faceBad from '../../../../assets/evening/face-bad.png';
@@ -11,7 +12,8 @@ import { useApi, useApiAction } from '../../../../hooks/useApi';
 const FACE_BY_INDEX = [faceGood, faceNormal, faceBad];
 
 const Backdrop = styled.div`
-  position: fixed;
+  /* Layout(폰 프레임)이 기준이 되도록 absolute를 쓴다. fixed면 브라우저 창 가운데에 뜬다. */
+  position: absolute;
   inset: 0;
   display: flex;
   align-items: center;
@@ -252,21 +254,23 @@ function EveningCheckPopup({ onClose, onCompleted }) {
 
   if (loading || error || totalSteps === 0) {
     return (
-      <Backdrop onClick={onClose}>
-        <Card onClick={(event) => event.stopPropagation()}>
-          <InnerBorder />
-          <CloseButton type="button" aria-label="닫기" onClick={onClose}>
-            ✕
-          </CloseButton>
-          <Message>
-            {loading
-              ? '질문을 불러오는 중이에요...'
-              : error
-                ? error.message
-                : '오늘은 준비된 질문이 없어요.'}
-          </Message>
-        </Card>
-      </Backdrop>
+      <PopupPortal>
+        <Backdrop onClick={onClose}>
+          <Card onClick={(event) => event.stopPropagation()}>
+            <InnerBorder />
+            <CloseButton type="button" aria-label="닫기" onClick={onClose}>
+              ✕
+            </CloseButton>
+            <Message>
+              {loading
+                ? '질문을 불러오는 중이에요...'
+                : error
+                  ? error.message
+                  : '오늘은 준비된 질문이 없어요.'}
+            </Message>
+          </Card>
+        </Backdrop>
+      </PopupPortal>
     );
   }
 
