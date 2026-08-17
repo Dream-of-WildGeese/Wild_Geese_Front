@@ -11,7 +11,7 @@ import {
 } from '../../../../api/medication';
 import { saveMealLog, getMealLogs } from '../../../../api/meal';
 import { useApi, useApiAction } from '../../../../hooks/useApi';
-import { parseTime, toDateString } from '../../../../utils/medication';
+import { parseTime, toDateString, timeToLabel } from '../../../../utils/medication';
 import { formatKoreanTime } from '../homeCtaFlow';
 import {
   PopupBackdrop,
@@ -108,11 +108,25 @@ const MedLabel = styled.p`
   white-space: nowrap;
 `;
 
-function MedicineCheckPopup({ dueMedications, mealLabel, onClose }) {
+function MedicineCheckPopup({ dueMedications, mealLabel, isAllDay = false, onClose }) {
   const [step, setStep] = useState('checklist'); // checklist | complete | edit
+
+  // 같은 약이 여러 번이면 어느 시간대인지 붙여준다. 안 그러면 같은 이름의 줄이
+  // 여러 개 보여서 무엇을 체크한 건지 알 수 없다.
+  const nameCounts = dueMedications.reduce((acc, med) => {
+    acc[med.name] = (acc[med.name] ?? 0) + 1;
+    return acc;
+  }, {});
+
   const rows = [
     { id: 'meal', label: `${mealLabel} 드셨어요?` },
-    ...dueMedications.map((med) => ({ id: med.scheduleId, label: `${med.name} 드셨어요?` })),
+    ...dueMedications.map((med) => ({
+      id: med.scheduleId,
+      label:
+        nameCounts[med.name] > 1
+          ? `${med.name} (${timeToLabel(med.scheduledTime)}) 드셨어요?`
+          : `${med.name} 드셨어요?`,
+    })),
   ];
   const [checks, setChecks] = useState({});
 
@@ -120,8 +134,18 @@ function MedicineCheckPopup({ dueMedications, mealLabel, onClose }) {
   const { data: allMedications } = useApi(getMedications, { enabled: step === 'complete' });
 
   // 오늘 이미 기록해둔 게 있으면 그대로 체크된 상태로 연다.
-  const { data: todayLog } = useApi(getMedicationLogs, { args: [toDateString()] });
+  const { data: todayLog, refetch: refetchLog } = useApi(getMedicationLogs, {
+    args: [toDateString()],
+  });
   const { data: todayMeals } = useApi(getMealLogs, { args: [toDateString()] });
+
+  // 완료 화면의 꽃 아이콘은 화면 상태가 아니라 서버 기록을 기준으로 그린다.
+  // 그래야 '기록 수정'에서 바꾼 내용이 곧바로 반영된다.
+  const takenSchedules = new Set(
+    (todayLog?.medications ?? [])
+      .filter((item) => item.status === 'TAKEN')
+      .map((item) => item.scheduleId),
+  );
 
   const seededRef = useRef(false);
   useEffect(() => {
@@ -151,12 +175,22 @@ function MedicineCheckPopup({ dueMedications, mealLabel, onClose }) {
       alert(error.message);
       return;
     }
+    refetchLog();
     setStep('complete');
   };
 
   // Figma 19: 완료 화면의 '기록 수정하기'로 들어가는 별도 팝업
   if (step === 'edit') {
-    return <MedicineLogEditPopup onClose={onClose} onDone={() => setStep('complete')} />;
+    return (
+      <MedicineLogEditPopup
+        onClose={onClose}
+        onDone={() => {
+          // 수정한 내용을 완료 화면이 바로 보여주도록 기록을 다시 읽는다.
+          refetchLog();
+          setStep('complete');
+        }}
+      />
+    );
   }
 
   if (step === 'complete') {
@@ -170,8 +204,9 @@ function MedicineCheckPopup({ dueMedications, mealLabel, onClose }) {
 
           <CircleRow>
             {(allMedications ?? []).map((med, index) => {
-              const taken = dueMedications.some(
-                (due) => due.medicationId === med.medicationId && checks[due.scheduleId],
+              // 그 약의 시간대 중 하나라도 먹었으면 꽃으로 표시한다.
+              const taken = (med.schedules ?? []).some((schedule) =>
+                takenSchedules.has(schedule.scheduleId),
               );
               return (
                 <MedIconWrap key={med.medicationId}>
@@ -200,8 +235,14 @@ function MedicineCheckPopup({ dueMedications, mealLabel, onClose }) {
         <PopupInnerBorder />
         <PopupIcon $size={56} src={clockIcon} alt="" />
         <PopupTitle $center>
-          {timeLabel}
-          <br />약 드실 시간이에요!
+          {isAllDay ? (
+            '오늘 챙길 약이에요!'
+          ) : (
+            <>
+              {timeLabel}
+              <br />약 드실 시간이에요!
+            </>
+          )}
         </PopupTitle>
 
         {rows.map((row) => (

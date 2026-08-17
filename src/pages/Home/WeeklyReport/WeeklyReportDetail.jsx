@@ -1,368 +1,314 @@
 import { useState } from 'react';
 import { useNavigate, useLocation, useParams } from 'react-router-dom';
 import styled from 'styled-components';
+import aiIcon from '../../../assets/weekly/ai.png';
+import faceGood from '../../../assets/weekly/face-good.png';
+import faceNormal from '../../../assets/weekly/face-normal.png';
+import faceBad from '../../../assets/weekly/face-bad.png';
+import mealIcon from '../../../assets/weekly/meal.png';
+import walkIcon from '../../../assets/weekly/walk.png';
+import flowerIcon from '../../../assets/weekly/flower.png';
+import medEmptyIcon from '../../../assets/weekly/med-empty.png';
+import starIcon from '../../../assets/weekly/star.png';
+import closeIcon from '../../../assets/journal/close.png';
 import { loadWeeklyDetail } from './weeklyReportData';
 import { useApi } from '../../../hooks/useApi';
+import { useFamilyRelation } from '../../../hooks/useFamilyRelation';
 import PhoneNumberPopup from '../../../components/PhoneNumberPopup';
 import { callPhone, getFamilyPhone } from '../../../utils/call';
-import { useFamilyRelation } from '../../../hooks/useFamilyRelation';
+import JournalCta from '../TodayReport/JournalCta';
+
+// Figma 34 / 34b: 주간 리포트 상세.
+// 서버는 지표를 저녁 건강체크 선택지 점수(1~3)로만 주고, 3이 가장 좋은 상태다.
+const SCORE_MAX = 3;
+const FACE_BY_SCORE = { 3: faceGood, 2: faceNormal, 1: faceBad };
+const BAR_COLOR = { 3: '#a8c256', 2: '#e8cd73', 1: '#e6a794' };
+
+const scoreFace = (score) => FACE_BY_SCORE[Math.round(score)] ?? faceNormal;
+const scoreBarHeight = (score, max) => (score ? (score / SCORE_MAX) * max : 4);
+const scoreBarColor = (score) => BAR_COLOR[Math.round(score)] ?? '#d9d4cc';
 
 const Page = styled.div`
   position: relative;
   width: 100%;
   height: 100%;
   overflow-y: auto;
-  background: #fff;
-  padding: 16px 20px 30px;
   box-sizing: border-box;
+
+  padding: 16px 20px 30px;
+  background: #fff8ed;
+
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
 
   &::-webkit-scrollbar {
     display: none;
   }
 `;
 
-const Header = styled.div`
+const CloseButton = styled.button`
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+  align-self: flex-start;
+`;
+
+const CloseIcon = styled.img`
+  width: 40px;
+  height: 40px;
+  object-fit: contain;
+`;
+
+const HeaderBlock = styled.div`
   display: flex;
+  flex-direction: column;
   align-items: center;
-  justify-content: space-between;
-  padding-bottom: 12px;
-  border-bottom: 1px solid #e5e0d9;
-`;
-
-const BackButton = styled.button`
-  width: 20px;
-  font-size: 22px;
-  color: #000;
-  line-height: 1;
-`;
-
-const HeaderTitle = styled.p`
-  margin: 0;
-  font-size: 18px;
-  font-weight: 500;
-  color: #000;
-`;
-
-const HeaderSpacer = styled.div`
-  width: 20px;
-`;
-
-const FlowTitle = styled.h1`
-  margin: 20px 0 0;
-  font-size: 25px;
-  font-weight: 600;
-  color: #000;
+  gap: 4px;
 `;
 
 const DateRange = styled.p`
-  margin: 4px 0 0;
-  font-size: 14px;
-  color: #8c8780;
+  margin: 0;
+  width: 100%;
+  text-align: center;
+  color: #a79c8e;
+  font-family: 'Noto Sans KR';
+  font-size: 18px;
+  font-weight: 700;
 `;
 
-const HeadlineCard = styled.div`
-  margin-top: 20px;
-  padding: 20px 18px;
-  border-radius: 16px;
-  background: #e8734a;
-  color: #fff;
+const FlowTitle = styled.h1`
+  margin: 0;
+  width: 100%;
+  text-align: center;
+  color: #4a3a2f;
+  font-family: Jua;
+  font-size: 40px;
+  font-weight: 400;
+`;
+
+const Divider = styled.div`
+  width: 100%;
+  height: 2px;
+  background: rgba(74, 58, 47, 0.25);
+`;
+
+// 온담 한마디 / 다음 주 제안이 쓰는 연두색 카드
+const GreenCard = styled.div`
+  width: 100%;
+  padding: 16px;
+
   display: flex;
   flex-direction: column;
+  align-items: center;
+  gap: 8px;
+
+  border-radius: 18px;
+  border: 1.5px solid rgba(143, 174, 74, 0.5);
+  background: #edf2d4;
+`;
+
+const GreenCardHead = styled.div`
+  width: 100%;
+  display: flex;
+  align-items: center;
   gap: 8px;
 `;
 
-const HeadlineTag = styled.p`
-  margin: 0;
-  font-size: 12px;
-  font-weight: 500;
+const AiIcon = styled.img`
+  width: 44px;
+  height: 44px;
+  flex-shrink: 0;
+  object-fit: contain;
 `;
 
-const HeadlineTitle = styled.p`
+const GreenLabel = styled.p`
   margin: 0;
+  flex: 1;
+  min-width: 0;
+  color: #5b7a2e;
+  font-family: 'Noto Sans KR';
+  font-size: 18px;
+  font-weight: 700;
+`;
+
+const Headline = styled.p`
+  margin: 0;
+  width: 100%;
+  color: #4a3a2f;
+  font-family: 'Noto Sans KR';
   font-size: 20px;
-  font-weight: 600;
+  font-weight: 700;
 `;
 
-const HeadlineDesc = styled.p`
+const GreenText = styled.p`
   margin: 0;
-  font-size: 13px;
+  width: 100%;
+  color: #6b6661;
+  font-family: 'Noto Sans KR';
+  font-size: 16px;
   line-height: 1.5;
 `;
 
-const ColorLegend = styled.div`
-  display: flex;
-  gap: 14px;
-  margin-top: 16px;
-`;
-
-const LegendItem = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 5px;
-`;
-
-const LegendDot = styled.span`
-  width: 10px;
-  height: 10px;
-  border-radius: 5px;
-  background: ${({ $color }) => $color};
-`;
-
-const LegendLabel = styled.span`
-  font-size: 12px;
-  color: #8c8780;
-`;
-
 const MetricCard = styled.div`
-  margin-top: 16px;
+  width: 100%;
   padding: 18px 16px;
-  border-radius: 16px;
-  background: #f7f5f0;
+
   display: flex;
   flex-direction: column;
   gap: 12px;
-`;
 
-const MetricHead = styled.div`
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
+  border-radius: 18px;
+  border: 1.5px solid rgba(74, 58, 47, 0.4);
+  background: rgba(255, 255, 255, 0.55);
 `;
 
 const MetricTitle = styled.p`
   margin: 0;
-  font-size: 17px;
-  font-weight: 600;
-  color: #000;
+  color: #4a3a2f;
+  font-family: 'Noto Sans KR';
+  font-size: 16px;
+  font-weight: 700;
 `;
 
-const TrendArrow = styled.span`
-  font-size: 20px;
-  color: ${({ $trend }) => (($trend === 'down' && '#d1594d') || ($trend === 'up' && '#59a666') || '#8c8780')};
-`;
-
-const DotRow = styled.div`
+const DayRow = styled.div`
+  width: 100%;
   display: flex;
+  align-items: ${({ $bottom }) => ($bottom ? 'flex-end' : 'flex-start')};
   justify-content: space-between;
 `;
 
 const DayCol = styled.div`
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 6px;
-`;
-
-const Dot = styled.span`
-  width: 18px;
-  height: 18px;
-  border-radius: 9px;
-  background: ${({ $color }) => $color};
-`;
-
-const DayLabel = styled.span`
-  font-size: 11px;
-  color: #8c8780;
-`;
-
-const BarRow = styled.div`
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  height: 70px;
-`;
-
-const BarCol = styled.div`
+  width: 30px;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: flex-end;
-  gap: 4px;
-  height: 70px;
-  width: 30px;
+  gap: ${({ $gap }) => $gap ?? 8}px;
+`;
+
+const DayLabel = styled.span`
+  color: #8c8780;
+  font-size: 11px;
+`;
+
+const FaceIcon = styled.img`
+  width: 32px;
+  height: 32px;
+  object-fit: contain;
 `;
 
 const Bar = styled.div`
-  width: 18px;
+  width: 30px;
   height: ${({ $height }) => $height}px;
-  min-height: 4px;
+  border-radius: 8px;
+  background: ${({ $color }) => $color};
+`;
+
+const MedIcon = styled.img`
+  width: ${({ $taken }) => ($taken ? 36 : 26)}px;
+  height: ${({ $taken }) => ($taken ? 36 : 26)}px;
+  object-fit: contain;
+`;
+
+const Legend = styled.div`
+  display: flex;
+  gap: 14px;
+  align-items: center;
+  flex-wrap: wrap;
+`;
+
+const LegendItem = styled.div`
+  display: flex;
+  gap: 5px;
+  align-items: center;
+`;
+
+const LegendIcon = styled.img`
+  width: 20px;
+  height: 20px;
+  object-fit: contain;
+`;
+
+const LegendSwatch = styled.span`
+  width: 14px;
+  height: 14px;
   border-radius: 4px;
   background: ${({ $color }) => $color};
 `;
 
-const SleepLegend = styled.div`
-  display: flex;
-  gap: 10px;
-`;
-
-const SleepLegendItem = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 4px;
-`;
-
-const SleepLegendSwatch = styled.span`
-  width: 8px;
-  height: 8px;
-  border-radius: 2px;
-  background: ${({ $color }) => $color};
-`;
-
-const SleepLegendLabel = styled.span`
-  font-size: 11px;
-  color: #8c8780;
-`;
-
-const MedRow = styled.div`
-  display: flex;
-  justify-content: space-between;
-`;
-
-const MedCircle = styled.span`
-  width: 18px;
-  height: 18px;
-  border-radius: 9px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 11px;
-  font-weight: 600;
-  ${({ $taken }) => ($taken ? 'background: #e0f2e3; color: #59a666;' : 'border: 1.5px dashed #e5e0d9;')}
+const LegendLabel = styled.span`
+  color: #6b6661;
+  font-family: 'Noto Sans KR';
+  font-size: 13px;
+  font-weight: 500;
 `;
 
 const MetricNote = styled.p`
   margin: 0;
-  font-size: 13px;
-  font-weight: 500;
-  color: ${({ $tone }) => (($tone === 'warn' && '#d1594d') || ($tone === 'good' && '#59a666') || '#6b6661')};
-`;
-
-const AdviceCard = styled.div`
-  margin-top: 16px;
-  padding: 18px;
-  border-radius: 16px;
-  background: #fae5d9;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-`;
-
-const AdviceLabel = styled.p`
-  margin: 0;
-  font-size: 12px;
-  font-weight: 500;
-  color: #e8734a;
-`;
-
-const AdviceText = styled.p`
-  margin: 0;
-  font-size: 15px;
-  color: #000;
-`;
-
-const CtaCard = styled.div`
-  margin-top: 16px;
-  padding: 20px;
-  border-radius: 16px;
-  background: #fae5d9;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 12px;
-`;
-
-const CtaTitle = styled.p`
-  margin: 0;
-  font-size: 17px;
-  font-weight: 600;
-  color: #000;
-  text-align: center;
-`;
-
-const SuggestedMessage = styled.div`
   width: 100%;
-  padding: 10px 14px;
-  border-radius: 10px;
-  background: #fff;
-  border: 1px solid #e5e0d9;
-  box-sizing: border-box;
-`;
-
-const SuggestedMessageText = styled.p`
-  margin: 0;
-  font-size: 13px;
   color: #6b6661;
+  font-family: 'Noto Sans KR';
+  font-size: 16px;
+  line-height: 1.5;
 `;
 
-const CtaButtonRow = styled.div`
-  display: flex;
-  gap: 10px;
+const DayJumpCard = styled.div`
   width: 100%;
-`;
+  padding: 18px 2px;
 
-const CallButton = styled.button`
-  flex: 1;
-  height: 48px;
-  border-radius: 10px;
-  background: #fff;
-  border: 1.5px solid #e8734a;
-  color: #e8734a;
-  font-size: 15px;
-  font-weight: 600;
-`;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 
-const LetterButton = styled.button`
-  flex: 1;
-  height: 48px;
-  border-radius: 10px;
-  background: #e8734a;
-  color: #fff;
-  font-size: 15px;
-  font-weight: 600;
+  border-radius: 18px;
+  border: 1.5px solid rgba(74, 58, 47, 0.4);
 `;
 
 const DayJumpHint = styled.p`
-  margin: 20px 0 0;
-  font-size: 12px;
-  color: #8c8780;
+  margin: 0;
+  width: 100%;
+  padding: 0 14px;
+  color: #6b6661;
+  font-family: 'Noto Sans KR';
+  font-size: 15px;
+  font-weight: 500;
 `;
 
 const DayJumpRow = styled.div`
+  width: 100%;
   display: flex;
-  gap: 6px;
-  margin-top: 24px;
+  justify-content: space-between;
+  padding: 0 6px;
 `;
 
-const DayButton = styled.div`
-  flex: 1;
-  height: 62px;
-  border-radius: 12px;
-  border: 1px solid #e5e0d9;
+const DayButton = styled.button`
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
+  gap: 2px;
+`;
+
+const StarIcon = styled.img`
+  width: 44px;
+  height: 44px;
+  object-fit: contain;
 `;
 
 const DayButtonLabel = styled.span`
-  font-size: 15px;
-  font-weight: 500;
-  color: #000;
-`;
-
-const DayButtonDate = styled.span`
-  font-size: 10px;
   color: #8c8780;
+  font-family: 'Noto Sans KR';
+  font-size: 12px;
+  font-weight: 700;
 `;
 
-const SLEEP_COLOR = { good: '#59a666', ok: '#f2bf59', low: '#d96659' };
-
-// 서버는 수면·활동을 시간이나 걸음 수가 아니라 저녁 건강체크 선택지 점수(1~3)로 내려준다.
-// 3이 가장 좋은 상태라(좋았어요=3), 점수가 클수록 막대를 높고 진하게 그린다.
-const SCORE_MAX = 3;
-const scoreBarHeight = (score) => (score ? (score / SCORE_MAX) * 60 : 0);
-const scoreBarColor = (score) =>
-  score >= 3 ? SLEEP_COLOR.good : score >= 2 ? SLEEP_COLOR.ok : SLEEP_COLOR.low;
+const StatusText = styled.p`
+  margin: 40px 0 0;
+  text-align: center;
+  color: #a79c8e;
+  font-family: 'Noto Sans KR';
+  font-size: 15px;
+`;
 
 function WeeklyReportDetail() {
   const navigate = useNavigate();
@@ -377,31 +323,9 @@ function WeeklyReportDetail() {
 
   const week = data?.week;
   const detail = data?.detail;
+  const isMine = person === 'me';
+  const personLabel = isMine ? '나' : partnerLabel;
 
-  if (loading || error || !week || !detail) {
-    return (
-      <Page>
-        <Header>
-          <BackButton type="button" onClick={() => navigate('/home/weekly-report')}>
-            ‹
-          </BackButton>
-          <HeaderTitle>주간 리포트</HeaderTitle>
-          <HeaderSpacer />
-        </Header>
-        <DateRange>
-          {loading
-            ? '리포트를 불러오는 중이에요...'
-            : error
-              ? error.message
-              : '이 주는 아직 리포트가 준비되지 않았어요.'}
-        </DateRange>
-      </Page>
-    );
-  }
-
-  const personLabel = person === 'me' ? '나' : partnerLabel;
-
-  // 저장해둔 번호가 있으면 바로 걸고, 없으면 한 번 물어본 뒤 건다.
   const handleCall = () => {
     const saved = getFamilyPhone();
     if (saved) {
@@ -411,176 +335,187 @@ function WeeklyReportDetail() {
     setAskingPhone(true);
   };
 
-  const handleSendLetter = () => {
-    navigate('/home', { state: { openLetterbox: 'compose' } });
-  };
+  const goBack = () => navigate('/home/weekly-report');
+
+  if (loading || error || !week || !detail) {
+    return (
+      <Page>
+        <CloseButton type="button" aria-label="닫기" onClick={goBack}>
+          <CloseIcon src={closeIcon} alt="" />
+        </CloseButton>
+        <StatusText>
+          {loading
+            ? '리포트를 불러오는 중이에요...'
+            : error
+              ? error.message
+              : '이 주는 아직 리포트가 준비되지 않았어요.'}
+        </StatusText>
+      </Page>
+    );
+  }
 
   return (
     <Page>
-      <Header>
-        <BackButton type="button" aria-label="뒤로가기" onClick={() => navigate('/home/weekly-report')}>
-          ‹
-        </BackButton>
-        <HeaderTitle>{personLabel}의 {week.label}</HeaderTitle>
-        <HeaderSpacer />
-      </Header>
+      <CloseButton type="button" aria-label="닫기" onClick={goBack}>
+        <CloseIcon src={closeIcon} alt="" />
+      </CloseButton>
 
-      <FlowTitle>{personLabel}의 이번 주 건강 흐름</FlowTitle>
-      <DateRange>{week.range}</DateRange>
+      <HeaderBlock>
+        <DateRange>{week.range}</DateRange>
+        <FlowTitle>{personLabel}의 이번 주 건강 흐름</FlowTitle>
+        <Divider />
+      </HeaderBlock>
 
-      <HeadlineCard>
-        <HeadlineTag>✦ 이번 주 한마디</HeadlineTag>
-        <HeadlineTitle>{detail.headline}</HeadlineTitle>
-        <HeadlineDesc>{detail.headlineDesc}</HeadlineDesc>
-      </HeadlineCard>
+      <GreenCard>
+        <GreenCardHead>
+          <AiIcon src={aiIcon} alt="" />
+          <GreenLabel>이번 주 한마디</GreenLabel>
+        </GreenCardHead>
+        <Headline>“{detail.headline}”</Headline>
+        {detail.headlineDesc && <GreenText>{detail.headlineDesc}</GreenText>}
+      </GreenCard>
 
-      <ColorLegend>
-        <LegendItem>
-          <LegendDot $color="#59a666" />
-          <LegendLabel>좋아요</LegendLabel>
-        </LegendItem>
-        <LegendItem>
-          <LegendDot $color="#f2bf59" />
-          <LegendLabel>보통이에요</LegendLabel>
-        </LegendItem>
-        <LegendItem>
-          <LegendDot $color="#d96659" />
-          <LegendLabel>조금 아쉬워요</LegendLabel>
-        </LegendItem>
-      </ColorLegend>
+      <Divider />
 
       <MetricCard>
-        <MetricHead>
-          <MetricTitle>컨디션</MetricTitle>
-          <TrendArrow $trend={detail.conditionTrend}>{detail.conditionTrend === 'down' ? '↘' : '→'}</TrendArrow>
-        </MetricHead>
-        <DotRow>
+        <MetricTitle>컨디션</MetricTitle>
+        <DayRow>
           {detail.condition.map((item) => (
             <DayCol key={item.day}>
-              <Dot $color={item.color} />
+              <FaceIcon src={scoreFace(item.score)} alt="" />
               <DayLabel>{item.day}</DayLabel>
             </DayCol>
           ))}
-        </DotRow>
-        <MetricNote $tone={detail.conditionTrend === 'down' ? 'warn' : 'neutral'}>{detail.conditionNote}</MetricNote>
+        </DayRow>
+        <Legend>
+          <LegendItem>
+            <LegendIcon src={faceGood} alt="" />
+            <LegendLabel>좋아요</LegendLabel>
+          </LegendItem>
+          <LegendItem>
+            <LegendIcon src={faceNormal} alt="" />
+            <LegendLabel>보통이에요</LegendLabel>
+          </LegendItem>
+          <LegendItem>
+            <LegendIcon src={faceBad} alt="" />
+            <LegendLabel>조금 아쉬워요</LegendLabel>
+          </LegendItem>
+        </Legend>
+        <MetricNote>{detail.conditionNote}</MetricNote>
       </MetricCard>
 
       <MetricCard>
-        <MetricHead>
-          <MetricTitle>수면</MetricTitle>
-          <TrendArrow $trend="flat">→</TrendArrow>
-        </MetricHead>
-        <BarRow>
+        <MetricTitle>수면</MetricTitle>
+        <DayRow $bottom style={{ height: 70 }}>
           {detail.sleep.map((item) => (
-            <BarCol key={item.day}>
-              <Bar $height={scoreBarHeight(item.value)} $color={scoreBarColor(item.value)} />
+            <DayCol key={item.day} $gap={4}>
+              <Bar $height={scoreBarHeight(item.value, 48)} $color={scoreBarColor(item.value)} />
               <DayLabel>{item.day}</DayLabel>
-            </BarCol>
+            </DayCol>
           ))}
-        </BarRow>
-        <SleepLegend>
-          <SleepLegendItem>
-            <SleepLegendSwatch $color={SLEEP_COLOR.good} />
-            <SleepLegendLabel>푹 잤어요</SleepLegendLabel>
-          </SleepLegendItem>
-          <SleepLegendItem>
-            <SleepLegendSwatch $color={SLEEP_COLOR.ok} />
-            <SleepLegendLabel>조금 부족했어요</SleepLegendLabel>
-          </SleepLegendItem>
-          <SleepLegendItem>
-            <SleepLegendSwatch $color={SLEEP_COLOR.low} />
-            <SleepLegendLabel>거의 못 잤어요</SleepLegendLabel>
-          </SleepLegendItem>
-        </SleepLegend>
+        </DayRow>
+        <Legend>
+          {[
+            { score: 3, label: '푹 잤어요' },
+            { score: 2, label: '조금 부족했어요' },
+            { score: 1, label: '거의 못 잤어요' },
+          ].map((item) => (
+            <LegendItem key={item.score}>
+              <LegendSwatch $color={BAR_COLOR[item.score]} />
+              <LegendLabel>{item.label}</LegendLabel>
+            </LegendItem>
+          ))}
+        </Legend>
         <MetricNote>{detail.sleepNote}</MetricNote>
       </MetricCard>
 
       <MetricCard>
-        <MetricHead>
-          <MetricTitle>식사</MetricTitle>
-          <TrendArrow $trend="flat">→</TrendArrow>
-        </MetricHead>
-        <DotRow>
+        <MetricTitle>식사</MetricTitle>
+        <DayRow>
           {detail.meal.map((item) => (
             <DayCol key={item.day}>
-              <Dot $color={item.color} />
+              <FaceIcon
+                src={mealIcon}
+                alt=""
+                style={{ opacity: item.score ? 0.35 + (item.score / SCORE_MAX) * 0.65 : 0.25 }}
+              />
               <DayLabel>{item.day}</DayLabel>
             </DayCol>
           ))}
-        </DotRow>
+        </DayRow>
         <MetricNote>{detail.mealNote}</MetricNote>
       </MetricCard>
 
       <MetricCard>
-        <MetricHead>
-          <MetricTitle>활동 (걸음 수)</MetricTitle>
-          <TrendArrow $trend={detail.stepsTrend}>{detail.stepsTrend === 'down' ? '↘' : '→'}</TrendArrow>
-        </MetricHead>
-        <BarRow>
+        <MetricTitle>활동</MetricTitle>
+        <DayRow $bottom style={{ height: 108 }}>
           {detail.steps.map((item) => (
-            <BarCol key={item.day}>
-              <Bar $height={scoreBarHeight(item.value)} $color="#e8734a" />
+            <DayCol key={item.day}>
+              <LegendIcon src={walkIcon} alt="" style={{ width: 30, height: 30 }} />
+              <Bar $height={scoreBarHeight(item.value, 40)} $color={scoreBarColor(item.value)} />
               <DayLabel>{item.day}</DayLabel>
-            </BarCol>
+            </DayCol>
           ))}
-        </BarRow>
-        <MetricNote $tone={detail.stepsTrend === 'down' ? 'warn' : 'neutral'}>{detail.stepsNote}</MetricNote>
+        </DayRow>
+        <MetricNote>{detail.stepsNote}</MetricNote>
       </MetricCard>
 
       <MetricCard>
-        <MetricHead>
-          <MetricTitle>복약</MetricTitle>
-          <TrendArrow $trend="up">→</TrendArrow>
-        </MetricHead>
-        {/* 주간 리포트 API는 복약을 주 단위 합계로만 준다. 요일별 기록이 생기면 이 줄이 채워진다 */}
-        {detail.medsTaken.length > 0 && (
-          <MedRow>
-            {detail.medsTaken.map((item) => (
-              <DayCol key={item.day}>
-                <MedCircle $taken={item.taken}>{item.taken ? '✓' : ''}</MedCircle>
-                <DayLabel>{item.day}</DayLabel>
+        <MetricTitle>복약</MetricTitle>
+        {/* 서버가 요일별 복약을 안 줘서, 주 단위 합계만큼 앞에서부터 채워 보여준다 */}
+        <DayRow>
+          {['월', '화', '수', '목', '금', '토', '일'].map((day, index) => {
+            const taken = index < detail.medsTakenCount;
+            return (
+              <DayCol key={day}>
+                <MedIcon $taken={taken} src={taken ? flowerIcon : medEmptyIcon} alt="" />
+                <DayLabel>{day}</DayLabel>
               </DayCol>
-            ))}
-          </MedRow>
-        )}
-        <MetricNote $tone="good">
+            );
+          })}
+        </DayRow>
+        <MetricNote>
           {detail.medsTotal > 0
             ? `이번 주 ${detail.medsTotal}번 중 ${detail.medsTakenCount}번 챙기셨어요.`
             : detail.medsNote}
         </MetricNote>
       </MetricCard>
 
-      <AdviceCard>
-        <AdviceLabel>✦ 다음 주 제안</AdviceLabel>
-        <AdviceText>{detail.adviceText}</AdviceText>
-      </AdviceCard>
-
-      {person === 'mom' && (
-        <CtaCard>
-          <CtaTitle>{partnerLabel}에게 연락해볼까요?</CtaTitle>
-          <SuggestedMessage>
-            <SuggestedMessageText>{detail.contactMessage}</SuggestedMessageText>
-          </SuggestedMessage>
-          <CtaButtonRow>
-            <CallButton type="button" onClick={handleCall}>
-              전화하기
-            </CallButton>
-            <LetterButton type="button" onClick={handleSendLetter}>
-              편지 보내기
-            </LetterButton>
-          </CtaButtonRow>
-        </CtaCard>
+      {detail.adviceText && (
+        <GreenCard>
+          <GreenCardHead>
+            <AiIcon src={aiIcon} alt="" />
+            <GreenLabel>다음 주 제안</GreenLabel>
+          </GreenCardHead>
+          <GreenText>{detail.adviceText}</GreenText>
+        </GreenCard>
       )}
 
-      <DayJumpHint>하루하루의 건강기록을 확인해보세요</DayJumpHint>
-      <DayJumpRow>
-        {['월', '화', '수', '목', '금', '토', '일'].map((day, index) => (
-          <DayButton key={day}>
-            <DayButtonLabel>{day}</DayButtonLabel>
-            <DayButtonDate>{week.range.split(' - ')[0].split('/')[0]}/{Number(week.range.split(' - ')[0].split('/')[1]) + index}</DayButtonDate>
-          </DayButton>
-        ))}
-      </DayJumpRow>
+      <Divider />
+
+      <DayJumpCard>
+        <DayJumpHint>하루하루의 건강기록을 확인해보세요</DayJumpHint>
+        <DayJumpRow>
+          {['월', '화', '수', '목', '금', '토', '일'].map((day) => (
+            <DayButton key={day} type="button" onClick={() => navigate('/home/today-report')}>
+              <StarIcon src={starIcon} alt="" />
+              <DayButtonLabel>{day}</DayButtonLabel>
+            </DayButton>
+          ))}
+        </DayJumpRow>
+      </DayJumpCard>
+
+      {!isMine && (
+        <>
+          <Divider />
+          <JournalCta
+            title={`이제 ${partnerLabel}와 안부를 나눠볼까요?`}
+            message={detail.contactMessage}
+            onCall={handleCall}
+            onSendLetter={() => navigate('/home', { state: { openLetterbox: 'compose' } })}
+          />
+        </>
+      )}
 
       {askingPhone && (
         <PhoneNumberPopup

@@ -97,10 +97,14 @@ function Home() {
     const { data: due } = await fetchDueMedications();
     let medications = due ?? [];
 
-    if (medications.length === 0) {
+    // 복용 예정이 비면 오늘 먹을 약 전체를 시간대까지 펼쳐서 보여준다.
+    // 시각에 따라 한 개만 골라 보여주면, 다시 열 때 다른 시간대가 떠서
+    // 저장한 기록이 사라진 것처럼 보인다.
+    const isAllDay = medications.length === 0;
+    if (isAllDay) {
       const { data: all } = await fetchAllMedications();
       medications = (all ?? []).flatMap((med) =>
-        (med.schedules ?? []).slice(0, 1).map((schedule) => ({
+        (med.schedules ?? []).map((schedule) => ({
           medicationId: med.medicationId,
           scheduleId: schedule.scheduleId,
           name: med.name,
@@ -109,7 +113,7 @@ function Home() {
       );
     }
 
-    setCtaSlot({ medications, mealLabel: getMealLabel(new Date().getHours()) });
+    setCtaSlot({ medications, isAllDay, mealLabel: getMealLabel(new Date().getHours()) });
     // 상단 약 아이콘의 'medication'(복용약 관리) 팝업과 이름이 겹치지 않도록 구분한다.
     setActivePopup('medication_check');
   };
@@ -150,6 +154,7 @@ function Home() {
         <MedicineCheckPopup
           dueMedications={ctaSlot.medications}
           mealLabel={ctaSlot.mealLabel}
+          isAllDay={ctaSlot.isAllDay}
           onClose={closePopup}
         />
       )}

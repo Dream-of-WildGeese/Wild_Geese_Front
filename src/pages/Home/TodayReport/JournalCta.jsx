@@ -3,7 +3,7 @@ import phoneIcon from '../../../assets/journal/cta-phone.png';
 import momIcon from '../../../assets/journal/cta-mom.png';
 import bubbleImage from '../../../assets/journal/cta-bubble.png';
 
-// Figma 31b의 CTA Card_최종3: 가족 화면 맨 아래에만 붙는 안부 카드.
+// Figma 31b(937:792)의 CTA Card_최종1: 가족 화면 맨 아래에만 붙는 안부 카드.
 const Card = styled.div`
   width: 100%;
   padding: 20px;
@@ -14,13 +14,13 @@ const Card = styled.div`
   gap: 14px;
 
   border-radius: 20px;
-  border: 1.5px solid rgba(217, 138, 74, 0.5);
-  background: #fbe3d0;
+  border: 1.5px solid rgba(230, 167, 148, 0.5);
+  background: rgba(251, 234, 229, 0.7);
 `;
 
 const PhoneIcon = styled.img`
-  width: 80px;
-  height: 80px;
+  width: 70px;
+  height: 70px;
   object-fit: contain;
 `;
 
@@ -28,7 +28,7 @@ const Title = styled.p`
   margin: 0;
   width: 100%;
   text-align: center;
-  color: #c97a3d;
+  color: #c97158;
   font-family: Jua;
   font-size: 22px;
 `;
@@ -42,21 +42,23 @@ const BubbleRow = styled.div`
 const MomIcon = styled.img`
   width: 106px;
   height: 133px;
-  margin-top: 45px;
+  margin-top: 56px;
   flex-shrink: 0;
   object-fit: contain;
 `;
 
+// 말풍선 그림 위에 글자를 얹는다. 꼬리가 아래쪽에 있어 여백을 비대칭으로 준다.
 const Bubble = styled.div`
   position: relative;
   flex: 1;
   min-width: 0;
-  min-height: 150px;
+  min-height: 158px;
+  margin-left: -20px;
 
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 30px 26px 40px 8px;
+  padding: 38px 18px 60px 22px;
 
   background-image: url(${bubbleImage});
   background-size: 100% 100%;
