@@ -42,8 +42,13 @@ const findPartner = async () => {
   return (family?.members ?? []).find((member) => String(member.userId) !== String(myUserId));
 };
 
+// 화면이 점수로 표정 아이콘을 고르므로 색과 함께 원점수도 넘긴다.
 const toDailyDots = (metric) =>
-  DAYS.map((day, index) => ({ day, color: scoreColor(metric?.daily?.[index]) }));
+  DAYS.map((day, index) => ({
+    day,
+    score: metric?.daily?.[index] ?? null,
+    color: scoreColor(metric?.daily?.[index]),
+  }));
 
 const toDailyBars = (metric) =>
   DAYS.map((day, index) => ({ day, value: metric?.daily?.[index] ?? 0 }));
