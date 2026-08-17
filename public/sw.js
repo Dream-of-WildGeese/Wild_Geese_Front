@@ -12,7 +12,7 @@ self.addEventListener('push', (event) => {
 
   event.waitUntil(
     self.registration.showNotification(data.title || '온담', {
-      body: data.body || '',
+      body: data.content||data.body || '',
       icon: '/icons/pinkflower.svg',
       badge: '/icons/pinkflower.svg',
       data: {
