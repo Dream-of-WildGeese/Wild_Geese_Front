@@ -10,6 +10,7 @@ import { useApi, useApiAction } from '../../../hooks/useApi';
 import { formatAlarmTime, ROLE_LABEL } from './settingsUtils';
 import TimePickerModal from '../../../components/TimePickerModal';
 import ConfirmPopup from './ConfirmPopup';
+import { useWebPush } from '../../../hooks/useWebPush';
 
 const Page = styled.div`
   position: relative;
@@ -177,8 +178,23 @@ function SettingsMain() {
     }
   };
 
-  const handleToggle = (key) => applyChange({ [key]: !setting[key] });
+  const { enablePush } = useWebPush();
 
+  const handleToggle = async (key) => {
+    const nextValue = !setting[key];
+
+    // 알림을 ON할 때만 브라우저 Web Push 구독을 준비한다.
+    if (nextValue) {
+      try {
+        await enablePush();
+      } catch (error) {
+        alert(error.message);
+        return;
+      }
+    }
+    await applyChange({ [key]: nextValue });
+  };
+  
   const handleTimeConfirm = (nextTime) => {
     applyChange({ [timeEditor]: nextTime });
     setTimeEditor(null);

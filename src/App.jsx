@@ -5,7 +5,6 @@ import GlobalStyle from './styles/GlobalStyle';
 import { AppDataProvider } from './store/AppDataContext';
 
 import Home from './pages/Home/Home';
-import DailyHealthCheck from './pages/Home/TodayOndam/Night/DailyHealthCheck';
 
 import MorningReport from './pages/MorningReport/MorningReport';
 
@@ -57,7 +56,6 @@ function App() {
               <Route path="/home/today-report" element={<TodayReport />} />
               <Route path="/home/weekly-report" element={<WeeklyReport />} />
               <Route path="/home/weekly-report/:weekId" element={<WeeklyReportDetail />} />
-              <Route path='/daily-health-check' element={<DailyHealthCheck />} />
               <Route path='/morning-report' element={<MorningReport />} />
             </Routes>
           </Layout>
