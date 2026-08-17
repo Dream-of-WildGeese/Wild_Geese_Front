@@ -79,7 +79,7 @@ const HealthSet = () => {
     navigate('/onboarding/complete/2');
   };
 
-  const interestList = ['수면', '활동량', '식사', '복약', '기분'];
+  const interestList = ['체력관리', '스트레스 관리', '수면 개선', '식습관 개선'];
 
   const toggleInterest = (item) => {
     const next = interests.includes(item) ? interests.filter((v) => v !== item) : [...interests, item];
@@ -217,26 +217,7 @@ const HealthSet = () => {
             </span>
             </AgreeBox>
 
-            <Card>
-            <CardTitle>건강 관심사를 골라주세요!</CardTitle>
-
-            <CardDesc>
-                여러 개 골라도 좋아요. 선택하신 관심사에 맞춰 맞춤 질문을
-                드릴게요.
-            </CardDesc>
-
-            <ChipWrap>
-                {interestList.map((item) => (
-                <Chip
-                    key={item}
-                    $active={interests.includes(item)}
-                    onClick={() => toggleInterest(item)}
-                >
-                    {item}
-                </Chip>
-                ))}
-            </ChipWrap>
-            </Card>
+            
             <Card>
               <CardTitle>현재 꾸준히 관리하고 있는 건강 문제가 있나요?</CardTitle>
 
@@ -271,19 +252,26 @@ const HealthSet = () => {
                   />
                 )}
             </Card>
-            {/*
-            <HighlightCard>
-              <HighlightText>
-                특별한 건강 문제가 없으시다면, 평소 챙기고 싶은 게 있을까요?
-              </HighlightText>
+            <Card>
+            <CardTitle>건강 관심사를 골라주세요!</CardTitle>
 
-              <ChipWrap>
-                <Chip>체력 관리</Chip>
-                <Chip>스트레스 관리</Chip>
-                <Chip>수면 개선</Chip>
-                <Chip>식습관 개선</Chip>
-              </ChipWrap>
-            </HighlightCard>*/}
+            <CardDesc>
+                여러 개 골라도 좋아요. 선택하신 관심사에 맞춰 맞춤 질문을
+                드릴게요.
+            </CardDesc>
+
+            <ChipWrap>
+                {interestList.map((item) => (
+                <Chip
+                    key={item}
+                    $active={interests.includes(item)}
+                    onClick={() => toggleInterest(item)}
+                >
+                    {item}
+                </Chip>
+                ))}
+            </ChipWrap>
+            </Card>
 
             <Card>
             <CardHeader>

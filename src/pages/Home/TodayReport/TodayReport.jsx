@@ -4,12 +4,26 @@ import styled from 'styled-components';
 import { loadTodayReport } from './todayReportData';
 import { useApi } from '../../../hooks/useApi';
 
+import back from '../../../assets/onboarding/back.svg';
+import aiIcon from '../../../assets/TodayReport/ai아이콘.svg';
+import sunIcon from '../../../assets/TodayReport/해아이콘.svg';
+import moonIcon from '../../../assets/TodayReport/달아이콘.svg';
+import checkIcon from '../../../assets/TodayReport/체크아이콘.svg';
+import flowerPink from '../../../assets/TodayReport/Flower-pink.svg';
+import flowerYellow from '../../../assets/TodayReport/Flower-yellow.svg';
+import sleepIcon from '../../../assets/TodayReport/잠 아이콘.svg';
+import mealIcon from '../../../assets/TodayReport/식사 아이콘.svg';
+import walkIcon from '../../../assets/TodayReport/산책 아이콘.svg';
+import bodyIcon from '../../../assets/TodayReport/몸상태 아이콘.svg';
+import conditionIcon from '../../../assets/TodayReport/컨디션 아이콘.svg';
+import pillIcon from '../../../assets/TodayReport/pill.svg';
+
 const Page = styled.div`
   position: relative;
   width: 100%;
   height: 100%;
   overflow-y: auto;
-  background: #fff;
+  background: #FFF8ED;
   padding: 16px 20px 30px;
   box-sizing: border-box;
 
@@ -17,89 +31,131 @@ const Page = styled.div`
     display: none;
   }
 `;
+const BackButton = styled.button`
+  position: absolute;
+  top: 18px;
+  left: 20px;
+
+  width: 36px;
+  height: 36px;
+  padding: 0;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  background: transparent;
+  z-index: 10;
+`;
+const Header = styled.div`
+  margin-top: 40px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+`;
+
+const BackIcon = styled.img`
+  width: 36px;
+  height: 36px;
+`;
 
 const DateLabel = styled.p`
   margin: 0;
   font-size: 14px;
   color: #8c8780;
+  text-align: center;
 `;
 
 const Title = styled.h1`
-  margin: 4px 0 0;
+  margin: 0;
   font-size: 25px;
-  font-weight: 600;
-  color: #000;
+  font-weight: 700;
+  color: #4a3a2f;
+  text-align: center;
+`
+
+const Divider = styled.div`
+  width: 100%;
+  border-top: 2px dashed #D8D0C7;
+  margin: 12px 0 20px;
 `;
 
 const ToggleWrap = styled.div`
   display: flex;
-  gap: 4px;
-  height: 46px;
-  padding: 4px;
-  margin-top: 16px;
-  border-radius: 12px;
-  background: #f7f5f0;
+  gap: 10px;
+  margin-top: 18px;
 `;
 
 const ToggleTab = styled.button`
   flex: 1;
-  border-radius: 9px;
-  font-size: 15px;
-  font-weight: ${({ $active }) => ($active ? 600 : 400)};
-  color: ${({ $active }) => ($active ? '#000' : '#8c8780')};
-  background: ${({ $active }) => ($active ? '#fff' : 'transparent')};
+  height: 56px;
+  border-radius: 20px;
+  border: 1.5px solid ${({ $active }) => ($active ? '#D9B4A3' : '#E9E3A8')};
+
+  background: #FFFDF8;
+  color: ${({ $active }) => ($active ? '#B66C54' : '#B89A36')};
+
+  font-family: "Noto Sans KR";
+  font-size: 18px;
+  font-weight: 700;
 `;
 
 const SummaryRow = styled.div`
   display: flex;
-  gap: 8px;
-  margin-top: 24px;
+  justify-content: space-between;
+  margin-top: 22px;
+  gap: 12px;
 `;
 
 const SummaryChip = styled.div`
   flex: 1;
-  height: 64px;
-  border-radius: 12px;
-  background: ${({ $bg }) => $bg};
-  color: ${({ $color }) => $color};
+  aspect-ratio: 1;
+  max-width: 92px;
+
+  border-radius: 50%;
+  border: 1.5px solid #CFC6BA;
+  background: #FFFDF8;
+
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 2px;
+  gap: 6px;
 `;
 
 const SummaryValue = styled.span`
-  font-size: 16px;
-  font-weight: 600;
+  font-size: 24px;
+  font-weight: 700;
+  line-height: 1;
 `;
 
 const SummaryLabel = styled.span`
-  font-size: 11px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #7A6B5D;
 `;
 
 const AiInsightCard = styled.div`
   display: flex;
   gap: 12px;
   align-items: center;
-  margin-top: 16px;
-  padding: 14px;
-  border-radius: 14px;
-  background: #fae5d9;
+  margin-top: 20px;
+  padding: 18px 16px;
+  border-radius: 20px;
+  background: #E8F4E8;
 `;
 
 const AiBadge = styled.div`
-  width: 32px;
-  height: 32px;
-  border-radius: 16px;
-  background: #e8734a;
-  color: #fff;
-  font-size: 15px;
-  font-weight: 600;
   flex-shrink: 0;
   display: flex;
   align-items: center;
   justify-content: center;
+`;
+
+const AiBadgeImg = styled.img`
+  width: 42px;
+  height: 42px;
 `;
 
 const AiTextCol = styled.div`
@@ -110,47 +166,52 @@ const AiTextCol = styled.div`
 
 const AiLabel = styled.p`
   margin: 0;
-  font-size: 12px;
-  font-weight: 500;
-  color: #e8734a;
+  font-size: 13px;
+  font-weight: 600;
+  color: #5BAA6A;
 `;
 
 const AiComment = styled.p`
   margin: 0;
-  font-size: 14px;
-  color: #000;
+  font-size: 15px;
+  line-height: 1.5;
+  color: #2F2F2F;
+  font-weight: 500;
 `;
 
 const StepRow = styled.div`
   display: flex;
   align-items: center;
-  gap: 10px;
-  height: 50px;
-  margin-top: 36px;
-  padding: 0 14px;
-  border-radius: 12px;
-  background: #e0ebfc;
+  gap: 12px;
+
+  margin-top: 18px;
+  padding: 16px;
+
+  border-radius: 20px;
+  background: #E8F4E8;
 `;
 
 const StepIconBadge = styled.div`
-  width: 24px;
-  height: 24px;
-  border-radius: 12px;
-  background: #4d80d9;
-  color: #fff;
-  font-size: 10px;
   flex-shrink: 0;
   display: flex;
   align-items: center;
   justify-content: center;
+
+  img {
+    width: 42px;
+    height: 42px;
+  }
 `;
 
 const StepText = styled.p`
   margin: 0;
   flex: 1;
-  font-size: 13px;
+
+  font-size: 15px;
+  line-height: 1.5;
   font-weight: 500;
-  color: #4d80d9;
+
+  color: #2F2F2F;
 `;
 
 const Timeline = styled.div`
@@ -177,18 +238,18 @@ const Rail = styled.div`
 `;
 
 const RailDot = styled.div`
-  width: 10px;
-  height: 10px;
-  border-radius: 5px;
-  background: #e8734a;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #7DBA67;
   flex-shrink: 0;
 `;
 
 const RailLine = styled.div`
   width: 2px;
   flex: 1;
-  margin-top: 4px;
-  background: #e5e0d9;
+  margin-top: 6px;
+  background: #D7E8D2;
 `;
 
 const TimelineContent = styled.div`
@@ -201,18 +262,20 @@ const TimelineContent = styled.div`
 
 const TimeLabel = styled.p`
   margin: 0;
-  font-size: 12px;
-  font-weight: 500;
-  color: #8c8780;
+  font-size: 13px;
+  font-weight: 600;
+  color: #8C8780;
 `;
 
 const EntryCard = styled.div`
-  padding: 14px;
-  border-radius: 14px;
-  background: #f7f5f0;
+  padding: 18px 16px;
+  border-radius: 20px;
+  background: #FFF;
+  border: 1px solid #ECE7DF;
+
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 12px;
 `;
 
 const CardHead = styled.div`
@@ -222,19 +285,33 @@ const CardHead = styled.div`
 `;
 
 const CardIconBadge = styled.div`
-  width: 26px;
-  height: 26px;
-  border-radius: 8px;
-  background: #fae5d9;
-  color: #e8734a;
-  font-size: 12px;
-  font-weight: 600;
-  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+
   display: flex;
   align-items: center;
   justify-content: center;
+  flex-shrink: 0;
+
+  background: ${({ $type }) => {
+    switch ($type) {
+      case 'question':
+        return '#FFF3D9';
+      case 'medication':
+        return 'transparent'; // 체크 아이콘 자체에 원이 있어서 배경 제거
+      case 'health':
+        return '#E9E1F8';
+      default:
+        return '#F7F5F0';
+    }
+  }};
 `;
 
+const CardIconImg = styled.img`
+  width: 28px;
+  height: 28px;
+`;
 const CardTitle = styled.p`
   margin: 0;
   font-size: 15px;
@@ -245,7 +322,7 @@ const CardTitle = styled.p`
 const QuestionRow = styled.div`
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  
 `;
 
 const QuestionLabel = styled.span`
@@ -257,11 +334,13 @@ const QuestionAnswer = styled.span`
   font-size: 14px;
   font-weight: 500;
   color: #000;
+  margin-left:6px;
 `;
 
 const MedRow = styled.div`
   display: flex;
-  gap: 16px;
+  gap: 22px;
+  margin: 6px 0;
 `;
 
 const MedItem = styled.div`
@@ -274,30 +353,38 @@ const MedItem = styled.div`
 const MedCircle = styled.div`
   width: 44px;
   height: 44px;
-  border-radius: 22px;
+
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 18px;
-  font-weight: 600;
-  ${({ $taken, $color, $textColor }) =>
-    $taken
-      ? `background: ${$color}; color: ${$textColor};`
-      : 'border: 1.5px dashed #e5e0d9;'}
+
+  ${({ $taken }) =>
+    !$taken &&
+    `
+      border: 2px dashed #DDD3C8;
+      border-radius: 50%;
+    `}
+
+  img {
+    width: 28px;
+    height: 28px;
+  }
 `;
 
 const MedLabel = styled.p`
   margin: 0;
-  font-size: 12px;
-  font-weight: 500;
-  color: ${({ $taken, $textColor }) => ($taken ? $textColor : '#8c8780')};
+  font-size: 13px;
+  font-weight: 700;
+
+  color: ${({ $textColor, $taken }) =>
+    $taken ? $textColor : '#8C8780'};
 `;
 
 const MedNote = styled.p`
   margin: 0;
   font-size: 13px;
   font-weight: 500;
-  color: #e8734a;
+  color: #6E9A3A;;
 `;
 
 const SentenceLine = styled.div`
@@ -307,19 +394,23 @@ const SentenceLine = styled.div`
 `;
 
 const MiniBadge = styled.div`
-  width: 22px;
-  height: 22px;
-  border-radius: 11px;
-  background: #fae5d9;
-  color: #e8734a;
-  font-size: 11px;
-  font-weight: 600;
-  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+
+  background: #EEF3D8;
+
   display: flex;
   align-items: center;
   justify-content: center;
+
+  flex-shrink: 0;
 `;
 
+const MiniIcon = styled.img`
+  width: 14px;
+  height: 14px;
+`;
 const SentenceText = styled.p`
   margin: 0;
   flex: 1;
@@ -335,9 +426,13 @@ const EntryAiComment = styled.div`
 `;
 
 const EntryAiIcon = styled.span`
-  font-size: 12px;
-  font-weight: 600;
-  color: #e8734a;
+  display: flex;
+  align-items: center;
+
+  img {
+    width: 14px;
+    height: 14px;
+  }
 `;
 
 const EntryAiText = styled.p`
@@ -345,7 +440,7 @@ const EntryAiText = styled.p`
   flex: 1;
   font-size: 13px;
   font-weight: 500;
-  color: #e8734a;
+  color: #6E9A3A;
 `;
 
 const CtaCard = styled.div`
@@ -411,6 +506,9 @@ const LetterButton = styled.button`
 
 function TodayReport() {
   const navigate = useNavigate();
+  const handleBack = () => {
+    navigate(-1);
+  };
   const [person, setPerson] = useState('me');
   const { data: report, loading, error } = useApi(loadTodayReport, { args: [person] });
 
@@ -421,13 +519,13 @@ function TodayReport() {
   if (loading || error || !report) {
     return (
       <Page>
-        <Title>오늘의 온담</Title>
+        <Title>오늘의 건강일지</Title>
         <AiComment>
           {loading
             ? '리포트를 불러오는 중이에요...'
             : error
-              ? error.message
-              : '아직 연결된 가족이 없어요.'}
+            ? error.message
+            : '아직 연결된 가족이 없어요.'}
         </AiComment>
       </Page>
     );
@@ -435,47 +533,69 @@ function TodayReport() {
 
   return (
     <Page>
+      <BackButton type="button" onClick={handleBack}>
+        <BackIcon src={back} alt="뒤로가기" />
+      </BackButton>
+        <Header>
       <DateLabel>{report.dateLabel}</DateLabel>
-      <Title>오늘의 온담</Title>
+      <Title>오늘의 건강일지</Title>
+    </Header>
+      <Divider />
 
       <ToggleWrap>
-        <ToggleTab type="button" $active={person === 'me'} onClick={() => setPerson('me')}>
+        <ToggleTab
+          type="button"
+          $active={person === 'me'}
+          onClick={() => setPerson('me')}
+        >
           나
         </ToggleTab>
-        <ToggleTab type="button" $active={person === 'mom'} onClick={() => setPerson('mom')}>
-          엄마
+
+        <ToggleTab
+          type="button"
+          $active={person === 'family'}
+          onClick={() => setPerson('family')}
+        >
+          {report.partnerLabel}
         </ToggleTab>
       </ToggleWrap>
 
       <SummaryRow>
-        <SummaryChip $bg="#e0f2e3" $color="#339959">
-          <SummaryValue>{report.summary.questionStatus}</SummaryValue>
+        <SummaryChip $color="#7A6B5D">
           <SummaryLabel>질문 답변</SummaryLabel>
+          <SummaryValue>{report.summary.questionStatus}</SummaryValue>
         </SummaryChip>
-        <SummaryChip $bg="#fae5d9" $color="#e8734a">
-          <SummaryValue>{report.summary.medication}</SummaryValue>
+
+        <SummaryChip $color="#7A6B5D">
           <SummaryLabel>복약</SummaryLabel>
+          <SummaryValue>{report.summary.medication}</SummaryValue>
         </SummaryChip>
-        <SummaryChip $bg="#f7f5f0" $color="#6b6661">
-          <SummaryValue>{report.summary.condition}</SummaryValue>
+
+        <SummaryChip $color="#7A6B5D">
           <SummaryLabel>컨디션</SummaryLabel>
+          <SummaryValue>{report.summary.condition}</SummaryValue>
         </SummaryChip>
       </SummaryRow>
 
       {report.aiComment && (
         <AiInsightCard>
-          <AiBadge>✦</AiBadge>
+          <AiBadge>
+            <AiBadgeImg src={aiIcon} alt="AI" />
+          </AiBadge>
+
           <AiTextCol>
-            <AiLabel>AI 한마디</AiLabel>
+            <AiLabel>온담 한마디</AiLabel>
             <AiComment>{report.aiComment}</AiComment>
           </AiTextCol>
         </AiInsightCard>
       )}
 
-      {/* 걸음수는 헬스케어 연동이 없어 서버가 내려주지 않는다. 값이 생기면 그때 노출된다. */}
       {report.stepMessage && (
         <StepRow>
-          <StepIconBadge>●</StepIconBadge>
+          <StepIconBadge>
+            <img src={walkIcon} alt="" />
+          </StepIconBadge>
+
           <StepText>{report.stepMessage}</StepText>
         </StepRow>
       )}
@@ -483,21 +603,28 @@ function TodayReport() {
       <Timeline>
         {report.timeline.map((entry, index) => {
           const isLast = index === report.timeline.length - 1;
+
           return (
-            <TimelineEntry key={entry.time}>
+            <TimelineEntry key={`${entry.type}-${entry.time}-${index}`}>
               <Rail>
                 <RailDot />
                 {!isLast && <RailLine />}
               </Rail>
+
               <TimelineContent>
                 <TimeLabel>{entry.time}</TimeLabel>
+
                 <EntryCard>
                   {entry.type === 'question' && (
                     <>
                       <CardHead>
-                        <CardIconBadge>☀</CardIconBadge>
+                        <CardIconBadge $type="question">
+                          <CardIconImg src={sunIcon} alt="" />
+                        </CardIconBadge>
+
                         <CardTitle>오늘의 질문</CardTitle>
                       </CardHead>
+
                       <QuestionRow>
                         <QuestionLabel>{entry.question}</QuestionLabel>
                         <QuestionAnswer>{entry.answer}</QuestionAnswer>
@@ -508,21 +635,41 @@ function TodayReport() {
                   {entry.type === 'medication' && (
                     <>
                       <CardHead>
-                        <CardIconBadge>℞</CardIconBadge>
+                        <CardIconBadge $type="medication">
+                          <CardIconImg src={pillIcon} alt="복약" />
+                        </CardIconBadge>
+
                         <CardTitle>복약 체크</CardTitle>
                       </CardHead>
+
                       <MedRow>
-                        {entry.medications.map((med) => (
-                          <MedItem key={med.name}>
-                            <MedCircle $taken={med.taken} $color={med.color} $textColor={med.textColor}>
-                              {med.taken ? '✓' : ''}
+                        {entry.medications.map((med, i) => (
+                          <MedItem key={`${med.name}-${i}`}>
+                            <MedCircle
+                              $taken={med.taken}
+                              $color={med.color}
+                              $textColor={med.textColor}
+                            >
+                              {med.taken ? (
+                                <img
+                                  src={i % 2 === 0 ? flowerYellow : flowerPink}
+                                  alt=""
+                                />
+                              ) : (
+                                ''
+                              )}
                             </MedCircle>
-                            <MedLabel $taken={med.taken} $textColor={med.textColor}>
+
+                            <MedLabel
+                              $taken={med.taken}
+                              $textColor={med.textColor}
+                            >
                               {med.name}
                             </MedLabel>
                           </MedItem>
                         ))}
                       </MedRow>
+
                       <MedNote>{entry.note}</MedNote>
                     </>
                   )}
@@ -530,17 +677,41 @@ function TodayReport() {
                   {entry.type === 'healthcheck' && (
                     <>
                       <CardHead>
-                        <CardIconBadge>☾</CardIconBadge>
+                        <CardIconBadge $type="health">
+                          <CardIconImg src={moonIcon} alt="" />
+                        </CardIconBadge>
+
                         <CardTitle>건강 체크</CardTitle>
                       </CardHead>
-                      {entry.lines.map((line) => (
-                        <SentenceLine key={line.text}>
-                          <MiniBadge>{line.icon}</MiniBadge>
-                          <SentenceText>{line.text}</SentenceText>
-                        </SentenceLine>
-                      ))}
+
+                      {entry.lines.map((line, i) => {
+                        const iconMap = {
+                          '♥': conditionIcon,
+                          Z: sleepIcon,
+                          M: mealIcon,
+                          A: walkIcon,
+                          B: bodyIcon,
+                        };
+
+                        return (
+                          <SentenceLine key={`${line.text}-${i}`}>
+                            <MiniBadge>
+                              <MiniIcon
+                                src={iconMap[line.icon] ?? aiIcon}
+                                alt=""
+                              />
+                            </MiniBadge>
+
+                            <SentenceText>{line.text}</SentenceText>
+                          </SentenceLine>
+                        );
+                      })}
+
                       <EntryAiComment>
-                        <EntryAiIcon>✦</EntryAiIcon>
+                        <EntryAiIcon>
+                          <img src={aiIcon} alt="" />
+                        </EntryAiIcon>
+
                         <EntryAiText>{entry.aiComment}</EntryAiText>
                       </EntryAiComment>
                     </>
@@ -555,11 +726,16 @@ function TodayReport() {
       {report.cta && (
         <CtaCard>
           <CtaTitle>{report.cta.title}</CtaTitle>
+
           <SuggestedMessage>
-            <SuggestedMessageText>{report.cta.suggestedMessage}</SuggestedMessageText>
+            <SuggestedMessageText>
+              {report.cta.suggestedMessage}
+            </SuggestedMessageText>
           </SuggestedMessage>
+
           <CtaButtonRow>
             <CallButton type="button">전화하기</CallButton>
+
             <LetterButton type="button" onClick={handleSendLetter}>
               편지 보내기
             </LetterButton>
