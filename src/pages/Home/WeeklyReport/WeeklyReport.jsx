@@ -1,192 +1,283 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
+import closeIcon from '../../../assets/journal/close.png';
+import cloudIcon from '../../../assets/weekly/cloud.png';
+import checkIcon from '../../../assets/weekly/check.png';
+import pencilIcon from '../../../assets/weekly/pencil.png';
 import { loadWeeklyList } from './weeklyReportData';
 import { useApi } from '../../../hooks/useApi';
 import { useFamilyRelation } from '../../../hooks/useFamilyRelation';
 
+// Figma 33_ver02 / ver04: 주간 리포트 목록.
+// 월 칩은 필터가 아니라 그 달 구간으로 스크롤을 옮기는 점프다(레이어 이름 Month Jump Row).
 const Page = styled.div`
   position: relative;
   width: 100%;
   height: 100%;
   overflow-y: auto;
-  background: #fff;
-  padding: 16px 20px 30px;
   box-sizing: border-box;
+
+  padding: 16px 20px 28px;
+  background: #fff8ed;
+
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
 
   &::-webkit-scrollbar {
     display: none;
   }
 `;
 
-const Title = styled.h1`
-  margin: 0;
-  font-size: 27px;
-  font-weight: 600;
-  color: #000;
+const CloseButton = styled.button`
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+  align-self: flex-start;
 `;
 
-const Subtitle = styled.p`
-  margin: 6px 0 0;
-  font-size: 16px;
-  color: #6b6661;
+const CloseIcon = styled.img`
+  width: 40px;
+  height: 40px;
+  object-fit: contain;
 `;
 
-const ToggleWrap = styled.div`
-  display: flex;
-  gap: 4px;
-  height: 46px;
-  padding: 4px;
-  margin-top: 16px;
-  border-radius: 12px;
-  background: #f7f5f0;
-`;
-
-const ToggleTab = styled.button`
-  flex: 1;
-  border-radius: 9px;
-  font-size: 15px;
-  font-weight: ${({ $active }) => ($active ? 600 : 400)};
-  color: ${({ $active }) => ($active ? '#000' : '#8c8780')};
-  background: ${({ $active }) => ($active ? '#fff' : 'transparent')};
-`;
-
-const CurrentWeekCard = styled.div`
-  margin-top: 36px;
-  height: 96px;
-  padding: 0 16px;
-  border-radius: 14px;
-  background: #fae5d9;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-`;
-
-const CurrentWeekTextCol = styled.div`
+const Header = styled.div`
   display: flex;
   flex-direction: column;
-  gap: 3px;
-  flex-shrink: 0;
-`;
-
-const CurrentWeekLabelRow = styled.div`
-  display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 4px;
 `;
 
-const CurrentWeekLabel = styled.p`
+const PageTitle = styled.h1`
   margin: 0;
-  font-size: 21px;
-  font-weight: 600;
-  color: #e8734a;
-  white-space: nowrap;
+  width: 100%;
+  font-family: 'Jua';
+  font-size: 40px;
+  font-weight: 400;
+  color: #4a3a2f;
+  text-align: center;
 `;
 
-const CurrentWeekBadge = styled.span`
-  padding: 2px 8px;
-  border-radius: 6px;
-  background: #e8734a;
-  color: #fff;
-  font-size: 13px;
-  font-weight: 500;
-`;
-
-const CurrentWeekRange = styled.p`
+const PageSubtitle = styled.p`
   margin: 0;
-  font-size: 15px;
-  color: #e8734a;
+  width: 100%;
+  font-family: 'Noto Sans KR';
+  font-size: 18px;
+  font-weight: 700;
+  color: #a79c8e;
+  text-align: center;
 `;
 
-const CurrentWeekDesc = styled.p`
-  margin: 0;
-  max-width: 150px;
-  font-size: 13px;
-  font-weight: 500;
-  color: #e8734a;
-  text-align: right;
-  line-height: 1.35;
+const TitleDivider = styled.div`
+  width: 100%;
+  margin-top: 10px;
+  border-top: 1.5px dashed rgba(74, 58, 47, 0.3);
 `;
 
-// 라벨에 연도가 붙어 길어졌다. 개수가 늘어나도 한 줄로 밀리지 않게 감싼다.
-const MonthJumpRow = styled.div`
+const SectionDivider = styled.div`
+  width: 100%;
+  border-top: 2px dashed rgba(74, 58, 47, 0.35);
+`;
+
+const PersonToggle = styled.div`
   display: flex;
-  flex-wrap: wrap;
+  gap: 4px;
+  padding: 4px;
+  border-radius: 16px;
+  background: #f8f5ee;
+`;
+
+// 선택한 쪽은 살구색으로 채우고, 나머지는 노란 테두리만 남긴다.
+const ToggleTab = styled.button`
+  flex: 1;
+  min-width: 0;
+  height: 48px;
+  border-radius: 12px;
+
+  font-family: 'Noto Sans KR';
+  font-size: 17px;
+  font-weight: 700;
+
+  border: 2px solid ${({ $active }) => ($active ? '#e6a794' : 'rgba(232, 205, 115, 0.7)')};
+  background: ${({ $active }) => ($active ? 'rgba(230, 167, 148, 0.5)' : 'transparent')};
+  color: ${({ $active }) => ($active ? '#c97158' : '#b9862e')};
+`;
+
+const ThisWeekCard = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
   gap: 8px;
-  margin-top: 20px;
-`;
 
-const MonthChip = styled.button`
-  white-space: nowrap;
-  padding: 8px 16px;
+  padding: 16px;
   border-radius: 18px;
-  font-size: 14px;
-  font-weight: 500;
-  background: ${({ $active }) => ($active ? '#e8734a' : '#fff')};
-  color: ${({ $active }) => ($active ? '#fff' : '#6b6661')};
-  border: ${({ $active }) => ($active ? 'none' : '1px solid #e5e0d9')};
+  background: #edf2d4;
 `;
 
-const MonthLabel = styled.p`
-  margin: 32px 0 16px;
-  font-size: 15px;
-  font-weight: 600;
-  color: #8c8780;
+const CloudIcon = styled.img`
+  width: 50px;
+  height: 50px;
+  object-fit: contain;
+`;
 
-  &:first-of-type {
-    margin-top: 32px;
-  }
+const ThisWeekText = styled.p`
+  margin: 0;
+  width: 100%;
+  font-family: 'Noto Sans KR';
+  font-size: 18px;
+  font-weight: 500;
+  color: #4a3a2f;
+  text-align: center;
 `;
 
 const WeekRow = styled.button`
   width: 100%;
-  height: 78px;
-  padding: 0 16px;
-  margin-bottom: 8px;
-  border-radius: 14px;
-  background: #f7f5f0;
+  padding: 16px;
+
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 10px;
+
+  border-radius: 18px;
+  border: 1.5px solid rgba(74, 58, 47, 0.4);
+  background: rgba(255, 255, 255, 0.55);
+  text-align: left;
 `;
 
-const WeekTextCol = styled.div`
+const ContentCol = styled.div`
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  gap: 6px;
   align-items: flex-start;
+  min-width: 0;
 `;
 
-const WeekLabel = styled.p`
-  margin: 0;
-  font-size: 19px;
-  font-weight: 600;
-  color: #000;
-`;
-
-const WeekRange = styled.p`
-  margin: 0;
-  font-size: 14px;
-  color: #8c8780;
-`;
-
-const WeekMetaCol = styled.div`
+const TitleLine = styled.div`
   display: flex;
   align-items: center;
   gap: 8px;
+`;
+
+const CheckIcon = styled.img`
+  width: 28px;
+  height: 28px;
   flex-shrink: 0;
+  object-fit: contain;
 `;
 
-const WeekDesc = styled.span`
+const WeekLabel = styled.span`
+  font-family: 'Noto Sans KR';
+  font-size: 18px;
+  font-weight: 700;
+  color: #4a3a2f;
+  white-space: nowrap;
+`;
+
+// 체크 아이콘 폭만큼 들여써서 주차 이름 아래에 맞춘다.
+const DateRow = styled.div`
+  display: flex;
+  align-items: center;
+  padding-left: 36px;
+`;
+
+const DateChip = styled.span`
+  padding: 4px 10px;
+  border-radius: 10px;
+  border: 1px solid rgba(74, 58, 47, 0.35);
+  background: rgba(255, 255, 255, 0.8);
+
+  font-family: 'Noto Sans KR';
   font-size: 13px;
-  font-weight: 500;
-  color: #8c8780;
-  text-align: right;
+  font-weight: 700;
+  color: #4a3a2f;
+  white-space: nowrap;
 `;
 
-const Chevron = styled.span`
-  font-size: 20px;
-  color: #8c8780;
+const Badge = styled.span`
+  flex-shrink: 0;
+  padding: 4px 12px;
+  border-radius: 20px;
+  background: #cbd879;
+
+  font-family: 'Noto Sans KR';
+  font-size: 13px;
+  font-weight: 700;
+  color: #3f5a1b;
+  white-space: nowrap;
+`;
+
+const EditLabel = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+`;
+
+const PencilIcon = styled.img`
+  width: 26px;
+  height: 26px;
+  flex-shrink: 0;
+  object-fit: contain;
+`;
+
+// 한 줄평이 길면 줄이 밀려서 주차 이름을 덮는다. 넘치면 말줄임으로 자른다.
+const EditText = styled.span`
+  font-family: 'Noto Sans KR';
+  font-size: 16px;
+  font-weight: 700;
+  color: #3f5a1b;
+  text-align: right;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+`;
+
+const MonthJumpRow = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+`;
+
+const MonthChip = styled.button`
+  padding: 8px 16px;
+  border-radius: 18px;
+  white-space: nowrap;
+
+  font-family: 'Noto Sans KR';
+  font-size: 15px;
+  font-weight: ${({ $active }) => ($active ? 700 : 500)};
+
+  border: 1px solid ${({ $active }) => ($active ? 'rgba(74, 58, 47, 0.25)' : '#e5e0d9')};
+  background: ${({ $active }) => ($active ? '#f6ebc7' : '#fcf8ea')};
+  color: ${({ $active }) => ($active ? '#4a3a2f' : '#a79c8e')};
+`;
+
+const MonthSection = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  scroll-margin-top: 16px;
+`;
+
+const MonthLabel = styled.p`
+  margin: 0;
+  width: 100%;
+  font-family: 'Noto Sans KR';
+  font-size: 15px;
+  font-weight: 700;
+  color: #a79c8e;
+`;
+
+const StatusText = styled.p`
+  margin: 0;
+  width: 100%;
+  text-align: center;
+  font-family: 'Noto Sans KR';
+  font-size: 15px;
+  color: #a79c8e;
 `;
 
 function WeeklyReport() {
@@ -202,11 +293,11 @@ function WeeklyReport() {
   // 월 숫자로 정렬하면 12월 다음에 1월이 오는 연말 구간에서 순서가 뒤집힌다.
   const months = useMemo(() => {
     const seen = new Map();
-    [currentWeek, ...pastWeeks].filter(Boolean).forEach((week) => {
+    pastWeeks.forEach((week) => {
       if (!seen.has(week.monthKey)) seen.set(week.monthKey, week);
     });
     return [...seen.values()].sort((a, b) => b.monthKey - a.monthKey);
-  }, [currentWeek, pastWeeks]);
+  }, [pastWeeks]);
 
   const [monthKey, setMonthKey] = useState(null);
   const activeMonthKey = monthKey ?? months[0]?.monthKey ?? null;
@@ -220,74 +311,114 @@ function WeeklyReport() {
     return map;
   }, [pastWeeks]);
 
+  const sectionRefs = useRef({});
+  const jumpToMonth = (key) => {
+    setMonthKey(key);
+    sectionRefs.current[key]?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
+
+  const openWeek = (weekId) =>
+    navigate(`/home/weekly-report/${weekId}`, { state: { person } });
+
   return (
     <Page>
-      <Title>주간 리포트</Title>
-      <Subtitle>{person === 'me' ? '매주 일요일에 새로운 리포트가 만들어져요' : `${partnerLabel}의 리포트가 매주 일요일에 만들어져요`}</Subtitle>
+      <CloseButton type="button" aria-label="닫기" onClick={() => navigate('/home')}>
+        <CloseIcon src={closeIcon} alt="" />
+      </CloseButton>
 
-      <ToggleWrap>
+      <Header>
+        <PageTitle>주간 리포트</PageTitle>
+        <PageSubtitle>
+          {person === 'me'
+            ? '매주 일요일에 새로운 리포트가 만들어져요!'
+            : `${partnerLabel}의 리포트도 매주 일요일에 만들어져요!`}
+        </PageSubtitle>
+        <TitleDivider />
+      </Header>
+
+      <PersonToggle>
         <ToggleTab type="button" $active={person === 'me'} onClick={() => setPerson('me')}>
           나
         </ToggleTab>
-        <ToggleTab type="button" $active={person === 'mom'} onClick={() => setPerson('mom')}>
+        <ToggleTab type="button" $active={person !== 'me'} onClick={() => setPerson('mom')}>
           {partnerLabel}
         </ToggleTab>
-      </ToggleWrap>
+      </PersonToggle>
+
+      {loading && <StatusText>리포트를 불러오는 중이에요...</StatusText>}
+      {error && <StatusText>{error.message}</StatusText>}
 
       {currentWeek && (
-        <CurrentWeekCard>
-          <CurrentWeekTextCol>
-            <CurrentWeekLabelRow>
-              <CurrentWeekLabel>{currentWeek.label}</CurrentWeekLabel>
-              <CurrentWeekBadge>이번 주</CurrentWeekBadge>
-            </CurrentWeekLabelRow>
-            <CurrentWeekRange>{currentWeek.range}</CurrentWeekRange>
-          </CurrentWeekTextCol>
-          <CurrentWeekDesc>{currentWeek.comment}</CurrentWeekDesc>
-        </CurrentWeekCard>
+        <ThisWeekCard>
+          <CloudIcon src={cloudIcon} alt="" />
+          <ThisWeekText>
+            온담과 한 주를 마무리하며
+            <br />
+            이번 주 일상을 살펴보세요!
+          </ThisWeekText>
+
+          <WeekRow type="button" onClick={() => openWeek(currentWeek.id)}>
+            <ContentCol>
+              <TitleLine>
+                <CheckIcon src={checkIcon} alt="" />
+                <WeekLabel>{currentWeek.label}</WeekLabel>
+              </TitleLine>
+              <DateRow>
+                <DateChip>{currentWeek.range}</DateChip>
+              </DateRow>
+            </ContentCol>
+            <Badge>이번 주</Badge>
+          </WeekRow>
+        </ThisWeekCard>
       )}
 
-      {loading && <MonthLabel>리포트를 불러오는 중이에요...</MonthLabel>}
-      {error && <MonthLabel>{error.message}</MonthLabel>}
-      {/* 가족 구성원은 최신 주차만 조회할 수 있어서 지난 주 목록이 없다 */}
-      {data?.partnerOnly && !loading && <MonthLabel>가족은 최신 주 리포트만 볼 수 있어요</MonthLabel>}
-
-      <MonthJumpRow>
-        {months.map((m) => (
-          <MonthChip
-            key={m.monthKey}
-            type="button"
-            $active={activeMonthKey === m.monthKey}
-            onClick={() => setMonthKey(m.monthKey)}
-          >
-            {m.monthLabel}
-          </MonthChip>
-        ))}
-      </MonthJumpRow>
-
-      {months
-        .filter((m) => weeksByMonth.has(m.monthKey))
-        .map((m) => (
-          <div key={m.monthKey}>
-            <MonthLabel>{m.monthLabel}</MonthLabel>
-            {weeksByMonth.get(m.monthKey).map((week) => (
-              <WeekRow
-                key={week.id}
+      {months.length > 0 && (
+        <>
+          <SectionDivider />
+          <MonthJumpRow>
+            {months.map((month) => (
+              <MonthChip
+                key={month.monthKey}
                 type="button"
-                onClick={() => navigate(`/home/weekly-report/${week.id}`, { state: { person } })}
+                $active={activeMonthKey === month.monthKey}
+                onClick={() => jumpToMonth(month.monthKey)}
               >
-                <WeekTextCol>
-                  <WeekLabel>{week.label}</WeekLabel>
-                  <WeekRange>{week.range}</WeekRange>
-                </WeekTextCol>
-                <WeekMetaCol>
-                  <WeekDesc>{week.comment}</WeekDesc>
-                  <Chevron>›</Chevron>
-                </WeekMetaCol>
-              </WeekRow>
+                {month.monthLabel}
+              </MonthChip>
             ))}
-          </div>
-        ))}
+          </MonthJumpRow>
+        </>
+      )}
+
+      {months.map((month, index) => (
+        <MonthSection
+          key={month.monthKey}
+          ref={(node) => {
+            sectionRefs.current[month.monthKey] = node;
+          }}
+        >
+          {/* 맨 위 구간은 월 칩이 이미 어느 달인지 보여줘서 제목을 생략한다. */}
+          {index > 0 && <MonthLabel>{month.monthLabel}</MonthLabel>}
+
+          {weeksByMonth.get(month.monthKey).map((week) => (
+            <WeekRow key={week.id} type="button" onClick={() => openWeek(week.id)}>
+              <ContentCol>
+                <TitleLine>
+                  <CheckIcon src={checkIcon} alt="" />
+                  <WeekLabel>{week.label}</WeekLabel>
+                </TitleLine>
+                <DateRow>
+                  <DateChip>{week.range}</DateChip>
+                </DateRow>
+              </ContentCol>
+              <EditLabel>
+                <PencilIcon src={pencilIcon} alt="" />
+                <EditText>{week.comment}</EditText>
+              </EditLabel>
+            </WeekRow>
+          ))}
+        </MonthSection>
+      ))}
     </Page>
   );
 }
