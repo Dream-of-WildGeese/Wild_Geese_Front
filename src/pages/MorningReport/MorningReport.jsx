@@ -12,6 +12,7 @@ import { getMyFamily } from '../../api/family';
 import { getUserId } from '../../api/client';
 import { useApi } from '../../hooks/useApi';
 import { toDateString } from '../../utils/medication';
+import { getRelationLabel } from '../../utils/family';
 
 // 아침 질문 이력 API는 질문 목록만 주고 답변은 담아주지 않는다.
 // 그래서 질문 목록을 받은 뒤, 각 날짜의 일지에서 나와 가족의 답변을 따로 채워 넣는다.
@@ -45,7 +46,7 @@ async function loadMonthJournal({ from, to }) {
       if (partnerLog?.morningAnswer?.textValue) {
         answers.push({
           id: 'family',
-          name: '가족',
+          name: getRelationLabel(partner),
           avatar: avatarHeartHug,
           text: partnerLog.morningAnswer.textValue,
         });

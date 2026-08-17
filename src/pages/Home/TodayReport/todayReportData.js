@@ -4,6 +4,7 @@ import { getMorningHistory } from '../../../api/morning';
 import { getMyFamily } from '../../../api/family';
 import { getUserId } from '../../../api/client';
 import { toDateString } from '../../../utils/medication';
+import { getRelationLabel } from '../../../utils/family';
 
 const WEEKDAY_LABELS = ['일', '월', '화', '수', '목', '금', '토'];
 
@@ -41,6 +42,7 @@ const buildMedicationEntry = (medicationLog, medications) => {
   });
 
   const items = logs.map((log, index) => ({
+    scheduleId: log.scheduleId,
     name: nameBySchedule.get(log.scheduleId) ?? '복용약',
     taken: log.status === 'TAKEN',
     ...MEDICATION_COLORS[index % MEDICATION_COLORS.length],
@@ -131,7 +133,7 @@ export async function loadTodayReport(person, date = new Date()) {
   ]);
 
   return {
-    personLabel: isMe ? '나' : '가족',
+    personLabel: isMe ? '나' : getRelationLabel(partner),
     dateLabel: formatDateLabel(date),
     summary: buildSummary(dailyLog, medicationLog),
     aiComment: dailyLog?.summaryText ?? '',

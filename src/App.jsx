@@ -27,6 +27,8 @@ import ProfileEdit from './pages/Home/Setting/ProfileEdit';
 import TodayReport from './pages/Home/TodayReport/TodayReport';
 import WeeklyReport from './pages/Home/WeeklyReport/WeeklyReport';
 import WeeklyReportDetail from './pages/Home/WeeklyReport/WeeklyReportDetail';
+import HealthCheck from './pages/Home/HealthCheck/HealthCheck';
+import AddHealthCheck from './pages/Home/HealthCheck/AddHealthCheck';
 
 function App() {
   return (
@@ -56,6 +58,9 @@ function App() {
               <Route path="/home/today-report" element={<TodayReport />} />
               <Route path="/home/weekly-report" element={<WeeklyReport />} />
               <Route path="/home/weekly-report/:weekId" element={<WeeklyReportDetail />} />
+              <Route path="/home/healthcheck" element={<HealthCheck />} />
+              <Route path="/home/healthcheck/add" element={<AddHealthCheck />} />
+
               <Route path='/morning-report' element={<MorningReport />} />
             </Routes>
           </Layout>
