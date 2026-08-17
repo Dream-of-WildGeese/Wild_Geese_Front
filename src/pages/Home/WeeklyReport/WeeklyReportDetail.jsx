@@ -355,11 +355,11 @@ const DayButtonDate = styled.span`
 const SLEEP_COLOR = { good: '#59a666', ok: '#f2bf59', low: '#d96659' };
 
 // 서버는 수면·활동을 시간이나 걸음 수가 아니라 저녁 건강체크 선택지 점수(1~3)로 내려준다.
-// 1이 가장 좋은 상태라, 막대는 점수가 좋을수록 높게 그린다.
+// 3이 가장 좋은 상태라(좋았어요=3), 점수가 클수록 막대를 높고 진하게 그린다.
 const SCORE_MAX = 3;
-const scoreBarHeight = (score) => (score ? ((SCORE_MAX + 1 - score) / SCORE_MAX) * 60 : 0);
+const scoreBarHeight = (score) => (score ? (score / SCORE_MAX) * 60 : 0);
 const scoreBarColor = (score) =>
-  score <= 1 ? SLEEP_COLOR.good : score <= 2 ? SLEEP_COLOR.ok : SLEEP_COLOR.low;
+  score >= 3 ? SLEEP_COLOR.good : score >= 2 ? SLEEP_COLOR.ok : SLEEP_COLOR.low;
 
 function WeeklyReportDetail() {
   const navigate = useNavigate();

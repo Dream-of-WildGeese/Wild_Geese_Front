@@ -6,11 +6,20 @@ import yellowFlower from '../../assets/onboarding/yellowflower.svg';
 import back from '../../assets/onboarding/back.svg';
 import { useAppData } from '../../store/AppDataContext';
 import { setUserId } from '../../api/client';
+import { getDemoAccount } from '../../demo/accounts';
 
 const UserType = () => {
     const navigate= useNavigate();
   const { setProfile } = useAppData();
   const [userType, setUserType] = useState(null);
+
+  // 회원가입이 붙기 전까지는 역할에 맞는 시연용 계정으로 로그인한다.
+  const handleNext = () => {
+    const account = getDemoAccount(userType);
+    setUserId(account.userId);
+    setProfile({ role: userType, name: account.name });
+    navigate('/onboarding/step-guide', { state: { role: userType } });
+  };
 
   return (
     <Page>

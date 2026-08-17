@@ -409,7 +409,7 @@ function TodayReport() {
       return (
         <MedCircleRow>
           {entry.medications.map((med, index) => (
-            <MedIconWrap key={med.scheduleId ?? `${med.name}-${index}`}>
+            <MedIconWrap key={med.name}>
               <MedIcon
                 $taken={med.taken}
                 src={med.taken ? MED_FLOWERS[index % MED_FLOWERS.length] : medEmpty}

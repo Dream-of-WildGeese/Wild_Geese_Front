@@ -9,6 +9,7 @@ import { getMedications } from '../../api/medication';
 import { useApi, useApiAction } from '../../hooks/useApi';
 import BirthDatePickerModal from '../../components/BirthDatePickerModal';
 import heart from '../../assets/onboarding/heart.svg';
+import MissingFieldsPopup from '../../components/MissingFieldsPopup';
 
 // "1856-03-02" -> "1856년 3월 2일"
 const formatBirthLabel = (value) => {
@@ -50,6 +51,7 @@ const HealthSet = () => {
   // 개인정보 수집 동의. 체크해야만 다음으로 넘어갈 수 있다.
   const [agreed, setAgreed] = useState(false);
   const [isBirthPickerOpen, setIsBirthPickerOpen] = useState(false);
+  const [isMissingPopupOpen, setIsMissingPopupOpen] = useState(false);
   const [interests, setInterests] = useState(data.interests || []);
 
   // 로그인 대신 쓰는 임시 유저 선택 화면(UserType)에는 실제 이름이 없어서,
@@ -72,6 +74,12 @@ const HealthSet = () => {
   const { execute: saveHealthProfile, loading: saving } = useApiAction(updateHealthProfile);
 
   const handleNext = async () => {
+    // 필수 항목이 비어 있으면 저장하지 않고 무엇이 비었는지 알려준다.
+    if (!canProceed) {
+      setIsMissingPopupOpen(true);
+      return;
+    }
+
     const { ok, error } = await saveHealthProfile({
       name: name.trim(),
       birthDate: birth,
@@ -170,14 +178,13 @@ const [otherDiseases, setOtherDiseases] = useState(
 
   // 이름·생년월일·성별을 모두 채우고 개인정보 수집에 동의해야 다음으로 넘어간다.
   // 무엇이 비었는지 짚어주지 않으면 버튼이 왜 안 눌리는지 알기 어렵다.
-  const missing = [
-    !name.trim() && '이름',
-    !birth && '생년월일',
-    !gender && '성별',
-    !agreed && '개인정보 수집 동의',
-  ].filter(Boolean);
-  const canProceed = missing.length === 0;
-  const missingLabel = missing.join(', ');
+  const requirements = [
+    { label: '이름', done: Boolean(name.trim()) },
+    { label: '생년월일', done: Boolean(birth) },
+    { label: '성별', done: Boolean(gender) },
+    { label: '개인정보 수집 동의', done: agreed },
+  ];
+  const canProceed = requirements.every((item) => item.done);
 
   const handleGenderChange = (value) => {
     setGender(value);
@@ -362,13 +369,22 @@ const [otherDiseases, setOtherDiseases] = useState(
 
         {!canProceed && (
           <RequirementHint>
-            {missingLabel}을(를) 입력해야 다음으로 넘어갈 수 있어요
+            {requirements.filter((item) => !item.done).length}개 항목이 아직 비어 있어요
           </RequirementHint>
         )}
-        <NextButton onClick={handleNext} disabled={saving || !canProceed}>
+        {/* 버튼을 막아두면 눌러도 반응이 없어 이유를 알 수 없다.
+            누를 수는 있게 두고, 덜 채웠으면 무엇이 비었는지 팝업으로 알려준다. */}
+        <NextButton onClick={handleNext} disabled={saving}>
           {saving ? '저장 중...' : '다음'}
         </NextButton>
       </Content>
+
+      {isMissingPopupOpen && (
+        <MissingFieldsPopup
+          items={requirements}
+          onClose={() => setIsMissingPopupOpen(false)}
+        />
+      )}
 
       {isBirthPickerOpen && (
         <BirthDatePickerModal
