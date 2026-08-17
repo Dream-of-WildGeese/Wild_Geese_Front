@@ -98,12 +98,12 @@ export const flattenAll = (items) =>
 
 // 체크 상태를 저장한다. 체크는 서버로 보내고, 해제는 로컬에 적어둔다.
 // scheduleIds는 이번 화면이 책임지는 스케줄만 담아서, 다른 시간대 기록은 건드리지 않는다.
-export async function saveMedicationChecks({ recordDate, scheduleIds, checked }) {
+export async function saveMedicationChecks({ recordDate, scheduleIds, checks }) {
   const unchecked = readUnchecked(recordDate);
 
-  const toSend = scheduleIds.filter((id) => checked[id]);
+  const toSend = scheduleIds.filter((id) => checks[id]);
   toSend.forEach((id) => unchecked.delete(id));
-  scheduleIds.filter((id) => !checked[id]).forEach((id) => unchecked.add(id));
+  scheduleIds.filter((id) => !checks[id]).forEach((id) => unchecked.add(id));
 
   writeUnchecked(recordDate, unchecked);
 
