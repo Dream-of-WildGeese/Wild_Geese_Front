@@ -1,5 +1,13 @@
 import React, { useState } from 'react';
 import styled from 'styled-components';
+import DatePickerModal from '../../../components/DatePickerModal';
+
+
+// "1856-03-02" -> "1856년 3월 2일"
+const formatDateLabel = (value) => {
+  const [year, month, day] = String(value).split('-').map(Number);
+  return `${year}년 ${month}월 ${day}일`;
+};
 
 const HEALTH_CHECK_TYPES = [
   '일반검진',
@@ -14,8 +22,10 @@ const ALERT_OPTIONS = ['3일 전', '1일 전', '알림 받지 않기'];
 
 const AddHealthCheck = ({ onClose, onSave }) => {
   const [checkType, setCheckType] = useState('');
-  const [customType, setCustomType] = useState('');
+  const [customTypeInput, setCustomTypeInput] = useState('');
+  const [customTypes, setCustomTypes] = useState([]);
   const [date, setDate] = useState('');
+  const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
   const [hospital, setHospital] = useState('');
   const [alertOption, setAlertOption] = useState('3일 전');
 
@@ -23,14 +33,28 @@ const AddHealthCheck = ({ onClose, onSave }) => {
     setCheckType(type);
 
     if (type !== '직접 입력') {
-      setCustomType('');
+      setCustomTypeInput('');
+      setCustomTypes([]);
     }
+  };
+
+  const addCustomType = () => {
+    const value = customTypeInput.trim();
+
+    if (!value || customTypes.includes(value)) return;
+
+    setCustomTypes((prev) => [...prev, value]);
+    setCustomTypeInput('');
+  };
+
+  const removeCustomType = (target) => {
+    setCustomTypes((prev) => prev.filter((item) => item !== target));
   };
 
   const handleSave = () => {
     const finalType =
       checkType === '직접 입력'
-        ? customType.trim()
+        ? customTypes.join(', ')
         : checkType;
 
     if (!finalType) {
@@ -55,7 +79,6 @@ const AddHealthCheck = ({ onClose, onSave }) => {
       alertOption,
     };
 
-    // 아직 API가 없으므로 부모에게 데이터만 전달
     onSave?.(healthCheckData);
   };
 
@@ -67,25 +90,25 @@ const AddHealthCheck = ({ onClose, onSave }) => {
         aria-labelledby="add-health-check-title"
         onClick={(event) => event.stopPropagation()}
       >
-        <Header>
-          <CloseButton
-            type="button"
-            onClick={onClose}
-            aria-label="닫기"
-          >
-            ×
-          </CloseButton>
+        <ModalInner>
+          <Header>
+            <CloseButton
+              type="button"
+              onClick={onClose}
+              aria-label="닫기"
+            >
+              ×
+            </CloseButton>
 
-          <HeaderTitle id="add-health-check-title">
-            검진 일정 추가하기
-          </HeaderTitle>
+            <HeaderTitle id="add-health-check-title">
+              검진 일정 추가하기
+            </HeaderTitle>
 
-          <HeaderSpacer />
-        </Header>
+            <HeaderSpacer />
+          </Header>
 
-        <Divider />
+          <Divider />
 
-        <Content>
           <FormSection>
             <Label>검진 종류를 골라주세요</Label>
 
@@ -104,17 +127,38 @@ const AddHealthCheck = ({ onClose, onSave }) => {
 
             {checkType === '직접 입력' && (
               <>
-                <Input
-                  type="text"
-                  placeholder="예: 유방암 초음파, 위내시경 등"
-                  value={customType}
-                  onChange={(event) =>
-                    setCustomType(event.target.value)
-                  }
-                />
+                <AddTypeRow>
+                  <TypeInput
+                    type="text"
+                    placeholder="예: 유방암 초음파, 위내시경 등"
+                    value={customTypeInput}
+                    onChange={(event) =>
+                      setCustomTypeInput(event.target.value)
+                    }
+                  />
+                  <AddTypeButton type="button" onClick={addCustomType}>
+                    +
+                  </AddTypeButton>
+                </AddTypeRow>
+
+                {customTypes.length > 0 && (
+                  <TypeWrap>
+                    {customTypes.map((type) => (
+                      <TypeChip key={type} as="span" $active>
+                        {type}
+                        <RemoveTypeIcon
+                          type="button"
+                          onClick={() => removeCustomType(type)}
+                        >
+                          ×
+                        </RemoveTypeIcon>
+                      </TypeChip>
+                    ))}
+                  </TypeWrap>
+                )}
 
                 <FieldHint>
-                  * 직접 입력을 선택한 경우만 적어주세요
+                  * "직접 입력"을 고르신 경우에만 적어주세요
                 </FieldHint>
               </>
             )}
@@ -123,11 +167,12 @@ const AddHealthCheck = ({ onClose, onSave }) => {
           <FormSection>
             <Label>날짜를 선택해주세요</Label>
 
-            <Input
-              type="date"
-              value={date}
-              onChange={(event) => setDate(event.target.value)}
-            />
+            <DateSelectButton
+              type="button"
+              onClick={() => setIsDatePickerOpen(true)}
+            >
+              {date ? formatDateLabel(date) : '날짜를 선택해주세요'}
+            </DateSelectButton>
           </FormSection>
 
           <FormSection>
@@ -164,47 +209,92 @@ const AddHealthCheck = ({ onClose, onSave }) => {
           >
             저장하기
           </SaveButton>
-        </Content>
+        </ModalInner>
       </Modal>
+
+      {isDatePickerOpen && (
+        <DatePickerModal
+          value={date}
+          title="검진 날짜 선택"
+          onConfirm={(nextDate) => {
+            setDate(nextDate);
+            setIsDatePickerOpen(false);
+          }}
+          onClose={() => setIsDatePickerOpen(false)}
+        />
+      )}
     </Overlay>
   );
 };
 
 export default AddHealthCheck;
 
+/* =========================
+   Overlay
+========================= */
+
 const Overlay = styled.div`
   position: absolute;
   inset: 0;
-  z-index: 1000;
+  z-index: 9999;
 
   display: flex;
-  align-items: flex-end;
+  align-items: center;
   justify-content: center;
 
-  background: rgba(49, 41, 35, 0.25);
+  padding: 14px;
+
+  box-sizing: border-box;
+
+  background: rgba(38, 34, 30, 0.52);
 `;
+
+/* =========================
+   Modal
+========================= */
 
 const Modal = styled.div`
   width: 100%;
-  max-width: 402px;
-  max-height: 88vh;
+  max-width: 390px;
+  max-height: calc(100% - 12px);
 
-  padding: 20px 16px 24px;
+  padding: 8px;
+
   box-sizing: border-box;
 
-  overflow-y: auto;
-
-  border-radius: 24px 24px 0 0;
-  border: 1px solid rgba(74, 58, 47, 0.15);
+  border: 2px solid #4a3a2f;
+  border-radius: 28px;
 
   background: #fff8ed;
 
-  box-shadow: 0 -8px 30px rgba(74, 58, 47, 0.14);
+  box-shadow: 0 10px 40px rgba(74, 58, 47, 0.2);
+
+  overflow: hidden;
+`;
+
+const ModalInner = styled.div`
+  width: 100%;
+  max-height: calc(100vh - 48px);
+
+  padding: 18px 16px 18px;
+
+  box-sizing: border-box;
+
+  border: 2px dashed #8d806e;
+  border-radius: 14px;
+
+  background: #fff8ed;
+
+  overflow-y: auto;
 
   &::-webkit-scrollbar {
     display: none;
   }
 `;
+
+/* =========================
+   Header
+========================= */
 
 const Header = styled.div`
   display: flex;
@@ -216,7 +306,9 @@ const CloseButton = styled.button`
   width: 32px;
   height: 32px;
 
+  margin: 0;
   padding: 0;
+
   border: none;
   background: transparent;
 
@@ -236,9 +328,12 @@ const HeaderTitle = styled.h1`
   margin: 0;
 
   color: #4a3a2f;
-  font-family: 'Noto Sans KR';
-  font-size: 17px;
-  font-weight: 700;
+
+  font-family: Jua, sans-serif;
+  font-size: 24px;
+  font-weight: 400;
+
+  text-align: center;
 `;
 
 const HeaderSpacer = styled.div`
@@ -247,27 +342,35 @@ const HeaderSpacer = styled.div`
 
 const Divider = styled.div`
   width: 100%;
-  margin-top: 12px;
 
-  border-top: 1px solid #e5ddd2;
+  margin: 12px 0 0;
+
+  border-top: 1px solid rgba(74, 58, 47, 0.25);
 `;
 
-const Content = styled.div`
-  padding-top: 4px;
-`;
+/* =========================
+   Form
+========================= */
 
 const FormSection = styled.section`
   margin-top: 20px;
+
+  padding: 14px 14px 16px;
+
+  border: 1.3px solid rgba(74, 58, 47, 0.35);
+  border-radius: 18px;
+
+  background: rgba(255, 255, 255, 0.55);
 `;
 
 const Label = styled.p`
-  margin: 0 0 10px;
+  margin: 0 0 12px;
 
-  color: #7b736b;
+  color: #4a3a2f;
 
   font-family: 'Noto Sans KR';
-  font-size: 12px;
-  font-weight: 500;
+  font-size: 15px;
+  font-weight: 700;
 `;
 
 const TypeWrap = styled.div`
@@ -277,65 +380,143 @@ const TypeWrap = styled.div`
 `;
 
 const TypeChip = styled.button`
-  min-height: 34px;
-  padding: 7px 12px;
+  min-height: 36px;
 
-  border: 1.2px solid
-    ${({ $active }) =>
-      $active ? '#c97956' : '#d8d0c6'};
+  padding: 6px 12px;
+
+  border: ${({ $active }) =>
+    $active
+      ? '1.4px solid #9b7b3f'
+      : '1.4px dashed #bdb4a8'};
 
   border-radius: 999px;
 
   background: ${({ $active }) =>
-    $active ? '#f8e1d2' : '#fffdf8'};
+    $active ? '#f6ebc7' : '#fffdf8'};
 
-  color: ${({ $active }) =>
-    $active ? '#c97158' : '#5d554d'};
+  color: #4a3a2f;
 
   font-family: 'Noto Sans KR';
-  font-size: 11px;
-  font-weight: 600;
+  font-size: 12px;
+  font-weight: 700;
 
   cursor: pointer;
 `;
 
 const Input = styled.input`
   width: 100%;
-  height: 44px;
+  height: 48px;
 
-  margin-top: 10px;
-  padding: 0 12px;
+  margin-top: 12px;
+  padding: 0 14px;
 
   box-sizing: border-box;
 
-  border: 1.2px solid #d8d0c6;
-  border-radius: 10px;
+  border: 1.3px solid #c9c0b4;
+  border-radius: 14px;
 
   background: #fffdf8;
 
   color: #4a3a2f;
 
   font-family: 'Noto Sans KR';
-  font-size: 12px;
+  font-size: 14px;
 
   outline: none;
 
   &::placeholder {
-    color: #a79f96;
+    color: #aaa196;
   }
 
   &:focus {
-    border-color: #c98263;
+    border-color: #a58a54;
   }
 `;
 
-const FieldHint = styled.p`
-  margin: 6px 0 0;
+const DateSelectButton = styled.button`
+  width: 100%;
+  height: 48px;
 
-  color: #a79f96;
+  margin-top: 12px;
+  padding: 0 14px;
 
-  font-size: 9px;
+  box-sizing: border-box;
+
+  border: 1.3px solid #c9c0b4;
+  border-radius: 14px;
+
+  background: #fffdf8;
+
+  color: ${({ children }) =>
+    String(children).includes('선택해주세요') ? '#aaa196' : '#4a3a2f'};
+
+  font-family: 'Noto Sans KR';
+  font-size: 14px;
+  text-align: left;
+
+  cursor: pointer;
 `;
+
+const AddTypeRow = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 12px;
+`;
+
+const TypeInput = styled(Input)`
+  flex: 1;
+  margin-top: 0;
+`;
+
+const AddTypeButton = styled.button`
+  flex-shrink: 0;
+  width: 44px;
+  height: 44px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border: 1.4px solid #9b7b3f;
+  border-radius: 12px;
+  background: #f6ebc7;
+
+  color: #4a3a2f;
+  font-size: 20px;
+  font-weight: 700;
+  line-height: 1;
+
+  cursor: pointer;
+`;
+
+const RemoveTypeIcon = styled.button`
+  margin-left: 6px;
+  padding: 0;
+  border: none;
+  background: transparent;
+
+  color: #4a3a2f;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1;
+
+  cursor: pointer;
+`;
+
+const FieldHint = styled.p`
+  margin: 8px 0 0;
+
+  color: #a29a91;
+
+  font-family: 'Noto Sans KR';
+  font-size: 10px;
+  line-height: 1.4;
+`;
+
+/* =========================
+   Alert
+========================= */
 
 const AlertWrap = styled.div`
   display: flex;
@@ -346,40 +527,50 @@ const AlertChip = styled.button`
   flex: 1;
   height: 38px;
 
-  border: 1.2px solid
-    ${({ $active }) =>
-      $active ? '#c97956' : '#d8d0c6'};
+  padding: 0 8px;
 
-  border-radius: 10px;
+  border: ${({ $active }) =>
+    $active
+      ? '1.4px solid #a98663'
+      : '1.4px dashed #c0b6aa'};
+
+  border-radius: 12px;
 
   background: ${({ $active }) =>
-    $active ? '#f4dfd1' : '#fffdf8'};
+    $active ? '#f6ebc7' : '#fffdf8'};
 
-  color: ${({ $active }) =>
-    $active ? '#c97158' : '#635b53'};
+  color: #4a3a2f;
 
   font-family: 'Noto Sans KR';
   font-size: 11px;
-  font-weight: 600;
+  font-weight: 700;
 
   cursor: pointer;
 `;
 
+/* =========================
+   Save
+========================= */
+
 const SaveButton = styled.button`
   width: 100%;
-  height: 50px;
+  height: 54px;
 
-  margin-top: 28px;
+  margin-top: 20px;
 
-  border: 1.5px solid rgba(74, 58, 47, 0.35);
+  border: 1.5px solid rgba(74, 58, 47, 0.45);
   border-radius: 14px;
 
-  background: #d17b55;
-  color: #fffdf8;
+  background: #dbe4a1;
+  color: #4a3a2f;
 
   font-family: Jua, sans-serif;
-  font-size: 17px;
+  font-size: 20px;
   font-weight: 400;
 
   cursor: pointer;
+
+  &:active {
+    transform: translateY(1px);
+  }
 `;
