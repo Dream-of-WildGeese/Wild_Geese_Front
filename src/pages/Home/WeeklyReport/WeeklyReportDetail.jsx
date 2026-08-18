@@ -646,7 +646,8 @@ function WeeklyReportDetail() {
               type="button"
               onClick={() =>
                 navigate(`/home/today-report/${toDateParam(dayDates[index])}`, {
-                  state: { person },
+                  // 일지에서 뒤로 가면 홈이 아니라 이 주간 리포트로 돌아오게 한다.
+                  state: { person, from: `/home/weekly-report/${weekId}` },
                 })
               }
             >
