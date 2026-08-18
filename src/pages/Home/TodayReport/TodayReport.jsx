@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation, useParams } from 'react-router-dom';
 import styled from 'styled-components';
 import closeIcon from '../../../assets/journal/close.png';
 import aiIcon from '../../../assets/journal/ai.png';
@@ -409,8 +409,18 @@ const StatusText = styled.p`
 
 function TodayReport() {
   const navigate = useNavigate();
-  const [person, setPerson] = useState('me');
-  const { data: report, loading, error, refetch } = useApi(loadTodayReport, { args: [person] });
+  const location = useLocation();
+  // 주간 리포트에서 요일을 누르면 /home/today-report/2026-08-04 로 들어온다.
+  // useApi가 인자를 JSON으로 직렬화해서 다시 읽으므로 Date가 아니라 문자열로 넘긴다.
+  const { date: dateParam } = useParams();
+
+  const [person, setPerson] = useState(location.state?.person ?? 'me');
+  const {
+    data: report,
+    loading,
+    error,
+    refetch,
+  } = useApi(loadTodayReport, { args: [person, dateParam ?? null] });
   const { partnerLabel } = useFamilyRelation();
   // 어떤 기록을 고치는 중인지 ('question' | 'medication' | 'healthcheck' | null)
   const [editing, setEditing] = useState(null);

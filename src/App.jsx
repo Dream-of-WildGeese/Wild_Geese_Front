@@ -56,6 +56,8 @@ function App() {
               <Route path="/home/settings" element={<SettingsMain />} />
               <Route path="/home/settings/profile" element={<ProfileEdit />} />
               <Route path="/home/today-report" element={<TodayReport />} />
+              {/* 주간 리포트에서 요일을 누르면 그 날짜의 일지로 들어온다 */}
+              <Route path="/home/today-report/:date" element={<TodayReport />} />
               <Route path="/home/weekly-report" element={<WeeklyReport />} />
               <Route path="/home/weekly-report/:weekId" element={<WeeklyReportDetail />} />
               <Route path="/home/healthcheck" element={<HealthCheck />} />

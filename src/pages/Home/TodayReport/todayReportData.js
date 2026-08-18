@@ -5,6 +5,8 @@ import { getMyFamily } from '../../../api/family';
 import { getUserId } from '../../../api/client';
 import { toDateString } from '../../../utils/medication';
 import { getRelationLabel } from '../../../utils/family';
+import { getWeekStart } from '../WeeklyReport/weeklyReportData';
+import { getMockDailyReport } from '../../../mock/dailyReport';
 
 const WEEKDAY_LABELS = ['일', '월', '화', '수', '목', '금', '토'];
 
@@ -107,20 +109,45 @@ const buildSummary = (dailyLog, medicationLog) => {
   };
 };
 
+// 이번 주를 0으로 놓고 몇 주 전인지 센다. 지난 주는 서버에 기록이 없어서
+// 주간 리포트와 같은 시연용 데이터를 쓴다.
+const weeksAgoOf = (date) => {
+  const start = getWeekStart(date);
+  return Math.round((getWeekStart() - start) / (7 * 24 * 60 * 60 * 1000));
+};
+
 // person이 'me'면 내 일지를, 아니면 가족 구성원의 일지를 불러온다.
 // 걸음수는 헬스케어 연동이 없어서 서버가 내려주지 않으므로 stepMessage는 비워둔다.
-export async function loadTodayReport(person, date = new Date()) {
+// dateString은 '2026-08-04' 또는 null(오늘). useApi가 인자를 JSON으로 주고받아서
+// Date 객체를 그대로 넘길 수 없다.
+export async function loadTodayReport(person, dateString = null) {
+  const date = dateString ? new Date(`${dateString}T00:00:00`) : new Date();
   const recordDate = toDateString(date);
 
   const family = await getMyFamily().catch(() => null);
   const myUserId = getUserId();
-  const partner = (family?.members ?? []).find(
-    (member) => String(member.userId) !== String(myUserId),
-  );
+  const members = family?.members ?? [];
+  const me = members.find((member) => String(member.userId) === String(myUserId));
+  const partner = members.find((member) => String(member.userId) !== String(myUserId));
 
   const isMe = person === 'me';
   if (!isMe && !partner) {
     return null;
+  }
+
+  // 지난 주 날짜를 열었다면 주간 리포트와 같은 요일 값에서 하루 기록을 만든다.
+  const weeksAgo = weeksAgoOf(date);
+  if (weeksAgo > 0) {
+    const myRole = me?.role === 'CHILD' ? 'child' : 'parent';
+    const role = isMe ? myRole : myRole === 'parent' ? 'child' : 'parent';
+    const mock = getMockDailyReport({
+      role,
+      weeksAgo,
+      date,
+      personLabel: isMe ? '나' : getRelationLabel(partner),
+      isMine: isMe,
+    });
+    if (mock) return mock;
   }
 
   const [dailyLog, medicationLog, medications, history] = await Promise.all([
