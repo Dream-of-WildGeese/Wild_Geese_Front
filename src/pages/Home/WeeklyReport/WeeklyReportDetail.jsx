@@ -344,12 +344,12 @@ const MetricNote = styled.p`
 
 const DayJumpCard = styled.div`
   width: 100%;
-  padding: 18px 2px;
+  padding: 20px 8px 16px;
   box-sizing: border-box;
 
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 14px;
 
   border-radius: 18px;
   border: 1.5px solid rgba(74, 58, 47, 0.4);
@@ -361,7 +361,7 @@ const DayJumpHint = styled.p`
   text-align: center;
   color: #4a3a2f;
   font-family: Jua;
-  font-size: 18px;
+  font-size: 19px;
   word-break: keep-all;
 `;
 
@@ -375,12 +375,12 @@ const DayButton = styled.button`
   position: relative;
   flex: 1;
   min-width: 0;
-  height: 66px;
+  height: 82px;
 `;
 
 const StarIcon = styled.img`
   width: 100%;
-  max-width: 51px;
+  max-width: 56px;
   aspect-ratio: 1;
   object-fit: contain;
   display: block;
@@ -388,28 +388,29 @@ const StarIcon = styled.img`
 `;
 
 // 요일 글자는 별 그림 한가운데에 얹는다.
+// 별 크기(최대 56px)의 절반쯤에 오도록 잡았다.
 const DayButtonLabel = styled.span`
   position: absolute;
-  top: 17px;
+  top: 19px;
   left: 0;
   width: 100%;
   text-align: center;
   color: #4a3a2f;
   font-family: Jua;
-  font-size: 13px;
+  font-size: 16px;
   line-height: 1;
 `;
 
-// 요일과 같은 크기로 맞춘다. 11px과 13px로 달라서 한 덩어리로 안 읽혔다.
+// 요일과 같은 계열로 맞추되, 별 아래로 충분히 띄워 겹치지 않게 한다.
 const DayButtonDate = styled.span`
   position: absolute;
-  top: 52px;
+  top: 62px;
   left: 0;
   width: 100%;
   text-align: center;
   color: #4a3a2f;
   font-family: Jua;
-  font-size: 13px;
+  font-size: 15px;
   line-height: 1;
 `;
 
@@ -518,9 +519,16 @@ function WeeklyReportDetail() {
           <DayRow>
             {detail.condition.map((item) => (
               <DayCol key={item.day}>
-                <RingWrap $size={40} $color={scoreColor(item.score)}>
-                  <FaceIcon $size={32} src={scoreFace(item.score)} alt="" />
-                </RingWrap>
+                {/* 아직 답하지 않은 날은 빈 원으로 둔다. 표정을 채우면 기록한 것처럼 보인다 */}
+                {item.score ? (
+                  <RingWrap $size={40} $color={scoreColor(item.score)}>
+                    <FaceIcon $size={32} src={scoreFace(item.score)} alt="" />
+                  </RingWrap>
+                ) : (
+                  <IconWrap>
+                    <EmptyCircle src={emptyCircleIcon} alt="" />
+                  </IconWrap>
+                )}
                 <DayLabel>{item.day}</DayLabel>
               </DayCol>
             ))}

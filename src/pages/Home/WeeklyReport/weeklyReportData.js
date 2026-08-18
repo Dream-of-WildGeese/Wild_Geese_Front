@@ -1,5 +1,6 @@
 import { getWeeklyReport, getMyLatestReport, getFamilyLatestReport } from '../../../api/weekly';
 import { getMyFamily } from '../../../api/family';
+import { getDailyLog } from '../../../api/daily';
 import { getUserId } from '../../../api/client';
 import { toDateString } from '../../../utils/medication';
 import { getMockReport, getMockCurrentWeek, MOCK_WEEK_COUNT } from '../../../mock/weeklyReport';
@@ -149,20 +150,70 @@ const weeksAgoOf = (start) =>
 // 기록이 없는 주도 서버는 200에 빈 껍데기를 준다.
 // (metrics[].daily가 전부 [], comment는 '데이터를 확인해보세요.' 같은 고정 문구)
 // null이 아니라서 그냥 두면 시연용 데이터가 영영 안 쓰인다.
+// medication.totalCount는 '이번 주에 먹기로 한 횟수'라 약만 등록해두면 0이 아니다.
+// 그것만 보고 기록이 있다고 판단하면 그래프가 빈 채로 서버 껍데기를 쓰게 된다.
+// 실제로 남긴 게 있는지는 지표의 요일값과 '실제 챙긴 횟수'로 본다.
 const hasRecords = (report) =>
   Object.values(report?.metrics ?? {}).some((metric) => (metric?.daily?.length ?? 0) > 0) ||
-  (report?.medication?.totalCount ?? 0) > 0;
+  (report?.medication?.takenCount ?? 0) > 0;
 
 // 이번 주는 월요일부터 오늘까지만 기록이 있을 수 있다. (월요일이면 1일치)
 const daysFilledThisWeek = () =>
   Math.floor((new Date().setHours(0, 0, 0, 0) - getWeekStart()) / (24 * 60 * 60 * 1000)) + 1;
 
+// 저녁 건강체크 답변은 metricType 없이 질문 순서대로만 온다.
+// 저녁 체크 화면의 질문 순서(컨디션·수면·식사·활동·맞춤)와 같은 순서다.
+const EVENING_ORDER = ['CONDITION', 'SLEEP', 'MEAL', 'ACTIVITY'];
+
+// 주간 API는 진행 중인 주의 metrics[].daily를 채워주지 않는다.
+// 그래서 월요일부터 오늘까지 하루 일지를 직접 읽어 요일별 값을 만든다.
+async function buildCurrentWeekMetrics(weekStart, days) {
+  const dates = Array.from({ length: days }, (_, index) => toDateString(addDays(weekStart, index)));
+  const logs = await Promise.all(dates.map((date) => getDailyLog(date).catch(() => null)));
+
+  const daily = { CONDITION: [], SLEEP: [], MEAL: [], ACTIVITY: [] };
+  logs.forEach((log) => {
+    const answers = log?.eveningAnswers ?? [];
+    EVENING_ORDER.forEach((metric, index) => {
+      const answer = answers[index];
+      const score = answer?.metricType
+        ? answers.find((item) => item.metricType === metric)?.choiceValue
+        : answer?.choiceValue;
+      daily[metric].push(score != null ? Number(score) : null);
+    });
+  });
+
+  const filled = Object.values(daily).some((values) => values.some((value) => value != null));
+  return filled ? daily : null;
+}
+
 // 이번 주는 서버에 실제 기록이 있으면 그걸 쓰고, 없을 때만 오늘까지 채운 시연용
 // 데이터를 쓴다. 시연 도중 입력한 내용이 목업에 가려지면 안 된다.
-const resolveCurrentWeek = (fetched, role, weekStartDate) =>
-  hasRecords(fetched)
-    ? { ...fetched, inProgress: true }
-    : (getMockCurrentWeek(role, daysFilledThisWeek(), weekStartDate) ?? fetched);
+async function resolveCurrentWeek(fetched, role, weekStartDate) {
+  const days = daysFilledThisWeek();
+  const weekStart = getWeekStart();
+
+  // 서버가 요일별 값을 못 주더라도 하루 일지에는 남아 있다. 그걸로 채워본다.
+  const built = await buildCurrentWeekMetrics(weekStart, days).catch(() => null);
+
+  if (hasRecords(fetched) || built) {
+    const base = fetched ?? {};
+    return {
+      ...base,
+      inProgress: true,
+      metrics: built
+        ? Object.fromEntries(
+            EVENING_ORDER.map((metric) => [
+              metric,
+              { ...(base.metrics?.[metric] ?? {}), daily: built[metric] },
+            ]),
+          )
+        : base.metrics,
+    };
+  }
+
+  return getMockCurrentWeek(role, days, weekStartDate) ?? fetched;
+}
 
 // 목록 화면용. 주 목록을 주는 API가 없어서 최근 주차를 직접 만들어 각각 조회한다.
 // 지난 주는 아직 서버에 리포트가 없어서, 없는 주만 시연용 데이터로 채운다.
@@ -186,7 +237,7 @@ export async function loadWeeklyList(person) {
     const latest = await getFamilyLatestReport(partner.userId).catch(() => null);
     return {
       current: toWeekSummary(
-        resolveCurrentWeek(latest, role, toDateString(starts[0])),
+        await resolveCurrentWeek(latest, role, toDateString(starts[0])),
         starts[0],
       ),
       past: mockPast.map((report, index) => toWeekSummary(report, starts[index + 1])),
@@ -201,7 +252,7 @@ export async function loadWeeklyList(person) {
   const [currentReport, ...pastReports] = reports;
   return {
     current: toWeekSummary(
-      resolveCurrentWeek(currentReport, role, toDateString(starts[0])),
+      await resolveCurrentWeek(currentReport, role, toDateString(starts[0])),
       starts[0],
     ),
     past: pastReports.map((report, index) =>
@@ -226,7 +277,7 @@ export async function loadWeeklyDetail(weekId, person) {
     if (mock) return { week: toWeekSummary(mock, start), detail: toWeeklyDetail(mock) };
 
     const latest = await getFamilyLatestReport(partner.userId).catch(() => null);
-    const report = resolveCurrentWeek(latest, role, weekId);
+    const report = await resolveCurrentWeek(latest, role, weekId);
     return { week: toWeekSummary(report, start), detail: toWeeklyDetail(report) };
   }
 
@@ -234,7 +285,7 @@ export async function loadWeeklyDetail(weekId, person) {
   // 이번 주(weeksAgo 0)는 오늘까지만 채운다. 지난 주는 통째로 채운다.
   const report =
     weeksAgo === 0
-      ? resolveCurrentWeek(fetched, role, weekId)
+      ? await resolveCurrentWeek(fetched, role, weekId)
       : (hasRecords(fetched) ? fetched : (mock ?? fetched));
 
   return { week: toWeekSummary(report, start), detail: toWeeklyDetail(report) };
