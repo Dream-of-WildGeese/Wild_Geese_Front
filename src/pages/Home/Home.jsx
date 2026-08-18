@@ -131,6 +131,11 @@ function Home() {
         <EveningCheckPopup
           onClose={closePopup}
           onCompleted={() => setActivePopup('healthCheckDone')}
+          // 오늘 이미 마친 상태면 축하 팝업 없이 바로 건강일지로 이동한다.
+          onAlreadyDone={() => {
+            closePopup();
+            navigate('/home/today-report');
+          }}
         />
       )}
       {activePopup === 'healthCheckDone' && (

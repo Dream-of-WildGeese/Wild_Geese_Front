@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import styled, { keyframes } from 'styled-components';
 import PopupPortal from '../../../../components/PopupPortal';
 import faceGood from '../../../../assets/evening/face-good.png';
@@ -235,7 +235,7 @@ const Message = styled.p`
   font-size: 18px;
 `;
 
-function EveningCheckPopup({ onClose, onCompleted, forceEdit = false }) {
+function EveningCheckPopup({ onClose, onCompleted, onAlreadyDone, forceEdit = false }) {
   const [stepIndex, setStepIndex] = useState(0);
   const [answers, setAnswers] = useState({});
   const [note, setNote] = useState('');
@@ -252,6 +252,13 @@ function EveningCheckPopup({ onClose, onCompleted, forceEdit = false }) {
   // 단 건강일지에서 '수정'으로 들어온 경우(forceEdit)는 다시 답할 수 있게 연다.
   const alreadyDone =
     !forceEdit && Boolean(data) && data.completedCount >= data.totalCount && data.totalCount > 0;
+
+  // 오늘 이미 마친 상태로 다시 들어오면 안내 화면 없이 바로 건강일지로 넘어간다.
+  useEffect(() => {
+    if (alreadyDone) {
+      onAlreadyDone?.();
+    }
+  }, [alreadyDone, onAlreadyDone]);
 
   // 선택지가 없는 질문(맞춤 질문)은 음성/자유 입력으로 답한다.
   const choices = question?.choices ?? [];
@@ -297,7 +304,11 @@ function EveningCheckPopup({ onClose, onCompleted, forceEdit = false }) {
     onCompleted();
   };
 
-  if (loading || error || totalSteps === 0 || alreadyDone) {
+  // alreadyDone은 위 useEffect가 감지해 onAlreadyDone으로 바로 넘긴다.
+  // 여기서는 넘어가는 동안 잠깐 아무 것도 보여주지 않는다.
+  if (alreadyDone) return null;
+
+  if (loading || error || totalSteps === 0) {
     return (
       <PopupPortal>
         <Backdrop onClick={onClose}>
@@ -311,15 +322,8 @@ function EveningCheckPopup({ onClose, onCompleted, forceEdit = false }) {
                 ? '질문을 불러오는 중이에요...'
                 : error
                   ? error.message
-                  : alreadyDone
-                    ? '오늘 건강 체크는 이미 마치셨어요!'
-                    : '오늘은 준비된 질문이 없어요.'}
+                  : '오늘은 준비된 질문이 없어요.'}
             </Message>
-            {alreadyDone && (
-              <PrimaryButton type="button" onClick={onCompleted}>
-                오늘의 건강일지 보기
-              </PrimaryButton>
-            )}
           </Card>
         </Backdrop>
       </PopupPortal>
