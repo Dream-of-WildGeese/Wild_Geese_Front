@@ -168,4 +168,41 @@ export const getMockReport = (role, weeksAgo, weekStartDate) => {
   };
 };
 
+// 이번 주는 아직 쌓이는 중이다. 오늘까지만 채우고 남은 요일은 비워 둔다.
+// 지난 주 세트 중 하나를 빌려 쓰되 앞부분만 잘라서, 지난 주와 흐름이 이어져 보이게 한다.
+// daysFilled: 월요일부터 오늘까지 며칠치인지 (월요일이면 1)
+const cut = (values, daysFilled) => values.slice(0, daysFilled);
+
+export const getMockCurrentWeek = (role, daysFilled, weekStartDate) => {
+  const week = getMockWeek(role, 1);
+  if (!week || daysFilled <= 0) return null;
+
+  const meds = cut(week.meds.daily, daysFilled);
+  const takenCount = sum(meds);
+  const totalCount = week.meds.perDay * meds.length;
+
+  return {
+    weekStartDate,
+    // 아직 한 주가 안 끝나서 총평 대신 진행 중이라는 걸 알린다.
+    weeklyComment: '이번 주는 아직 쌓이는 중이에요',
+    weeklyDetail: `지금까지 ${daysFilled}일치 기록이 담겼어요. 일요일에 이번 주 리포트가 만들어져요.`,
+    nextWeekSuggestion: '',
+    isBaselineSufficient: true,
+    inProgress: true,
+    metrics: {
+      CONDITION: { daily: cut(week.condition.daily, daysFilled), trend: 'FLAT', comment: week.condition.comment },
+      SLEEP: { daily: cut(week.sleep.daily, daysFilled), comment: week.sleep.comment },
+      MEAL: { daily: cut(week.meal.daily, daysFilled), comment: week.meal.comment },
+      ACTIVITY: { daily: cut(week.activity.daily, daysFilled), trend: 'FLAT', comment: week.activity.comment },
+    },
+    medication: {
+      takenCount,
+      totalCount,
+      daily: meds,
+      perDay: week.meds.perDay,
+      comment: `지금까지 ${totalCount}번 중 ${takenCount}번 챙기셨어요.`,
+    },
+  };
+};
+
 export const MOCK_WEEK_COUNT = PARENT_WEEKS.length;

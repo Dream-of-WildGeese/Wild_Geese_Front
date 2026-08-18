@@ -2,7 +2,7 @@ import { getWeeklyReport, getMyLatestReport, getFamilyLatestReport } from '../..
 import { getMyFamily } from '../../../api/family';
 import { getUserId } from '../../../api/client';
 import { toDateString } from '../../../utils/medication';
-import { getMockReport, MOCK_WEEK_COUNT } from '../../../mock/weeklyReport';
+import { getMockReport, getMockCurrentWeek, MOCK_WEEK_COUNT } from '../../../mock/weeklyReport';
 
 const DAYS = ['월', '화', '수', '목', '금', '토', '일'];
 const PAST_WEEK_COUNT = MOCK_WEEK_COUNT;
@@ -111,6 +111,7 @@ export const toWeeklyDetail = (report) => {
     medsTakenCount: medication.takenCount ?? 0,
     medsTotal: medication.totalCount ?? 0,
     medsNote: medication.comment ?? '복약 기록이 아직 없어요.',
+    inProgress: Boolean(report.inProgress),
     adviceText: report.nextWeekSuggestion ?? '',
     // 서버가 기록을 분석해서 써주는 문장. 기록이 적으면 '아직 패턴을 분석할 만큼
     // 기록이 쌓이지 않았어요' 같은 기본 문구가 온다.
@@ -136,6 +137,8 @@ const toWeekSummary = (report, start) => {
         ? `${start.getMonth() + 1}월`
         : `${start.getFullYear()}년 ${start.getMonth() + 1}월`,
     comment: report?.weeklyComment ?? '아직 리포트가 준비되지 않았어요',
+    // 이번 주는 아직 쌓이는 중이라 목록에서 '입력 중'으로 표시한다.
+    inProgress: Boolean(report?.inProgress),
   };
 };
 
@@ -149,6 +152,17 @@ const weeksAgoOf = (start) =>
 const hasRecords = (report) =>
   Object.values(report?.metrics ?? {}).some((metric) => (metric?.daily?.length ?? 0) > 0) ||
   (report?.medication?.totalCount ?? 0) > 0;
+
+// 이번 주는 월요일부터 오늘까지만 기록이 있을 수 있다. (월요일이면 1일치)
+const daysFilledThisWeek = () =>
+  Math.floor((new Date().setHours(0, 0, 0, 0) - getWeekStart()) / (24 * 60 * 60 * 1000)) + 1;
+
+// 이번 주는 서버에 실제 기록이 있으면 그걸 쓰고, 없을 때만 오늘까지 채운 시연용
+// 데이터를 쓴다. 시연 도중 입력한 내용이 목업에 가려지면 안 된다.
+const resolveCurrentWeek = (fetched, role, weekStartDate) =>
+  hasRecords(fetched)
+    ? { ...fetched, inProgress: true }
+    : (getMockCurrentWeek(role, daysFilledThisWeek(), weekStartDate) ?? fetched);
 
 // 목록 화면용. 주 목록을 주는 API가 없어서 최근 주차를 직접 만들어 각각 조회한다.
 // 지난 주는 아직 서버에 리포트가 없어서, 없는 주만 시연용 데이터로 채운다.
@@ -171,7 +185,10 @@ export async function loadWeeklyList(person) {
 
     const latest = await getFamilyLatestReport(partner.userId).catch(() => null);
     return {
-      current: toWeekSummary(latest, starts[0]),
+      current: toWeekSummary(
+        resolveCurrentWeek(latest, role, toDateString(starts[0])),
+        starts[0],
+      ),
       past: mockPast.map((report, index) => toWeekSummary(report, starts[index + 1])),
       partnerOnly: true,
     };
@@ -183,7 +200,10 @@ export async function loadWeeklyList(person) {
 
   const [currentReport, ...pastReports] = reports;
   return {
-    current: toWeekSummary(currentReport, starts[0]),
+    current: toWeekSummary(
+      resolveCurrentWeek(currentReport, role, toDateString(starts[0])),
+      starts[0],
+    ),
     past: pastReports.map((report, index) =>
       toWeekSummary(hasRecords(report) ? report : mockPast[index], starts[index + 1]),
     ),
@@ -195,18 +215,28 @@ export async function loadWeeklyList(person) {
 export async function loadWeeklyDetail(weekId, person) {
   const start = new Date(`${weekId}T00:00:00`);
   const { partner, myRole, partnerRole } = await findFamilyRoles();
-  const mock = getMockReport(person === 'me' ? myRole : partnerRole, weeksAgoOf(start), weekId);
+  const role = person === 'me' ? myRole : partnerRole;
+  const weeksAgo = weeksAgoOf(start);
+  const mock = getMockReport(role, weeksAgo, weekId);
 
   if (person !== 'me') {
     if (!partner) return null;
     // 가족은 특정 주를 지정할 수 없어 최신 리포트만 보여준다.
     // 지난 주를 열었다면 최신 리포트가 아니라 그 주의 시연용 데이터를 쓴다.
-    const report = mock ?? (await getFamilyLatestReport(partner.userId));
+    if (mock) return { week: toWeekSummary(mock, start), detail: toWeeklyDetail(mock) };
+
+    const latest = await getFamilyLatestReport(partner.userId).catch(() => null);
+    const report = resolveCurrentWeek(latest, role, weekId);
     return { week: toWeekSummary(report, start), detail: toWeeklyDetail(report) };
   }
 
   const fetched = await getWeeklyReport(weekId).catch(() => null);
-  const report = hasRecords(fetched) ? fetched : (mock ?? fetched);
+  // 이번 주(weeksAgo 0)는 오늘까지만 채운다. 지난 주는 통째로 채운다.
+  const report =
+    weeksAgo === 0
+      ? resolveCurrentWeek(fetched, role, weekId)
+      : (hasRecords(fetched) ? fetched : (mock ?? fetched));
+
   return { week: toWeekSummary(report, start), detail: toWeeklyDetail(report) };
 }
 

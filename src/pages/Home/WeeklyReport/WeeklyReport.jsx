@@ -2,7 +2,7 @@ import { useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
 import closeIcon from '../../../assets/journal/close.png';
-import cloudIcon from '../../../assets/weekly/cloud.png';
+import magnifierIcon from '../../../assets/weekly/magnifier.png';
 import checkIcon from '../../../assets/weekly/check.png';
 import pencilIcon from '../../../assets/weekly/pencil.png';
 import { loadWeeklyList } from './weeklyReportData';
@@ -116,7 +116,7 @@ const ThisWeekCard = styled.div`
   background: #edf2d4;
 `;
 
-const CloudIcon = styled.img`
+const MagnifierIcon = styled.img`
   width: 50px;
   height: 50px;
   object-fit: contain;
@@ -196,16 +196,18 @@ const DateChip = styled.span`
   white-space: nowrap;
 `;
 
+// 이번 주는 아직 쌓이는 중이라 색을 달리해서 완성된 주와 구분한다.
 const Badge = styled.span`
   flex-shrink: 0;
   padding: 4px 12px;
   border-radius: 20px;
-  background: #cbd879;
+  background: ${({ $progress }) => ($progress ? '#f6ebc7' : '#cbd879')};
+  border: ${({ $progress }) => ($progress ? '1px solid rgba(184, 134, 46, 0.5)' : 'none')};
 
   font-family: 'Noto Sans KR';
   font-size: 13px;
   font-weight: 700;
-  color: #3f5a1b;
+  color: ${({ $progress }) => ($progress ? '#a8761c' : '#3f5a1b')};
   white-space: nowrap;
 `;
 
@@ -350,11 +352,21 @@ function WeeklyReport() {
 
       {currentWeek && (
         <ThisWeekCard>
-          <CloudIcon src={cloudIcon} alt="" />
+          <MagnifierIcon src={magnifierIcon} alt="" />
           <ThisWeekText>
-            온담과 한 주를 마무리하며
-            <br />
-            이번 주 일상을 살펴보세요!
+            {currentWeek.inProgress ? (
+              <>
+                이번 주는 아직 쌓이는 중이에요
+                <br />
+                눌러서 지금까지 기록을 볼 수 있어요
+              </>
+            ) : (
+              <>
+                온담과 한 주를 마무리하며
+                <br />
+                이번 주 일상을 살펴보세요!
+              </>
+            )}
           </ThisWeekText>
 
           <WeekRow type="button" onClick={() => openWeek(currentWeek.id)}>
@@ -367,7 +379,9 @@ function WeeklyReport() {
                 <DateChip>{currentWeek.range}</DateChip>
               </DateRow>
             </ContentCol>
-            <Badge>이번 주</Badge>
+            <Badge $progress={currentWeek.inProgress}>
+              {currentWeek.inProgress ? '입력 중' : '이번 주'}
+            </Badge>
           </WeekRow>
         </ThisWeekCard>
       )}
