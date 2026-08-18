@@ -1,4 +1,9 @@
-import { getWeeklyReport, getMyLatestReport, getFamilyLatestReport } from '../../../api/weekly';
+import {
+  getWeeklyReport,
+  getMyLatestReport,
+  getFamilyLatestReport,
+  getWeeklyHistory,
+} from '../../../api/weekly';
 import { getMyFamily } from '../../../api/family';
 import { getDailyLog } from '../../../api/daily';
 import { getUserId } from '../../../api/client';
@@ -245,19 +250,36 @@ export async function loadWeeklyList(person) {
     };
   }
 
-  const reports = await Promise.all(
-    starts.map((start) => getWeeklyReport(toDateString(start)).catch(() => null)),
-  );
+  // 서버가 리포트를 만들어둔 주 목록. 없는 주를 헛되이 조회하지 않아도 된다.
+  // 다만 월요일 시작과 일요일 시작이 섞여 오는데, 앱은 월요일 기준이라
+  // 월요일 것만 취한다. 안 그러면 6일이 겹치는 주가 나란히 뜬다.
+  const history = await getWeeklyHistory().catch(() => null);
+  const historyStarts = (history ?? [])
+    .map((item) => item.weekStartDate)
+    .filter((date) => new Date(`${date}T00:00:00`).getDay() === 1);
 
-  const [currentReport, ...pastReports] = reports;
+  // 목록에 없더라도 최근 몇 주는 시연용 데이터로 채워야 해서 둘을 합친다.
+  const pastDates = [...new Set([...starts.slice(1).map(toDateString), ...historyStarts])]
+    .filter((date) => date < toDateString(starts[0]))
+    .sort((a, b) => b.localeCompare(a))
+    .slice(0, PAST_WEEK_COUNT);
+
+  const [currentReport, ...pastReports] = await Promise.all([
+    getWeeklyReport(toDateString(starts[0])).catch(() => null),
+    ...pastDates.map((date) => getWeeklyReport(date).catch(() => null)),
+  ]);
+
   return {
     current: toWeekSummary(
       await resolveCurrentWeek(currentReport, role, toDateString(starts[0])),
       starts[0],
     ),
-    past: pastReports.map((report, index) =>
-      toWeekSummary(hasRecords(report) ? report : mockPast[index], starts[index + 1]),
-    ),
+    past: pastReports.map((report, index) => {
+      const start = new Date(`${pastDates[index]}T00:00:00`);
+      // 서버에 실제 기록이 없는 주는 몇 주 전인지에 맞는 시연용 데이터로 채운다.
+      const mock = getMockReport(role, weeksAgoOf(start), pastDates[index]);
+      return toWeekSummary(hasRecords(report) ? report : (mock ?? report), start);
+    }),
     partnerOnly: false,
   };
 }
