@@ -11,6 +11,14 @@ import {
 } from '../../../../api/evening';
 import { useApi, useApiAction } from '../../../../hooks/useApi';
 import { useVoiceRecorder } from '../../../../hooks/useVoiceRecorder';
+import {
+  PopupBackdrop,
+  PopupCard,
+  PopupInnerBorder,
+  PopupTitle,
+  PopupPrimaryButton,
+  CHOICE_ICON_SIZE,
+} from '../../../../components/PopupShell';
 
 // Figma 22~22e: 저녁 건강체크가 별도 페이지에서 5단계 팝업으로 바뀌었다.
 // 선택지 아이콘은 좋음/보통/나쁨 세 장을 모든 질문이 공유한다(디자인에서도 같은 에셋).
@@ -59,9 +67,32 @@ const InnerBorder = styled.div`
   pointer-events: none;
 `;
 
+// 첫 질문이 아니면 왼쪽에 뒤로가기, 오른쪽에 닫기가 함께 놓인다.
+const TopRow = styled.div`
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+`;
+
+const BackButton = styled.button`
+  display: flex;
+  align-items: center;
+  gap: 4px;
+
+  color: #8c8172;
+  font-family: 'Noto Sans KR';
+  font-size: 16px;
+  font-weight: 700;
+
+  /* 첫 질문에서는 자리만 차지하고 보이지 않게 둔다(닫기 위치가 흔들리지 않도록) */
+  visibility: ${({ $hidden }) => ($hidden ? 'hidden' : 'visible')};
+`;
+
 const CloseButton = styled.button`
-  color: #8c8780;
-  font-size: 18px;
+  color: #d1493a;
+  font-size: 30px;
+  font-weight: 700;
   line-height: 1;
 `;
 
@@ -104,7 +135,7 @@ const Subtitle = styled.p`
 
 const Option = styled.button`
   width: 100%;
-  height: 64px;
+  height: 72px;
   padding: 0 16px;
 
   display: flex;
@@ -123,8 +154,8 @@ const Option = styled.button`
 `;
 
 const OptionIcon = styled.img`
-  width: 44px;
-  height: 44px;
+  width: ${CHOICE_ICON_SIZE}px;
+  height: ${CHOICE_ICON_SIZE}px;
   flex-shrink: 0;
   object-fit: contain;
 `;
@@ -177,13 +208,15 @@ const VoiceLabel = styled.span`
   font-size: 15px;
 `;
 
-const VoiceError = styled.p`
+const ErrorText = styled.p`
   margin: 0;
   width: 100%;
   text-align: center;
-  color: #c1553c;
+  color: #6b6661;
   font-family: 'Noto Sans KR';
-  font-size: 13px;
+  font-size: 16px;
+  line-height: 1.5;
+  word-break: keep-all;
 `;
 
 const NoteInput = styled.textarea`
@@ -239,6 +272,7 @@ function EveningCheckPopup({ onClose, onCompleted, onAlreadyDone, forceEdit = fa
   const [stepIndex, setStepIndex] = useState(0);
   const [answers, setAnswers] = useState({});
   const [note, setNote] = useState('');
+  const [submitError, setSubmitError] = useState(null);
 
   const { data, loading, error } = useApi(getTodayEveningQuestions);
   const { execute: submitAnswers, loading: submitting } = useApiAction(submitEveningAnswers);
@@ -275,11 +309,10 @@ function EveningCheckPopup({ onClose, onCompleted, onAlreadyDone, forceEdit = fa
   );
   const voice = useVoiceRecorder(transcribe, appendTranscript);
 
+  // 고르기만 하고 넘어가지는 않는다. 예전에는 누르는 순간 다음 질문으로 넘어가서
+  // 잘못 눌렀을 때 되돌릴 수가 없었다.
   const selectOption = (optionIndex) => {
     setAnswers((prev) => ({ ...prev, [question.questionId]: optionIndex }));
-    if (!isLastStep) {
-      setStepIndex(stepIndex + 1);
-    }
   };
 
   const handleFinish = async () => {
@@ -296,9 +329,9 @@ function EveningCheckPopup({ onClose, onCompleted, onAlreadyDone, forceEdit = fa
         };
       });
 
-    const { ok, error: submitError } = await submitAnswers(payload);
+    const { ok, error: failed } = await submitAnswers(payload);
     if (!ok) {
-      alert(submitError.message);
+      setSubmitError(failed);
       return;
     }
     onCompleted();
@@ -338,13 +371,22 @@ function EveningCheckPopup({ onClose, onCompleted, onAlreadyDone, forceEdit = fa
       <Backdrop onClick={onClose}>
         <Card onClick={(event) => event.stopPropagation()}>
           <InnerBorder />
-          <CloseButton type="button" aria-label="닫기" onClick={onClose}>
-            ✕
-          </CloseButton>
+          <TopRow>
+            <BackButton
+              type="button"
+              $hidden={stepIndex === 0}
+              onClick={() => setStepIndex((prev) => Math.max(0, prev - 1))}
+            >
+              ‹ 이전
+            </BackButton>
+            <CloseButton type="button" aria-label="닫기" onClick={onClose}>
+              ✕
+            </CloseButton>
+          </TopRow>
 
           <BadgeRow>
             <ProgressBadge>
-              {stepIndex + 1} / {totalSteps}
+              {stepIndex + 1}/{totalSteps}
             </ProgressBadge>
             {isLastStep && <ProgressBadge>마지막 질문이에요</ProgressBadge>}
           </BadgeRow>
@@ -372,7 +414,6 @@ function EveningCheckPopup({ onClose, onCompleted, onAlreadyDone, forceEdit = fa
                         : '눌러서 말해보세요'}
                 </VoiceLabel>
               </VoiceButton>
-              {voice.error && <VoiceError>{voice.error.message}</VoiceError>}
               <NoteInput
                 placeholder="또는 직접 적어주세요"
                 value={note}
@@ -407,6 +448,33 @@ function EveningCheckPopup({ onClose, onCompleted, onAlreadyDone, forceEdit = fa
             </PrimaryButton>
           )}
         </Card>
+
+        {/* 음성 인식·저장 실패는 팝업으로 알린다 */}
+        {(voice.error || submitError) && (
+          <PopupBackdrop
+            onClick={() => {
+              voice.clearError();
+              setSubmitError(null);
+            }}
+          >
+            <PopupCard $center $gap={16} $padTop={36} onClick={(event) => event.stopPropagation()}>
+              <PopupInnerBorder />
+              <PopupTitle $center $size={22}>
+                {voice.error ? '잘 못 들었어요' : '저장하지 못했어요'}
+              </PopupTitle>
+              <ErrorText>{(voice.error ?? submitError).message}</ErrorText>
+              <PopupPrimaryButton
+                type="button"
+                onClick={() => {
+                  voice.clearError();
+                  setSubmitError(null);
+                }}
+              >
+                다시 해볼게요
+              </PopupPrimaryButton>
+            </PopupCard>
+          </PopupBackdrop>
+        )}
       </Backdrop>
     </PopupPortal>
   );
