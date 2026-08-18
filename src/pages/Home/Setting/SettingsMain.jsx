@@ -188,18 +188,24 @@ function SettingsMain() {
 
   const { enablePush } = useWebPush();
 
-  const handleToggle = async (key) => {
+const handleToggle = async (key) => {
     const nextValue = !setting[key];
 
-    // 알림을 ON할 때만 브라우저 Web Push 구독을 준비한다.
+    // 알림을 켤 때 브라우저 권한 및 구독 준비
     if (nextValue) {
       try {
         await enablePush();
       } catch (error) {
-        alert(error.message);
-        return;
+        console.warn('푸시 알림 활성화 경고:', error);
+        // 이미 권한이 있는데 백엔드 중복 등으로 에러가 난 경우 토글 저장은 계속 진행되도록 허용
+        if (Notification.permission !== 'granted') {
+          alert('브라우저 알림 권한을 허용해주세요.');
+          return;
+        }
       }
     }
+
+    // 서버 설정값 저장
     await applyChange({ [key]: nextValue });
   };
   

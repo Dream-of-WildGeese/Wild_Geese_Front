@@ -410,7 +410,11 @@ const Page = styled.div`
 
 const Content = styled.div`
   position: relative;
+
+  max-width: 402px;
   height: 100%;
+  margin: 0 auto;
+
   display: flex;
   flex-direction: column;
   box-sizing: border-box;
@@ -730,22 +734,20 @@ const Manage = styled.button`
 `;
 
 const NextButton = styled.button`
-  width: 100%;
+  width:100%;
   height: 56px;
 
-  margin-top: 8px;
-
-  border-radius: 18px;
-  border: 1.5px solid rgba(74,58,47,.45);
-
+  border-radius: 16px;
+  border: 1.5px solid rgba(74,58,47,.55);
   background: #CBD879;
-  color: #4A3A2F;
 
-  font-family: Jua, sans-serif;
-  font-size: 22px;
+  color: #4A3A2F;
+  font-family: Jua;
+  font-size: 18px;
   font-weight: 400;
 
   cursor: pointer;
+
 `;
 
 const DiseaseInput = styled(Input)`

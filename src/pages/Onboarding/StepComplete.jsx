@@ -210,6 +210,7 @@ const Description = styled.p`
 
 const ButtonArea = styled.div`
   margin-top: auto;
+  padding-top: 51px;
 `;
 
 const ContinueButton = styled.button`

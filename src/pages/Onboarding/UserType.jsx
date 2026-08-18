@@ -58,9 +58,11 @@ const UserType = () => {
           </OptionButton>
         </OptionList>
 
-        <NextButton disabled={!userType} onClick={handleNext}>
-          다음
-        </NextButton>
+        <ButtonArea>
+          <NextButton disabled={!userType} onClick={handleNext}>
+            다음
+          </NextButton>
+        </ButtonArea>
       </Content>
     </Page>
   );
@@ -76,6 +78,8 @@ const Page = styled.div`
 `;
 
 const Content = styled.div`
+  position: relative;
+
   max-width: 402px;
   height: 100%;
   min-height: 100%;
@@ -189,15 +193,14 @@ const OptionText = styled.span`
 
 
 
+const ButtonArea = styled.div`
+  margin-top: auto;
+  padding-top: 51px;
+`;
+
 const NextButton = styled.button`
   width: 100%;
   height: 56px;
-
-  margin-top: auto;
-
-  display: flex;
-  justify-content: center;
-  align-items: center;
 
   border: 1.5px solid rgba(74, 58, 47, 0.55);
   border-radius: 16px;
@@ -207,4 +210,6 @@ const NextButton = styled.button`
   font-family: Jua;
   font-size: 18px;
   font-weight: 400;
+
+  cursor: pointer;
 `;
