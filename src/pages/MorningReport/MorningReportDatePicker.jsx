@@ -4,6 +4,11 @@ import PopupPortal from '../../components/PopupPortal';
 
 const YEARS_PER_PAGE = 6;
 
+// 연도 목록은 '보고 있는 해'가 아니라 '올해'를 기준으로 잡는다.
+// 예전에는 보고 있는 해를 기준으로 삼아서, 2013년으로 옮긴 뒤 다시 열면
+// 창이 [2008~2013]이 되고 yearPage가 0이라 '최근으로'가 막혔다.
+const CURRENT_YEAR = new Date().getFullYear();
+
 const Backdrop = styled.div`
   /* Layout(폰 프레임)이 기준이 되도록 absolute를 쓴다. fixed면 브라우저 창 가운데에 뜬다. */
   position: absolute;
@@ -30,69 +35,57 @@ const CloseButton = styled.button`
   position: absolute;
   top: ${({ theme }) => theme.spacing.sm};
   right: ${({ theme }) => theme.spacing.sm};
-  width: 28px;
-  height: 28px;
+  width: 32px;
+  height: 32px;
   display: flex;
   align-items: center;
   justify-content: center;
   border-radius: 999px;
-  color: #4a3a2f;
-  font-size: 16px;
+  color: #d1493a;
+  font-size: 24px;
+  font-weight: 700;
+  line-height: 1;
 `;
 
 const Title = styled.p`
-  margin: 0 0 ${({ theme }) => theme.spacing.md};
+  margin: 0 0 4px;
   padding-right: ${({ theme }) => theme.spacing.lg};
   font-family: 'Jua', sans-serif;
   font-size: 18px;
   color: #4a3a2f;
 `;
 
-const RootRow = styled.div`
-  display: flex;
-  gap: ${({ theme }) => theme.spacing.sm};
-`;
-
-const RootButton = styled.button`
-  flex: 1;
-  padding: ${({ theme }) => theme.spacing.md} 0;
-  border-radius: 14px;
-  background: rgba(193, 160, 103, 0.18);
-  border: 1px solid #4a3a2f;
-  font-family: 'Jua', sans-serif;
-  font-size: 22px;
-  color: #4a3a2f;
+const SectionLabel = styled.p`
+  margin: ${({ theme }) => theme.spacing.md} 0 6px;
+  font-family: 'Noto Sans KR', sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+  color: #8c8172;
 `;
 
 const OptionGrid = styled.div`
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(${({ $columns }) => $columns ?? 3}, 1fr);
   gap: ${({ theme }) => theme.spacing.sm};
 `;
 
 const OptionButton = styled.button`
   padding: 12px 0;
   border-radius: 10px;
-  background: ${({ $active }) => ($active ? 'rgba(193, 160, 103, 0.35)' : 'rgba(193, 160, 103, 0.14)')};
-  border: 1px solid #4a3a2f;
+  background: ${({ $active }) =>
+    $active ? 'rgba(193, 160, 103, 0.45)' : 'rgba(193, 160, 103, 0.14)'};
+  border: 1px solid ${({ $active }) => ($active ? '#4a3a2f' : 'rgba(74, 58, 47, 0.35)')};
   font-family: 'Noto Sans KR', sans-serif;
   font-weight: 700;
   font-size: 15px;
   color: #4a3a2f;
 `;
 
-const BackToRoot = styled.button`
-  margin-top: ${({ theme }) => theme.spacing.md};
-  font-size: 13px;
-  color: #6b6661;
-  text-decoration: underline;
-`;
-
 const YearPageNav = styled.div`
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-top: ${({ theme }) => theme.spacing.sm};
+  margin-top: 6px;
 `;
 
 const YearPageButton = styled.button`
@@ -105,25 +98,22 @@ const YearPageButton = styled.button`
   opacity: ${({ disabled }) => (disabled ? 0.35 : 1)};
 `;
 
-const ConfirmButton = styled.button`
-  width: 100%;
-  height: 48px;
-  margin-top: ${({ theme }) => theme.spacing.md};
-  border-radius: 14px;
-  background: #4a3a2f;
-  color: #fff8ed;
+const Hint = styled.p`
+  margin: ${({ theme }) => theme.spacing.md} 0 0;
+  text-align: center;
   font-family: 'Noto Sans KR', sans-serif;
-  font-weight: 700;
-  font-size: 15px;
+  font-size: 13px;
+  color: #8c8172;
 `;
 
 function MorningReportDatePicker({ year, month, onConfirm, onClose }) {
-  const [view, setView] = useState('root');
   const [draftYear, setDraftYear] = useState(year);
-  const [draftMonth, setDraftMonth] = useState(month);
-  const [yearPage, setYearPage] = useState(0);
+  // 처음 열 때 보고 있던 해가 담긴 쪽을 펴둔다.
+  const [yearPage, setYearPage] = useState(() =>
+    Math.max(0, Math.floor((CURRENT_YEAR - year) / YEARS_PER_PAGE)),
+  );
 
-  const yearWindowStart = year - YEARS_PER_PAGE * (yearPage + 1) + 1;
+  const yearWindowStart = CURRENT_YEAR - YEARS_PER_PAGE * (yearPage + 1) + 1;
   const yearOptions = Array.from({ length: YEARS_PER_PAGE }, (_, i) => yearWindowStart + i);
   const monthOptions = Array.from({ length: 12 }, (_, i) => i + 1);
 
@@ -135,82 +125,51 @@ function MorningReportDatePicker({ year, month, onConfirm, onClose }) {
             ✕
           </CloseButton>
 
-          {view === 'root' && (
-            <>
-              <Title>연월 빠른 이동</Title>
-              <RootRow>
-                <RootButton type="button" onClick={() => setView('year')}>
-                  {draftYear}
-                </RootButton>
-                <RootButton type="button" onClick={() => setView('month')}>
-                  {draftMonth}월
-                </RootButton>
-              </RootRow>
-              <ConfirmButton type="button" onClick={() => onConfirm(draftYear, draftMonth)}>
-                확인
-              </ConfirmButton>
-            </>
-          )}
+          <Title>연월 빠른 이동</Title>
 
-          {view === 'year' && (
-            <>
-              <Title>연도 선택</Title>
-              <OptionGrid>
-                {yearOptions.map((y) => (
-                  <OptionButton
-                    key={y}
-                    type="button"
-                    $active={y === draftYear}
-                    onClick={() => {
-                      setDraftYear(y);
-                      setView('root');
-                    }}
-                  >
-                    {y}
-                  </OptionButton>
-                ))}
-              </OptionGrid>
-              <YearPageNav>
-                <YearPageButton type="button" onClick={() => setYearPage((p) => p + 1)}>
-                  ‹ 더 이전 연도
-                </YearPageButton>
-                <YearPageButton
-                  type="button"
-                  disabled={yearPage === 0}
-                  onClick={() => setYearPage((p) => Math.max(0, p - 1))}
-                >
-                  최근으로 ›
-                </YearPageButton>
-              </YearPageNav>
-              <BackToRoot type="button" onClick={() => setView('root')}>
-                ‹ 뒤로
-              </BackToRoot>
-            </>
-          )}
+          <SectionLabel>연도</SectionLabel>
+          <OptionGrid $columns={3}>
+            {yearOptions.map((y) => (
+              <OptionButton
+                key={y}
+                type="button"
+                $active={y === draftYear}
+                onClick={() => setDraftYear(y)}
+              >
+                {y}
+              </OptionButton>
+            ))}
+          </OptionGrid>
+          <YearPageNav>
+            <YearPageButton type="button" onClick={() => setYearPage((p) => p + 1)}>
+              ‹ 더 이전
+            </YearPageButton>
+            <YearPageButton
+              type="button"
+              disabled={yearPage === 0}
+              onClick={() => setYearPage((p) => Math.max(0, p - 1))}
+            >
+              최근으로 ›
+            </YearPageButton>
+          </YearPageNav>
 
-          {view === 'month' && (
-            <>
-              <Title>달 선택</Title>
-              <OptionGrid>
-                {monthOptions.map((m) => (
-                  <OptionButton
-                    key={m}
-                    type="button"
-                    $active={m === draftMonth}
-                    onClick={() => {
-                      setDraftMonth(m);
-                      setView('root');
-                    }}
-                  >
-                    {m}월
-                  </OptionButton>
-                ))}
-              </OptionGrid>
-              <BackToRoot type="button" onClick={() => setView('root')}>
-                ‹ 뒤로
-              </BackToRoot>
-            </>
-          )}
+          {/* 달을 누르면 바로 그 달로 옮긴다. 예전에는 연도·달을 각각 다른 화면에서
+              고르고 '확인'까지 눌러야 해서 손이 많이 갔다. */}
+          <SectionLabel>달 (누르면 바로 이동해요)</SectionLabel>
+          <OptionGrid $columns={4}>
+            {monthOptions.map((m) => (
+              <OptionButton
+                key={m}
+                type="button"
+                $active={draftYear === year && m === month}
+                onClick={() => onConfirm(draftYear, m)}
+              >
+                {m}월
+              </OptionButton>
+            ))}
+          </OptionGrid>
+
+          <Hint>{draftYear}년에서 볼 달을 골라주세요</Hint>
         </Card>
       </Backdrop>
     </PopupPortal>

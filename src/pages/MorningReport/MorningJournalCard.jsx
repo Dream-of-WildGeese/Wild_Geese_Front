@@ -1,5 +1,6 @@
 import styled from 'styled-components';
 import journalDateIcon from '../../assets/journal-date-icon.png';
+import mascotImg from '../../assets/mascot.png';
 
 const PLANK_LINES = [55, 114, 173];
 
@@ -146,6 +147,39 @@ const BubbleText = styled.p`
   color: #4a3a2f;
 `;
 
+// 나도 가족도 답하지 않은 날. 빈 카드만 두면 불러오다 만 것처럼 보여서
+// 마스코트를 세워둔다. 색을 빼고 살짝 기울여 시무룩한 느낌을 준다.
+const EmptyAnswers = styled.div`
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 0 8px;
+`;
+
+const SadMascot = styled.img`
+  width: 84px;
+  height: 84px;
+  object-fit: contain;
+  object-position: top;
+  filter: grayscale(0.55) brightness(0.95);
+  transform: rotate(-6deg);
+  opacity: 0.85;
+`;
+
+const EmptyText = styled.p`
+  margin: 0;
+  text-align: center;
+  font-family: 'Noto Sans KR', sans-serif;
+  font-weight: 700;
+  font-size: 14px;
+  line-height: 1.5;
+  color: #f6ebc7;
+  text-shadow: 0 2px 3px rgba(0, 0, 0, 0.3);
+`;
+
 function MorningJournalCard({ date, question, answers }) {
   return (
     <Card>
@@ -168,16 +202,27 @@ function MorningJournalCard({ date, question, answers }) {
 
       <QuestionText>{question}</QuestionText>
 
-      {answers.map((answer) => (
-        <AnswerRow key={answer.id}>
-          <Avatar>
-            <AvatarImage src={answer.avatar} alt={answer.name} />
-          </Avatar>
-          <Bubble>
-            <BubbleText>{answer.text}</BubbleText>
-          </Bubble>
-        </AnswerRow>
-      ))}
+      {answers.length === 0 ? (
+        <EmptyAnswers>
+          <SadMascot src={mascotImg} alt="" />
+          <EmptyText>
+            이 날은 아무도 답하지 않았어요
+            <br />
+            온담이가 기다리고 있었대요
+          </EmptyText>
+        </EmptyAnswers>
+      ) : (
+        answers.map((answer) => (
+          <AnswerRow key={answer.id}>
+            <Avatar>
+              <AvatarImage src={answer.avatar} alt={answer.name} />
+            </Avatar>
+            <Bubble>
+              <BubbleText>{answer.text}</BubbleText>
+            </Bubble>
+          </AnswerRow>
+        ))
+      )}
     </Card>
   );
 }

@@ -1,6 +1,7 @@
 import styled from 'styled-components';
 import { useNavigate } from 'react-router-dom';
 import calendarIcon from '../../assets/calendar.png';
+import closeIcon from '../../assets/journal/close.png';
 
 const HeaderWrap = styled.div`
   flex-shrink: 0;
@@ -18,19 +19,18 @@ const TopRow = styled.div`
   padding: 0 6px;
 `;
 
+// 다른 화면(건강일지·주간 리포트)과 같은 40px 닫기 아이콘으로 맞춘다.
+// 여기만 살구색 '뒤로가기' 알약 버튼이라 화면을 옮길 때마다 위치가 달라 보였다.
 const BackButton = styled.button`
-  display: flex;
-  align-items: center;
-  padding: 8px 22px;
-  border-radius: 10px;
-  background: rgba(253, 139, 119, 0.4);
-  border: 1px solid #4a3a2f;
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
 `;
 
-const BackLabel = styled.span`
-  font-family: 'Jua', sans-serif;
-  font-size: 12px;
-  color: #4a3a2f;
+const BackIcon = styled.img`
+  width: 40px;
+  height: 40px;
+  object-fit: contain;
 `;
 
 const CalendarButton = styled.button`
@@ -93,8 +93,8 @@ function MorningReportHeader({ year, month, onPrevMonth, onNextMonth, onOpenPick
   return (
     <HeaderWrap>
       <TopRow>
-        <BackButton type="button" onClick={() => navigate('/home')}>
-          <BackLabel>뒤로가기</BackLabel>
+        <BackButton type="button" aria-label="닫기" onClick={() => navigate('/home')}>
+          <BackIcon src={closeIcon} alt="" />
         </BackButton>
         <CalendarButton type="button" aria-label="연월 빠른 이동" onClick={onOpenPicker}>
           <CalendarImage src={calendarIcon} alt="" />
