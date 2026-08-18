@@ -99,6 +99,8 @@ const HealthCheck = () => {
 
   // 어떤 일정을 지울지 물어보는 중인지 (checkupId | null)
   const [deleteTarget, setDeleteTarget] = useState(null);
+  // 고치는 중인 일정 (upcomingCheckup 객체 | null)
+  const [editTarget, setEditTarget] = useState(null);
   const [deleteError, setDeleteError] = useState(null);
 
   const handleDelete = async () => {
@@ -299,14 +301,19 @@ const HealthCheck = () => {
                   {person === 'family' ? `${displayName}의 ` : ''}
                   {upcoming.checkupType}
                 </UpcomingCardTitle>
-                <DeleteIconButton
-                  type="button"
-                  aria-label="삭제"
-                  disabled={deleting}
-                  onClick={() => setDeleteTarget(upcoming.checkupId)}
-                >
-                  <TrashIcon src={trashBin} alt="삭제" />
-                </DeleteIconButton>
+                <CardActions>
+                  <EditTextButton type="button" onClick={() => setEditTarget(upcoming)}>
+                    수정
+                  </EditTextButton>
+                  <DeleteIconButton
+                    type="button"
+                    aria-label="삭제"
+                    disabled={deleting}
+                    onClick={() => setDeleteTarget(upcoming.checkupId)}
+                  >
+                    <TrashIcon src={trashBin} alt="삭제" />
+                  </DeleteIconButton>
+                </CardActions>
               </UpcomingCardHeader>
               <ChipGroup>
                 <InfoChip>{formatMonthDay(upcoming.checkupDate)}</InfoChip>
@@ -364,11 +371,16 @@ const HealthCheck = () => {
           </AddButtonArea>
         </ScrollArea>
 
-        {showAddModal && (
+        {(showAddModal || editTarget) && (
           <AddHealthCheck
-            onClose={() => setShowAddModal(false)}
+            editing={editTarget}
+            onClose={() => {
+              setShowAddModal(false);
+              setEditTarget(null);
+            }}
             onSuccess={() => {
               setShowAddModal(false);
+              setEditTarget(null);
               refetch();
             }}
           />
@@ -559,6 +571,26 @@ const CalendarNavHeader = styled.div`
   justify-content: space-between;
   margin-bottom: 12px;
   padding: 0 4px;
+`;
+
+const CardActions = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+`;
+
+// 다른 화면의 수정 버튼과 같은 모양으로 맞춘다.
+const EditTextButton = styled.button`
+  padding: 4px 10px;
+  border-radius: 8px;
+  border: 1px solid rgba(74, 58, 47, 0.35);
+  background: rgba(255, 255, 255, 0.7);
+
+  color: #8c8172;
+  font-family: 'Noto Sans KR', sans-serif;
+  font-size: 13px;
+  font-weight: 700;
 `;
 
 // 삭제 확인·실패 팝업의 본문

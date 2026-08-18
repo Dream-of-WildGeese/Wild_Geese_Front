@@ -2,8 +2,8 @@ import React, { useState } from 'react';
 import styled from 'styled-components';
 import DatePickerModal from '../../../components/DatePickerModal';
 import { useApiAction } from '../../../hooks/useApi';
-import { createCheckup } from '../../../api/checkup/createCheckup';
-import { setCheckupAlert } from '../../../utils/localSettings';
+import { createCheckup, updateCheckup } from '../../../api/checkup';
+import { setCheckupAlert, getCheckupAlert } from '../../../utils/localSettings';
 import {
   PopupBackdrop,
   PopupCard,
@@ -28,16 +28,26 @@ const HEALTH_CHECK_TYPES = [
 
 const ALERT_OPTIONS = ['3일 전', '1일 전', '알림 받지 않기'];
 
-const AddHealthCheck = ({ onClose, onSuccess }) => {
-  const [checkType, setCheckType] = useState('');
+// editing이 있으면 그 일정을 고치고, 없으면 새로 만든다.
+const AddHealthCheck = ({ onClose, onSuccess, editing = null }) => {
+  // 고치는 중이면 기존 값으로 시작한다. 목록에 없는 종류면 '직접 입력'으로 연다.
+  const isCustomType = Boolean(editing) && !HEALTH_CHECK_TYPES.includes(editing.checkupType);
+  const [checkType, setCheckType] = useState(
+    editing ? (isCustomType ? '직접 입력' : editing.checkupType) : '',
+  );
   const [customTypeInput, setCustomTypeInput] = useState('');
-  const [customTypes, setCustomTypes] = useState([]);
-  const [date, setDate] = useState('');
+  const [customTypes, setCustomTypes] = useState(
+    isCustomType ? editing.checkupType.split(',').map((item) => item.trim()) : [],
+  );
+  const [date, setDate] = useState(editing?.checkupDate ?? '');
   const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
-  const [hospital, setHospital] = useState('');
-  const [alertOption, setAlertOption] = useState('3일 전');
+  const [hospital, setHospital] = useState(editing?.hospitalName ?? '');
+  const [alertOption, setAlertOption] = useState(
+    (editing && getCheckupAlert(editing.checkupId)) || '3일 전',
+  );
 
   const { execute: addCheckup, loading: creating } = useApiAction(createCheckup);
+  const { execute: editCheckup, loading: updating } = useApiAction(updateCheckup);
 
   const handleTypeChange = (type) => {
     setCheckType(type);
@@ -72,12 +82,16 @@ const AddHealthCheck = ({ onClose, onSuccess }) => {
     if (!date) return setMissing('날짜를 골라주세요');
     if (!hospital.trim()) return setMissing('병원 이름을 적어주세요');
 
-    // 서버 일정 등록 API 호출 (POST /api/v1/checkups)
-    const { ok, data, error } = await addCheckup({
+    const body = {
       checkupDate: date,
       checkupType: finalType,
       hospitalName: hospital.trim(),
-    });
+    };
+
+    // 고치는 중이면 PATCH, 새로 만드는 중이면 POST
+    const { ok, data, error } = editing
+      ? await editCheckup(editing.checkupId, body)
+      : await addCheckup(body);
 
     if (!ok) {
       setSaveError(error);
@@ -86,7 +100,8 @@ const AddHealthCheck = ({ onClose, onSuccess }) => {
 
     // 알림 시점은 서버 요청 본문에 자리가 없어서 이 기기에만 남긴다.
     // POST 응답(ApiResponseLong)은 새 checkupId를 숫자로 그대로 돌려준다.
-    if (data != null) setCheckupAlert(data, alertOption);
+    const savedId = editing ? editing.checkupId : data;
+    if (savedId != null) setCheckupAlert(savedId, alertOption);
 
     onSuccess?.();
   };
@@ -101,7 +116,7 @@ const AddHealthCheck = ({ onClose, onSuccess }) => {
       >
         <ModalInner>
           <HeaderTitle id="add-health-check-title">
-            검진 일정 추가하기
+            {editing ? '검진 일정 고치기' : '검진 일정 추가하기'}
           </HeaderTitle>
 
           {/* 1. 검진 종류 선택 */}
@@ -217,9 +232,9 @@ const AddHealthCheck = ({ onClose, onSuccess }) => {
           <SaveButton
             type="button"
             onClick={handleSave}
-            disabled={creating}
+            disabled={creating || updating}
           >
-            {creating ? '저장 중...' : '저장하기'}
+            {creating || updating ? '저장 중...' : '저장하기'}
           </SaveButton>
         </ModalInner>
       </Modal>

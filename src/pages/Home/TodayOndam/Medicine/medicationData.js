@@ -18,28 +18,6 @@ const todayDayName = () => DAY_NAMES[new Date().getDay()];
 
 export const slotOfTime = (scheduledTime) => getSlotLabel(parseTime(scheduledTime).hour);
 
-// 서버는 TAKEN을 되돌리지 못한다. status를 NOT_RECORDED로 다시 보내면 200을 주면서
-// 실제로는 무시하고, 기록을 지우는 API도 없다. 그래서 '해제한 스케줄'만 여기 적어두고
-// 서버 응답 위에 덮어쓴다. 서버가 해제를 받아주면 이 파일에서 통째로 지우면 된다.
-const UNCHECK_KEY = 'ondam:medication-unchecked';
-
-const readUnchecked = (recordDate) => {
-  try {
-    const saved = JSON.parse(localStorage.getItem(UNCHECK_KEY) ?? '{}');
-    // 날짜가 바뀌면 어제 해제 기록은 버린다.
-    return saved.recordDate === recordDate ? new Set(saved.scheduleIds ?? []) : new Set();
-  } catch {
-    return new Set();
-  }
-};
-
-const writeUnchecked = (recordDate, scheduleIds) => {
-  localStorage.setItem(
-    UNCHECK_KEY,
-    JSON.stringify({ recordDate, scheduleIds: [...scheduleIds] }),
-  );
-};
-
 // 오늘 먹어야 할 약을 약 단위로 묶고, 각 시간대에 기록이 있는지 함께 담는다.
 export async function loadTodayMedications() {
   const recordDate = toDateString();
@@ -48,7 +26,6 @@ export async function loadTodayMedications() {
     getMedicationLogs(recordDate).catch(() => null),
   ]);
 
-  const unchecked = readUnchecked(recordDate);
   const today = todayDayName();
 
   // 서버는 아직 시간이 안 지난 스케줄의 기록 행을 미리 만들어주지 않는다.
@@ -69,9 +46,7 @@ export async function loadTodayMedications() {
           scheduledTime: schedule.scheduledTime,
           timeLabel: timeToLabel(schedule.scheduledTime),
           slot: slotOfTime(schedule.scheduledTime),
-          taken:
-            statusBySchedule.get(schedule.scheduleId) === 'TAKEN' &&
-            !unchecked.has(schedule.scheduleId),
+          taken: statusBySchedule.get(schedule.scheduleId) === 'TAKEN',
         }))
         .sort((a, b) => a.scheduledTime.localeCompare(b.scheduledTime)),
     }))
@@ -101,20 +76,16 @@ export const flattenAll = (items) =>
     })),
   );
 
-// 체크 상태를 저장한다. 체크는 서버로 보내고, 해제는 로컬에 적어둔다.
+// 체크 상태를 저장한다. 체크와 해제를 모두 서버로 보낸다.
 // scheduleIds는 이번 화면이 책임지는 스케줄만 담아서, 다른 시간대 기록은 건드리지 않는다.
 export async function saveMedicationChecks({ recordDate, scheduleIds, checks }) {
-  const unchecked = readUnchecked(recordDate);
+  if (scheduleIds.length === 0) return;
 
-  const toSend = scheduleIds.filter((id) => checks[id]);
-  toSend.forEach((id) => unchecked.delete(id));
-  scheduleIds.filter((id) => !checks[id]).forEach((id) => unchecked.add(id));
-
-  writeUnchecked(recordDate, unchecked);
-
-  if (toSend.length === 0) return;
   await updateMedicationLogs({
     recordDate,
-    logs: toSend.map((scheduleId) => ({ scheduleId, status: 'TAKEN' })),
+    logs: scheduleIds.map((scheduleId) => ({
+      scheduleId,
+      status: checks[scheduleId] ? 'TAKEN' : 'NOT_RECORDED',
+    })),
   });
 }
