@@ -415,6 +415,9 @@ function TodayReport() {
   const { date: dateParam } = useParams();
 
   const [person, setPerson] = useState(location.state?.person ?? 'me');
+  // 주간 리포트의 요일 버튼으로 들어왔으면 뒤로 갈 때 그 주간 리포트로 돌아간다.
+  const backTo = location.state?.from ?? '/home';
+  const closeJournal = () => navigate(backTo, backTo !== '/home' ? { state: { person } } : undefined);
   const {
     data: report,
     loading,
@@ -483,7 +486,7 @@ function TodayReport() {
 
   return (
     <Page>
-      <CloseButton type="button" aria-label="닫기" onClick={() => navigate('/home')}>
+      <CloseButton type="button" aria-label="닫기" onClick={closeJournal}>
         <CloseIcon src={closeIcon} alt="" />
       </CloseButton>
 

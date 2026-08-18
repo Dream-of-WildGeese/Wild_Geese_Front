@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import styled, { keyframes } from 'styled-components';
 import PopupPortal from '../../../../components/PopupPortal';
 import faceGood from '../../../../assets/evening/face-good.png';
@@ -11,6 +11,14 @@ import {
 } from '../../../../api/evening';
 import { useApi, useApiAction } from '../../../../hooks/useApi';
 import { useVoiceRecorder } from '../../../../hooks/useVoiceRecorder';
+import {
+  PopupBackdrop,
+  PopupCard,
+  PopupInnerBorder,
+  PopupTitle,
+  PopupPrimaryButton,
+  CHOICE_ICON_SIZE,
+} from '../../../../components/PopupShell';
 
 // Figma 22~22e: 저녁 건강체크가 별도 페이지에서 5단계 팝업으로 바뀌었다.
 // 선택지 아이콘은 좋음/보통/나쁨 세 장을 모든 질문이 공유한다(디자인에서도 같은 에셋).
@@ -59,9 +67,32 @@ const InnerBorder = styled.div`
   pointer-events: none;
 `;
 
+// 첫 질문이 아니면 왼쪽에 뒤로가기, 오른쪽에 닫기가 함께 놓인다.
+const TopRow = styled.div`
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+`;
+
+const BackButton = styled.button`
+  display: flex;
+  align-items: center;
+  gap: 4px;
+
+  color: #8c8172;
+  font-family: 'Noto Sans KR';
+  font-size: 16px;
+  font-weight: 700;
+
+  /* 첫 질문에서는 자리만 차지하고 보이지 않게 둔다(닫기 위치가 흔들리지 않도록) */
+  visibility: ${({ $hidden }) => ($hidden ? 'hidden' : 'visible')};
+`;
+
 const CloseButton = styled.button`
-  color: #8c8780;
-  font-size: 18px;
+  color: #d1493a;
+  font-size: 30px;
+  font-weight: 700;
   line-height: 1;
 `;
 
@@ -104,7 +135,7 @@ const Subtitle = styled.p`
 
 const Option = styled.button`
   width: 100%;
-  height: 64px;
+  height: 72px;
   padding: 0 16px;
 
   display: flex;
@@ -123,8 +154,8 @@ const Option = styled.button`
 `;
 
 const OptionIcon = styled.img`
-  width: 44px;
-  height: 44px;
+  width: ${CHOICE_ICON_SIZE}px;
+  height: ${CHOICE_ICON_SIZE}px;
   flex-shrink: 0;
   object-fit: contain;
 `;
@@ -177,13 +208,15 @@ const VoiceLabel = styled.span`
   font-size: 15px;
 `;
 
-const VoiceError = styled.p`
+const ErrorText = styled.p`
   margin: 0;
   width: 100%;
   text-align: center;
-  color: #c1553c;
+  color: #6b6661;
   font-family: 'Noto Sans KR';
-  font-size: 13px;
+  font-size: 16px;
+  line-height: 1.5;
+  word-break: keep-all;
 `;
 
 const NoteInput = styled.textarea`
@@ -235,10 +268,11 @@ const Message = styled.p`
   font-size: 18px;
 `;
 
-function EveningCheckPopup({ onClose, onCompleted, forceEdit = false }) {
+function EveningCheckPopup({ onClose, onCompleted, onAlreadyDone, forceEdit = false }) {
   const [stepIndex, setStepIndex] = useState(0);
   const [answers, setAnswers] = useState({});
   const [note, setNote] = useState('');
+  const [submitError, setSubmitError] = useState(null);
 
   const { data, loading, error } = useApi(getTodayEveningQuestions);
   const { execute: submitAnswers, loading: submitting } = useApiAction(submitEveningAnswers);
@@ -252,6 +286,13 @@ function EveningCheckPopup({ onClose, onCompleted, forceEdit = false }) {
   // 단 건강일지에서 '수정'으로 들어온 경우(forceEdit)는 다시 답할 수 있게 연다.
   const alreadyDone =
     !forceEdit && Boolean(data) && data.completedCount >= data.totalCount && data.totalCount > 0;
+
+  // 오늘 이미 마친 상태로 다시 들어오면 안내 화면 없이 바로 건강일지로 넘어간다.
+  useEffect(() => {
+    if (alreadyDone) {
+      onAlreadyDone?.();
+    }
+  }, [alreadyDone, onAlreadyDone]);
 
   // 선택지가 없는 질문(맞춤 질문)은 음성/자유 입력으로 답한다.
   const choices = question?.choices ?? [];
@@ -268,11 +309,10 @@ function EveningCheckPopup({ onClose, onCompleted, forceEdit = false }) {
   );
   const voice = useVoiceRecorder(transcribe, appendTranscript);
 
+  // 고르기만 하고 넘어가지는 않는다. 예전에는 누르는 순간 다음 질문으로 넘어가서
+  // 잘못 눌렀을 때 되돌릴 수가 없었다.
   const selectOption = (optionIndex) => {
     setAnswers((prev) => ({ ...prev, [question.questionId]: optionIndex }));
-    if (!isLastStep) {
-      setStepIndex(stepIndex + 1);
-    }
   };
 
   const handleFinish = async () => {
@@ -289,15 +329,19 @@ function EveningCheckPopup({ onClose, onCompleted, forceEdit = false }) {
         };
       });
 
-    const { ok, error: submitError } = await submitAnswers(payload);
+    const { ok, error: failed } = await submitAnswers(payload);
     if (!ok) {
-      alert(submitError.message);
+      setSubmitError(failed);
       return;
     }
     onCompleted();
   };
 
-  if (loading || error || totalSteps === 0 || alreadyDone) {
+  // alreadyDone은 위 useEffect가 감지해 onAlreadyDone으로 바로 넘긴다.
+  // 여기서는 넘어가는 동안 잠깐 아무 것도 보여주지 않는다.
+  if (alreadyDone) return null;
+
+  if (loading || error || totalSteps === 0) {
     return (
       <PopupPortal>
         <Backdrop onClick={onClose}>
@@ -311,95 +355,128 @@ function EveningCheckPopup({ onClose, onCompleted, forceEdit = false }) {
                 ? '질문을 불러오는 중이에요...'
                 : error
                   ? error.message
-                  : alreadyDone
-                    ? '오늘 건강 체크는 이미 마치셨어요!'
-                    : '오늘은 준비된 질문이 없어요.'}
+                  : '오늘은 준비된 질문이 없어요.'}
             </Message>
-            {alreadyDone && (
-              <PrimaryButton type="button" onClick={onCompleted}>
-                오늘의 건강일지 보기
-              </PrimaryButton>
-            )}
           </Card>
         </Backdrop>
       </PopupPortal>
     );
   }
 
+  // TodayReport의 '수정'처럼 스크롤되는 페이지 안에서 열릴 때도 폰 프레임 기준으로
+  // 뜨도록 PopupPortal로 감싼다. 이걸 빼먹으면 그 페이지의 스크롤 위치에 따라
+  // 팝업이 화면 밖이나 엉뚱한 곳에 걸쳐 보이는 레이아웃 깨짐이 생긴다.
   return (
-    <Backdrop onClick={onClose}>
-      <Card onClick={(event) => event.stopPropagation()}>
-        <InnerBorder />
-        <CloseButton type="button" aria-label="닫기" onClick={onClose}>
-          ✕
-        </CloseButton>
-
-        <BadgeRow>
-          <ProgressBadge>
-            {stepIndex + 1} / {totalSteps}
-          </ProgressBadge>
-          {isLastStep && <ProgressBadge>마지막 질문이에요</ProgressBadge>}
-        </BadgeRow>
-
-        <Title>{question.content}</Title>
-        {isVoiceStep && <Subtitle>등록하신 건강정보에 맞춰서 준비했어요</Subtitle>}
-
-        {isVoiceStep ? (
-          <>
-            {/* 눌러서 녹음 → 다시 눌러 정지 → 서버 STT로 변환된 텍스트가 아래 칸에 채워진다 */}
-            <VoiceButton
+    <PopupPortal>
+      <Backdrop onClick={onClose}>
+        <Card onClick={(event) => event.stopPropagation()}>
+          <InnerBorder />
+          <TopRow>
+            <BackButton
               type="button"
-              onClick={voice.toggle}
-              disabled={!voice.supported || voice.busy}
-              $recording={voice.recording}
+              $hidden={stepIndex === 0}
+              onClick={() => setStepIndex((prev) => Math.max(0, prev - 1))}
             >
-              <MicCircle $recording={voice.recording}>●</MicCircle>
-              <VoiceLabel>
-                {!voice.supported
-                  ? '이 브라우저는 녹음을 지원하지 않아요'
-                  : voice.busy
-                    ? '옮겨 적는 중이에요...'
-                    : voice.recording
-                      ? '듣고 있어요. 다 말씀하시면 눌러주세요'
-                      : '눌러서 말해보세요'}
-              </VoiceLabel>
-            </VoiceButton>
-            {voice.error && <VoiceError>{voice.error.message}</VoiceError>}
-            <NoteInput
-              placeholder="또는 직접 적어주세요"
-              value={note}
-              onChange={(event) => setNote(event.target.value)}
-            />
-          </>
-        ) : (
-          choices.map((choice, optionIndex) => (
-            <Option
-              key={choice.label}
-              type="button"
-              $selected={answers[question.questionId] === optionIndex}
-              onClick={() => selectOption(optionIndex)}
-            >
-              <OptionIcon src={FACE_BY_INDEX[optionIndex] ?? faceNormal} alt="" />
-              {choice.label}
-            </Option>
-          ))
-        )}
+              ‹ 이전
+            </BackButton>
+            <CloseButton type="button" aria-label="닫기" onClick={onClose}>
+              ✕
+            </CloseButton>
+          </TopRow>
 
-        {isLastStep ? (
-          <PrimaryButton type="button" onClick={handleFinish} disabled={submitting}>
-            {submitting ? '저장 중...' : '오늘 기록 완료'}
-          </PrimaryButton>
-        ) : (
-          <PrimaryButton
-            type="button"
-            disabled={answers[question.questionId] == null}
-            onClick={() => setStepIndex(stepIndex + 1)}
+          <BadgeRow>
+            <ProgressBadge>
+              {stepIndex + 1}/{totalSteps}
+            </ProgressBadge>
+            {isLastStep && <ProgressBadge>마지막 질문이에요</ProgressBadge>}
+          </BadgeRow>
+
+          <Title>{question.content}</Title>
+          {isVoiceStep && <Subtitle>등록하신 건강정보에 맞춰서 준비했어요</Subtitle>}
+
+          {isVoiceStep ? (
+            <>
+              {/* 눌러서 녹음 → 다시 눌러 정지 → 서버 STT로 변환된 텍스트가 아래 칸에 채워진다 */}
+              <VoiceButton
+                type="button"
+                onClick={voice.toggle}
+                disabled={!voice.supported || voice.busy}
+                $recording={voice.recording}
+              >
+                <MicCircle $recording={voice.recording}>●</MicCircle>
+                <VoiceLabel>
+                  {!voice.supported
+                    ? '이 브라우저는 녹음을 지원하지 않아요'
+                    : voice.busy
+                      ? '옮겨 적는 중이에요...'
+                      : voice.recording
+                        ? '듣고 있어요. 다 말씀하시면 눌러주세요'
+                        : '눌러서 말해보세요'}
+                </VoiceLabel>
+              </VoiceButton>
+              <NoteInput
+                placeholder="또는 직접 적어주세요"
+                value={note}
+                onChange={(event) => setNote(event.target.value)}
+              />
+            </>
+          ) : (
+            choices.map((choice, optionIndex) => (
+              <Option
+                key={choice.label}
+                type="button"
+                $selected={answers[question.questionId] === optionIndex}
+                onClick={() => selectOption(optionIndex)}
+              >
+                <OptionIcon src={FACE_BY_INDEX[optionIndex] ?? faceNormal} alt="" />
+                {choice.label}
+              </Option>
+            ))
+          )}
+
+          {isLastStep ? (
+            <PrimaryButton type="button" onClick={handleFinish} disabled={submitting}>
+              {submitting ? '저장 중...' : '오늘 기록 완료'}
+            </PrimaryButton>
+          ) : (
+            <PrimaryButton
+              type="button"
+              disabled={answers[question.questionId] == null}
+              onClick={() => setStepIndex(stepIndex + 1)}
+            >
+              다음
+            </PrimaryButton>
+          )}
+        </Card>
+
+        {/* 음성 인식·저장 실패는 팝업으로 알린다 */}
+        {(voice.error || submitError) && (
+          <PopupBackdrop
+            onClick={() => {
+              voice.clearError();
+              setSubmitError(null);
+            }}
           >
-            다음
-          </PrimaryButton>
+            <PopupCard $center $gap={16} $padTop={36} onClick={(event) => event.stopPropagation()}>
+              <PopupInnerBorder />
+              <PopupTitle $center $size={22}>
+                {voice.error ? '잘 못 들었어요' : '저장하지 못했어요'}
+              </PopupTitle>
+              <ErrorText>{(voice.error ?? submitError).message}</ErrorText>
+              <PopupPrimaryButton
+                type="button"
+                onClick={() => {
+                  voice.clearError();
+                  setSubmitError(null);
+                }}
+              >
+                다시 해볼게요
+              </PopupPrimaryButton>
+            </PopupCard>
+          </PopupBackdrop>
         )}
-      </Card>
-    </Backdrop>
+      </Backdrop>
+    </PopupPortal>
   );
 }
 

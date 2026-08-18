@@ -55,10 +55,12 @@ export const PopupInnerBorder = styled.div`
   pointer-events: none;
 `;
 
+// 어르신도 바로 찾을 수 있게 크고 빨갛게 둔다.
 export const PopupClose = styled.button`
   align-self: flex-start;
-  color: #8c8780;
-  font-size: 18px;
+  color: #d1493a;
+  font-size: 30px;
+  font-weight: 700;
   line-height: 1;
 `;
 
@@ -140,3 +142,7 @@ export const PopupIcon = styled.img`
   object-fit: contain;
   flex-shrink: 0;
 `;
+
+// 선택지 앞에 붙는 그림의 크기. 팝업마다 44~56px로 제각각이었는데
+// 큰 쪽에 맞춰 통일했다. 새 선택지 목록을 만들면 이 값을 쓴다.
+export const CHOICE_ICON_SIZE = 56;

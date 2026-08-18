@@ -66,6 +66,15 @@ const buildMedications = (role, takenCount) => {
 };
 
 // role: 'parent' | 'child' / weeksAgo: 이번 주가 0, 지난 주가 1
+// 아침 질문+답변만 필요한 화면(질문함/MorningReport)을 위해 따로 뗐다.
+export function getMockMorningEntry({ role, weeksAgo, date }) {
+  const week = getMockWeek(role, weeksAgo);
+  if (!week) return null;
+  const index = dayIndexOf(date);
+  return (MORNING_BY_ROLE[role] ?? MORNING_BY_ROLE.parent)[index];
+}
+
+// role: 'parent' | 'child' / weeksAgo: 이번 주가 0, 지난 주가 1
 export function getMockDailyReport({ role, weeksAgo, date, personLabel, isMine }) {
   const week = getMockWeek(role, weeksAgo);
   if (!week) return null;
@@ -77,7 +86,7 @@ export function getMockDailyReport({ role, weeksAgo, date, personLabel, isMine }
   const activity = week.activity.daily[index];
   const takenCount = week.meds.daily[index];
 
-  const morning = (MORNING_BY_ROLE[role] ?? MORNING_BY_ROLE.parent)[index];
+  const morning = getMockMorningEntry({ role, weeksAgo, date });
   const medications = buildMedications(role, takenCount);
   const missed = medications.filter((item) => !item.taken);
 
