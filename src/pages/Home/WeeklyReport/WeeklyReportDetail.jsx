@@ -369,49 +369,56 @@ const DayJumpHint = styled.p`
 const DayJumpRow = styled.div`
   width: 100%;
   display: flex;
+  align-items: flex-start;
+  gap: 2px;
 `;
 
+// 별 크기가 화면 폭에 따라 달라져서 좌표를 고정하면 글자가 어긋난다.
+// 별을 감싼 상자를 기준으로 요일은 한가운데, 날짜는 그 아래로 흐르게 둔다.
 const DayButton = styled.button`
-  position: relative;
   flex: 1;
   min-width: 0;
-  height: 82px;
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+`;
+
+const StarWrap = styled.span`
+  position: relative;
+  width: 100%;
+  max-width: 52px;
+  aspect-ratio: 1;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
 `;
 
 const StarIcon = styled.img`
+  position: absolute;
+  inset: 0;
   width: 100%;
-  max-width: 56px;
-  aspect-ratio: 1;
+  height: 100%;
   object-fit: contain;
-  display: block;
-  margin: 0 auto;
 `;
 
 // 요일 글자는 별 그림 한가운데에 얹는다.
-// 별 크기(최대 56px)의 절반쯤에 오도록 잡았다.
 const DayButtonLabel = styled.span`
-  position: absolute;
-  top: 19px;
-  left: 0;
-  width: 100%;
-  text-align: center;
-  color: #4a3a2f;
-  font-family: Jua;
-  font-size: 16px;
-  line-height: 1;
-`;
-
-// 요일과 같은 계열로 맞추되, 별 아래로 충분히 띄워 겹치지 않게 한다.
-const DayButtonDate = styled.span`
-  position: absolute;
-  top: 62px;
-  left: 0;
-  width: 100%;
-  text-align: center;
+  position: relative;
   color: #4a3a2f;
   font-family: Jua;
   font-size: 15px;
   line-height: 1;
+`;
+
+const DayButtonDate = styled.span`
+  color: #4a3a2f;
+  font-family: Jua;
+  font-size: 13px;
+  line-height: 1;
+  white-space: nowrap;
 `;
 
 const StatusText = styled.p`
@@ -654,7 +661,7 @@ function WeeklyReportDetail() {
       <SectionDivider />
 
       <DayJumpCard>
-        <DayJumpHint>&lt; 하루하루의 건강기록을 확인해보세요 &gt;</DayJumpHint>
+        <DayJumpHint>하루하루의 건강기록을 확인해보세요</DayJumpHint>
         <DayJumpRow>
           {detail.condition.map((item, index) => (
             <DayButton
@@ -667,8 +674,10 @@ function WeeklyReportDetail() {
                 })
               }
             >
-              <StarIcon src={starIcon} alt="" />
-              <DayButtonLabel>{item.day}</DayButtonLabel>
+              <StarWrap>
+                <StarIcon src={starIcon} alt="" />
+                <DayButtonLabel>{item.day}</DayButtonLabel>
+              </StarWrap>
               <DayButtonDate>
                 {dayDates[index].getMonth() + 1}/{dayDates[index].getDate()}
               </DayButtonDate>
