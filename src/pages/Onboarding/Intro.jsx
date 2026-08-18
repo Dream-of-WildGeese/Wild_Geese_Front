@@ -40,7 +40,7 @@ const Intro = () => {
             <TextBox>
               <FeatureTitle>아침엔 가벼운 질문으로 연결돼요</FeatureTitle>
               <FeatureDescription>
-                가족이 같은 질문에 답하며 하루를 시작해요
+                같은 질문으로 가족이 하루를 시작해요
               </FeatureDescription>
             </TextBox>
           </Feature>
