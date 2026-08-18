@@ -28,6 +28,7 @@ import MedicineLogEditPopup from '../TodayOndam/Medicine/MedicineLogEditPopup';
 import EveningCheckPopup from '../TodayOndam/Night/EveningCheckPopup';
 import PhoneNumberPopup from '../../../components/PhoneNumberPopup';
 import { callPhone, getFamilyPhone } from '../../../utils/call';
+import { toDateString } from '../../../utils/medication';
 
 // Figma 31 / 31b: '오늘의 온담'이 '오늘의 건강일지'로 이름이 바뀌고
 // 타임라인 카드 형태로 재설계됐다.
@@ -169,6 +170,13 @@ const ChipValue = styled.span`
   font-weight: 700;
 `;
 
+// 컨디션 칩은 글자 대신 저녁 체크에서 고른 표정을 띄운다.
+const ChipFace = styled.img`
+  width: 38px;
+  height: 38px;
+  object-fit: contain;
+`;
+
 const InfoCard = styled.div`
   display: flex;
   align-items: center;
@@ -259,14 +267,6 @@ const EntryContent = styled.div`
   display: flex;
   flex-direction: column;
   gap: 8px;
-`;
-
-const EntryTime = styled.p`
-  margin: 0;
-  color: #a79c8e;
-  font-family: 'Noto Sans KR';
-  font-size: 16px;
-  font-weight: 500;
 `;
 
 const EntryCard = styled.div`
@@ -450,6 +450,11 @@ function TodayReport() {
 
   const isMine = person === 'me';
 
+  // 수정 팝업이 쓰는 API(/morning/today, /evening/today, 복약 기록)는 모두 '오늘'만
+  // 다룬다. 지난 날짜에서 수정을 열면 엉뚱하게 오늘 기록이 열리므로 버튼을 감춘다.
+  const isToday = !dateParam || dateParam === toDateString(new Date());
+  const canEdit = isMine && isToday;
+
   // 팝업을 닫으면 일지를 다시 불러와 방금 고친 내용을 반영한다.
   const closeEditor = () => {
     setEditing(null);
@@ -558,7 +563,15 @@ function TodayReport() {
             </SummaryChip>
             <SummaryChip>
               <ChipLabel>컨디션</ChipLabel>
-              <ChipValue>{report.summary.condition}</ChipValue>
+              {/* 저녁 체크 1번 답변을 표정으로 보여준다. 아직 안 했으면 '-' */}
+              {report.summary.conditionScore ? (
+                <ChipFace
+                  src={CONDITION_FACE[Math.round(report.summary.conditionScore)] ?? faceNormal}
+                  alt={report.summary.condition}
+                />
+              ) : (
+                <ChipValue>-</ChipValue>
+              )}
             </SummaryChip>
           </SummaryChips>
 
@@ -585,17 +598,17 @@ function TodayReport() {
 
           <SectionDivider />
 
+          {/* 작성 시각은 보여주지 않는다. 카드 제목만으로 아침·복약·저녁이 구분된다. */}
           {report.timeline.map((entry) => (
-            <TimelineEntry key={entry.time}>
+            <TimelineEntry key={entry.type}>
               <Rail />
               <EntryContent>
-                <EntryTime>{entry.time}</EntryTime>
                 <EntryCard>
                   <CardHead>
                     <CardHeadIcon src={ENTRY_ICONS[entry.type]} alt="" />
                     <CardTitle>{ENTRY_TITLES[entry.type]}</CardTitle>
-                    {/* 내 기록만 고칠 수 있다. 가족 기록은 보기만 한다 */}
-                    {isMine && (
+                    {/* 내 기록만, 그리고 오늘 것만 고칠 수 있다 */}
+                    {canEdit && (
                       <EditButton type="button" onClick={() => setEditing(entry.type)}>
                         수정
                       </EditButton>

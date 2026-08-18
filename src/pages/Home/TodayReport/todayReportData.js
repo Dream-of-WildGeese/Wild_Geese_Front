@@ -10,6 +10,9 @@ import { getMockDailyReport } from '../../../mock/dailyReport';
 
 const WEEKDAY_LABELS = ['일', '월', '화', '수', '목', '금', '토'];
 
+// 저녁 체크 질문 순서. 서버가 metricType을 안 실어줄 때 이 순서로 짚는다.
+const EVENING_ORDER = ['CONDITION', 'SLEEP', 'MEAL', 'ACTIVITY', 'CUSTOM'];
+
 const MEDICATION_COLORS = [
   { color: '#fcd9d9', textColor: '#d94040' },
   { color: '#fce5c7', textColor: '#d98c26' },
@@ -119,8 +122,10 @@ const buildTimeline = ({ dailyLog, question, medicationLog, medications }) => {
       time: formatTimeLabel('저녁', latestAnsweredAt(eveningAnswers)),
       // 아이콘은 화면 쪽에서 metricType으로 고른다. 컨디션은 choiceValue(1~3)로
       // 표정 아이콘을 고르므로 같이 넘긴다.
-      lines: eveningAnswers.map((answer) => ({
-        metricType: answer.metricType,
+      lines: eveningAnswers.map((answer, index) => ({
+        // 서버가 metricType을 안 실어줄 때가 있어서, 없으면 질문 순서로 채운다.
+        // 저녁 체크 질문 순서는 컨디션·수면·식사·활동·맞춤으로 고정이다.
+        metricType: answer.metricType ?? EVENING_ORDER[index] ?? 'CUSTOM',
         text: answer.textValue || answer.choiceValue || '',
         choiceValue: answer.choiceValue ?? null,
       })),
@@ -132,13 +137,15 @@ const buildTimeline = ({ dailyLog, question, medicationLog, medications }) => {
 
 // 화면 상단 요약 칩 3개. 컨디션은 저녁 건강체크의 CONDITION 답변을 그대로 쓴다.
 const buildSummary = (dailyLog, medicationLog) => {
-  const condition = (dailyLog?.eveningAnswers ?? []).find(
-    (answer) => answer.metricType === 'CONDITION',
-  );
+  const answers = dailyLog?.eveningAnswers ?? [];
+  // metricType이 없으면 첫 번째 답변이 컨디션이다(질문 순서 고정).
+  const condition = answers.find((answer) => answer.metricType === 'CONDITION') ?? answers[0];
   return {
     questionStatus: dailyLog?.morningAnswered ? '완료' : '아직',
     medication: medicationLog ? `${medicationLog.takenCount}/${medicationLog.totalCount}` : '-',
     condition: condition?.textValue || condition?.choiceValue || '-',
+    // 칩에 글자 대신 표정을 띄우려면 선택지 점수(1~3)가 필요하다.
+    conditionScore: condition?.choiceValue != null ? Number(condition.choiceValue) : null,
   };
 };
 

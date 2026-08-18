@@ -227,7 +227,8 @@ function DayQuestionPopup({ onClose }) {
       setSubmitError(failed);
       return;
     }
-    refetch();
+    // 가족 답변도 함께 갱신되도록 응답을 기다린 뒤 결과 화면으로 넘어간다.
+    await refetch();
     setStep('result');
   };
 
@@ -277,7 +278,9 @@ function DayQuestionPopup({ onClose }) {
 
           <AnswerCard>
             <Badge $mine>내 답변</Badge>
-            <AnswerText>{myAnswer || answer}</AnswerText>
+            {/* 방금 쓴 답을 먼저 보여준다. myAnswer를 앞에 두면 다시 답해도
+                서버 응답이 도착할 때까지 옛 답이 그대로 보인다. */}
+            <AnswerText>{answer || myAnswer}</AnswerText>
           </AnswerCard>
 
           {partnerAnswer ? (
