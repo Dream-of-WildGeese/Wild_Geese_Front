@@ -61,12 +61,17 @@ function Letterbox({ letters, loading, onMarkRead, onSent, onClose, initialStep 
   // 가족 조회 응답에는 이름이 없어서, 받은 편지의 보낸 사람 이름을 대신 쓴다.
   const recipientName = letters.find((letter) => letter.sender)?.sender ?? '';
 
-  const handleSend = async (content) => {
+  const handleSend = async (content, audioUrl) => {
     if (!recipient) {
       alert('편지를 보낼 가족이 아직 연결되지 않았어요.');
       return;
     }
-    const { ok, error } = await send({ toUserId: recipient.userId, content, inputType: 'TEXT' });
+    const { ok, error } = await send({
+      toUserId: recipient.userId,
+      content,
+      inputType: audioUrl ? 'VOICE' : 'TEXT',
+      audioUrl,
+    });
     if (!ok) {
       alert(error.message);
       return;
