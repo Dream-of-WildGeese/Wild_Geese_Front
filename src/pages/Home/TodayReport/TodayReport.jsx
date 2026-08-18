@@ -16,6 +16,9 @@ import mSleep from '../../../assets/journal/m-sleep.png';
 import mMeal from '../../../assets/journal/m-meal.png';
 import mActivity from '../../../assets/journal/m-activity.png';
 import mBody from '../../../assets/journal/m-body.png';
+import faceGood from '../../../assets/evening/face-good.png';
+import faceNormal from '../../../assets/evening/face-normal.png';
+import faceBad from '../../../assets/evening/face-bad.png';
 import { loadTodayReport } from './todayReportData';
 import { useApi } from '../../../hooks/useApi';
 import { useFamilyRelation } from '../../../hooks/useFamilyRelation';
@@ -39,6 +42,9 @@ const METRIC_ICONS = {
 };
 const ENTRY_ICONS = { question: sunIcon, medication: pillIcon, healthcheck: moonIcon };
 const ENTRY_TITLES = { question: '오늘의 질문', medication: '복약 체크', healthcheck: '건강 체크' };
+
+// 저녁 체크 1번(컨디션) 선택지는 3=좋았어요 … 1=힘들었어요 순으로 값이 클수록 좋다.
+const CONDITION_FACE = { 3: faceGood, 2: faceNormal, 1: faceBad };
 
 const Page = styled.div`
   position: relative;
@@ -389,6 +395,20 @@ const MiniBadgeIcon = styled.img`
   object-fit: contain;
 `;
 
+// 컨디션은 저녁 체크에서 고른 표정 하나만 크게 보여준다. 배지+문장을 같이 두면
+// 다른 지표들과 구분 없이 늘어서서 컨디션이 눈에 잘 안 들어왔다.
+const ConditionFaceRow = styled.div`
+  width: 100%;
+  display: flex;
+  justify-content: center;
+`;
+
+const ConditionFace = styled.img`
+  width: 56px;
+  height: 56px;
+  object-fit: contain;
+`;
+
 const SentenceText = styled.p`
   margin: 0;
   flex: 1;
@@ -474,14 +494,26 @@ function TodayReport() {
       );
     }
 
-    return entry.lines.map((line) => (
-      <SentenceLine key={line.text}>
-        <MiniBadge>
-          <MiniBadgeIcon src={METRIC_ICONS[line.metricType] ?? mBody} alt="" />
-        </MiniBadge>
-        <SentenceText>{line.text}</SentenceText>
-      </SentenceLine>
-    ));
+    return entry.lines.map((line, index) => {
+      // 컨디션은 저녁 체크에서 고른 표정 하나만 크게 보여준다.
+      if (line.metricType === 'CONDITION') {
+        const face = CONDITION_FACE[Math.round(Number(line.choiceValue))] ?? faceNormal;
+        return (
+          <ConditionFaceRow key={`${line.metricType}-${index}`}>
+            <ConditionFace src={face} alt={line.text} />
+          </ConditionFaceRow>
+        );
+      }
+
+      return (
+        <SentenceLine key={`${line.metricType}-${index}`}>
+          <MiniBadge>
+            <MiniBadgeIcon src={METRIC_ICONS[line.metricType] ?? mBody} alt="" />
+          </MiniBadge>
+          <SentenceText>{line.text}</SentenceText>
+        </SentenceLine>
+      );
+    });
   };
 
   return (

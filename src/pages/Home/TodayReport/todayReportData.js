@@ -48,22 +48,36 @@ const latestAnsweredAt = (items) =>
     return parseServerDate(item.answeredAt) > parseServerDate(latest) ? item.answeredAt : latest;
   }, null);
 
-// 서버는 복약 기록을 scheduleId 단위로 주므로, 약 이름을 붙이려면 복약 목록이 필요하다.
+// 서버는 복약 기록을 scheduleId 단위로 준다. 하루 여러 번 먹는 약은 스케줄마다
+// 로그가 따로 오는데, scheduleId 그대로 나열하면 같은 약 이름이 여러 번 찍히고
+// 한 번만 먹어도 꽃이 핀 것처럼 보인다. 약 단위로 묶어서, 그 약의 스케줄을
+// 전부 챙겼을 때만 꽃이 피게 한다. (기록 수정 팝업과 같은 규칙)
 const buildMedicationEntry = (medicationLog, medications) => {
   const logs = medicationLog?.medications ?? [];
   if (logs.length === 0) return null;
 
-  const nameBySchedule = new Map();
+  const medicationBySchedule = new Map();
   medications.forEach((medication) => {
     (medication.schedules ?? []).forEach((schedule) => {
-      nameBySchedule.set(schedule.scheduleId, medication.name);
+      medicationBySchedule.set(schedule.scheduleId, medication);
     });
   });
 
-  const items = logs.map((log, index) => ({
-    scheduleId: log.scheduleId,
-    name: nameBySchedule.get(log.scheduleId) ?? '복용약',
-    taken: log.status === 'TAKEN',
+  const groups = new Map();
+  logs.forEach((log) => {
+    const medication = medicationBySchedule.get(log.scheduleId);
+    const key = medication?.medicationId ?? log.scheduleId;
+    if (!groups.has(key)) {
+      groups.set(key, { name: medication?.name ?? '복용약', total: 0, taken: 0 });
+    }
+    const group = groups.get(key);
+    group.total += 1;
+    if (log.status === 'TAKEN') group.taken += 1;
+  });
+
+  const items = [...groups.values()].map((group, index) => ({
+    name: group.name,
+    taken: group.taken === group.total,
     ...MEDICATION_COLORS[index % MEDICATION_COLORS.length],
   }));
 
@@ -103,10 +117,12 @@ const buildTimeline = ({ dailyLog, question, medicationLog, medications }) => {
     timeline.push({
       type: 'healthcheck',
       time: formatTimeLabel('저녁', latestAnsweredAt(eveningAnswers)),
-      // 아이콘은 화면 쪽에서 metricType으로 고른다.
+      // 아이콘은 화면 쪽에서 metricType으로 고른다. 컨디션은 choiceValue(1~3)로
+      // 표정 아이콘을 고르므로 같이 넘긴다.
       lines: eveningAnswers.map((answer) => ({
         metricType: answer.metricType,
         text: answer.textValue || answer.choiceValue || '',
+        choiceValue: answer.choiceValue ?? null,
       })),
     });
   }
@@ -176,8 +192,10 @@ export async function loadTodayReport(person, dateString = null) {
     getMorningHistory({ from: recordDate, to: recordDate }).catch(() => []),
   ]);
 
+  const personLabel = isMe ? '나' : getRelationLabel(partner);
+
   return {
-    personLabel: isMe ? '나' : getRelationLabel(partner),
+    personLabel,
     dateLabel: formatDateLabel(date),
     summary: buildSummary(dailyLog, medicationLog),
     aiComment: dailyLog?.summaryText ?? '',
@@ -193,7 +211,8 @@ export async function loadTodayReport(person, dateString = null) {
     cta: isMe
       ? null
       : {
-          title: '이제 가족과 안부를 나눠볼까요?',
+          // '가족'이라고만 하면 누구인지 모호해서, 관계 호칭을 그대로 넣는다.
+          title: `이제 ${personLabel}와 안부를 나눠볼까요?`,
           suggestedMessage: dailyLog?.summaryText
             ? `"${dailyLog.summaryText}"`
             : '"오늘 하루는 어떠셨어요?"',

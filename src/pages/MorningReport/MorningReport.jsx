@@ -124,6 +124,13 @@ const Page = styled.div`
   padding: 20px 20px 24px;
   background: ${({ theme }) => theme.colors.reportBg};
   box-sizing: border-box;
+
+  /* 다른 화면들과 맞춰 스크롤바를 숨긴다. 폰 프레임 안이라 막대가 보이면 눈에 띈다. */
+  scrollbar-width: none;
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
 `;
 
 const Divider = styled.div`
