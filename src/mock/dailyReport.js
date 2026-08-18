@@ -97,6 +97,7 @@ export function getMockDailyReport({ role, weeksAgo, date, personLabel, isMine }
       questionStatus: '완료',
       medication: `${takenCount}/${week.meds.perDay}`,
       condition: CONDITION_TEXT[condition] ?? '-',
+      conditionScore: condition ?? null,
     },
     aiComment: '',
     eveningComment: '',

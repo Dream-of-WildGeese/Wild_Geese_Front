@@ -169,6 +169,13 @@ const ChipValue = styled.span`
   font-weight: 700;
 `;
 
+// 컨디션 칩은 글자 대신 저녁 체크에서 고른 표정을 띄운다.
+const ChipFace = styled.img`
+  width: 38px;
+  height: 38px;
+  object-fit: contain;
+`;
+
 const InfoCard = styled.div`
   display: flex;
   align-items: center;
@@ -259,14 +266,6 @@ const EntryContent = styled.div`
   display: flex;
   flex-direction: column;
   gap: 8px;
-`;
-
-const EntryTime = styled.p`
-  margin: 0;
-  color: #a79c8e;
-  font-family: 'Noto Sans KR';
-  font-size: 16px;
-  font-weight: 500;
 `;
 
 const EntryCard = styled.div`
@@ -558,7 +557,15 @@ function TodayReport() {
             </SummaryChip>
             <SummaryChip>
               <ChipLabel>컨디션</ChipLabel>
-              <ChipValue>{report.summary.condition}</ChipValue>
+              {/* 저녁 체크 1번 답변을 표정으로 보여준다. 아직 안 했으면 '-' */}
+              {report.summary.conditionScore ? (
+                <ChipFace
+                  src={CONDITION_FACE[Math.round(report.summary.conditionScore)] ?? faceNormal}
+                  alt={report.summary.condition}
+                />
+              ) : (
+                <ChipValue>-</ChipValue>
+              )}
             </SummaryChip>
           </SummaryChips>
 
@@ -585,11 +592,11 @@ function TodayReport() {
 
           <SectionDivider />
 
+          {/* 작성 시각은 보여주지 않는다. 카드 제목만으로 아침·복약·저녁이 구분된다. */}
           {report.timeline.map((entry) => (
-            <TimelineEntry key={entry.time}>
+            <TimelineEntry key={entry.type}>
               <Rail />
               <EntryContent>
-                <EntryTime>{entry.time}</EntryTime>
                 <EntryCard>
                   <CardHead>
                     <CardHeadIcon src={ENTRY_ICONS[entry.type]} alt="" />
