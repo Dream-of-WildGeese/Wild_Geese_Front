@@ -203,17 +203,42 @@ async function resolveCurrentWeek(fetched, role, weekStartDate) {
 
   if (hasRecords(fetched) || built) {
     const base = fetched ?? {};
+
+    // 아직 한 주가 안 끝났는데 서버는 '이번 주 35번 중 30번 챙기셨어요' 같은
+    // 완결된 문장을 준다. 지표 코멘트도 '데이터를 확인해보세요.' 고정 문구다.
+    // 진행 중이라는 게 드러나도록 여기서 바꿔 쓴다.
+    const progressNote = `${days}일치까지 담겼어요. 일요일에 이번 주 리포트가 만들어져요.`;
+    const meds = base.medication ?? {};
+
     return {
       ...base,
       inProgress: true,
-      metrics: built
-        ? Object.fromEntries(
-            EVENING_ORDER.map((metric) => [
-              metric,
-              { ...(base.metrics?.[metric] ?? {}), daily: built[metric] },
-            ]),
-          )
-        : base.metrics,
+      weeklyComment: '이번 주는 아직 쌓이는 중이에요',
+      weeklyDetail: progressNote,
+      // 다음 주 제안·AI 코멘트는 한 주가 끝나야 의미가 있어서 진행 중엔 감춘다.
+      nextWeekSuggestion: '',
+      aiCoachInsight: '',
+      metrics: Object.fromEntries(
+        EVENING_ORDER.map((metric) => {
+          const daily = built ? built[metric] : (base.metrics?.[metric]?.daily ?? []);
+          const recorded = daily.filter((value) => value != null).length;
+          return [
+            metric,
+            {
+              ...(base.metrics?.[metric] ?? {}),
+              daily,
+              comment: recorded > 0 ? `지금까지 ${recorded}일 기록했어요.` : '아직 기록이 없어요.',
+            },
+          ];
+        }),
+      ),
+      medication: {
+        ...meds,
+        comment:
+          (meds.totalCount ?? 0) > 0
+            ? `지금까지 ${meds.totalCount}번 중 ${meds.takenCount}번 챙기셨어요.`
+            : '아직 복약 기록이 없어요.',
+      },
     };
   }
 
