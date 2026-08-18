@@ -98,11 +98,13 @@ const InviteCode = () => {
         <Section>
           <SectionTitleWrap>
             <Heart src={heart} alt="" />
-            <SectionTitle>1단계. 가족 연결</SectionTitle>
+            <SectionTextWrap>
+              <SectionTitle>1단계. 가족 연결</SectionTitle>
+              <SectionDescription>
+                가족과 서로의 하루를 자연스럽게 나누어 보세요.
+              </SectionDescription>
+            </SectionTextWrap>
           </SectionTitleWrap>
-          <SectionDescription>
-             가족과 서로의 하루를 자연스럽게 나누어 보세요.
-          </SectionDescription>
 
 
           <CodeBox>
@@ -118,7 +120,7 @@ const InviteCode = () => {
 
             <CodeHelp>
               {inviteCode
-                ? '가족에게 초대 코드를 공유해주세요.'
+                ? '가족에게 초대 코드를 공유해주세요'
                 : '아직 발급된 코드가 없어요. 아래에서 가족 코드를 입력해 연결할 수 있어요.'}
             </CodeHelp>
           </CodeBox>
@@ -129,8 +131,8 @@ const InviteCode = () => {
             <span>가족에게 받은 코드가 있으신가요?</span>
           </OrSection>
 
-          <CodeInputBox>
-            <InputTitle>받은 코드 입력하기</InputTitle>
+          <CodeBox>
+            <CodeLabel>받은 코드 입력하기</CodeLabel>
 
             <CodeInput
               value={code}
@@ -143,9 +145,9 @@ const InviteCode = () => {
             </ConfirmButton>
 
             <HelpText>
-              가족이 수락하면 자동으로 다음으로 넘어가요
+              가족의 초대코드를 입력하면 다음으로 넘어가요
             </HelpText>
-          </CodeInputBox>
+          </CodeBox>
         </Section>
       </Content>
     </Page>
@@ -284,34 +286,43 @@ const Section = styled.section`
 
 const SectionTitleWrap = styled.div`
   display: flex;
-  align-items: center;
+  align-items: flex-start; /* 하트 아이콘을 상단 기준으로 맞춤 */
   gap: 12px;
-  margin-top: 26px;
+  margin-top: 2px;
 `;
 
 const Heart = styled.img`
   width: 32px;
   height: 32px;
+  flex-shrink: 0;
+  margin-top: 2px; /* 제목 폰트 높이에 맞춰 자연스럽게 보정 */
+`;
+
+
+const SectionTextWrap = styled.div`
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
 `;
 
 const SectionTitle = styled.h2`
   margin: 0;
-color: #4A3A2F;
-font-family: Jua;
-font-size: 28px;
-font-style: normal;
-font-weight: 400;
-line-height: normal;
+  color: #4A3A2F;
+  font-family: Jua;
+  font-size: 28px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
 `;
 
 const SectionDescription = styled.p`
-  margin: 0 0 0;
-color:  #A79C8E;
-font-family: "Noto Sans KR";
-font-size: 18px;
-font-style: normal;
-font-weight: 400;
-line-height: normal;
+  margin: 0 0 0; 
+  color: #A79C8E;
+  font-family: "Noto Sans KR";
+  font-size: 16px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
 `;
 
 
@@ -436,23 +447,6 @@ line-height: normal;
 
 
 
-const CodeInputBox = styled.div`
-  margin-top: 0;
-
-  min-height: 210px;
-  padding: 22px 20px 20px;
-
-  display: flex;
-  flex-direction: column;
-  align-items: stretch;
-  gap: 10px;
-
-  border-radius: 18px;
-  border: 1.3px solid rgba(74, 58, 47, 0.4);
-  background: rgba(255, 255, 255, 0.55);
-
-  box-sizing: border-box;
-`;
 
 const CodeInput = styled.input`
   width: 100%;

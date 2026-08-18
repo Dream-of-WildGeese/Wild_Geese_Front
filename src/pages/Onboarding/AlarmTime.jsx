@@ -1,4 +1,4 @@
- import React, { useState } from 'react';
+import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import styled from 'styled-components';
 import alarmSun from '../../assets/onboarding/alarm-sun.svg';
@@ -14,7 +14,6 @@ import { formatAlarmTime } from '../Home/Setting/settingsUtils';
 import { getMedications } from '../../api/medication';
 import { useApi } from '../../hooks/useApi';
 
-
 const AlarmTime = () => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -25,10 +24,17 @@ const AlarmTime = () => {
   const [morningTime, setMorningTime] = useState(data.alarms.morning);
   const [eveningTime, setEveningTime] = useState(data.alarms.evening);
   const { execute: saveSetting, loading: saving } = useApiAction(updateNotificationSetting);
-  // 어떤 시각을 편집 중인지 ('morning' | 'evening' | null)
   const [timeEditor, setTimeEditor] = useState(null);
 
-  // 서버는 알림 on/off와 시각을 한 번에 받으므로, 온보딩 기본값(전부 켜짐)과 함께 보낸다.
+  // 시간 문자열('08:00', '13:30' 등)을 이른 시간순으로 정렬하는 헬퍼 함수
+  const sortSchedules = (schedules = []) => {
+    return [...schedules].sort((a, b) => {
+      const timeA = a.scheduledTime || '';
+      const timeB = b.scheduledTime || '';
+      return timeA.localeCompare(timeB);
+    });
+  };
+
   const handleComplete = async () => {
     const { ok, error } = await saveSetting({
       morningTime,
@@ -72,12 +78,13 @@ const AlarmTime = () => {
         <Section>
           <SectionTitleWrap>
             <Heart src={heart} alt="" />
-            <SectionTitle>3단계. 알림시간</SectionTitle>
+            <SectionTextWrap>
+              <SectionTitle>3단계. 알림시간</SectionTitle>
+              <SectionDesc>
+                편한 시간에 안부를 나눌 수 있도록 맞춰드려요
+              </SectionDesc>
+            </SectionTextWrap>
           </SectionTitleWrap>
-
-          <SectionDesc>
-            편한 시간에 안부를 나눌 수 있도록 맞춰드려요
-          </SectionDesc>
 
           <ScrollArea>
             <Card>
@@ -118,34 +125,43 @@ const AlarmTime = () => {
               </TimeButton>
             </Card>
 
+            {/* 깔끔하게 개편된 복약알림 칩 카드 */}
             <Card>
               <MedicineHeader>
                 <ClockIcon src={clock} alt="" />
-                <CardTitle>복약알림</CardTitle>
-                <ClockIcon src={clock} alt="" />
+                <CardTitle>복약 알림 목록</CardTitle>
               </MedicineHeader>
 
-              <MedicineText>
+              <MedicineList>
                 {(medicationList ?? []).length > 0 ? (
-                  medicationList.map((med) => (
-                    <MedicineItem key={med.medicationId}>
-                      -{med.name} :{" "}
-                      {med.schedules
-                        .map((schedule) => formatAlarmTime(schedule.scheduledTime))
-                        .join(', ')}
-                    </MedicineItem>
-                  ))
+                  medicationList.map((med) => {
+                    const sorted = sortSchedules(med.schedules);
+                    return (
+                      <MedicineRow key={med.medicationId}>
+                        <MedNameBadge>{med.name}</MedNameBadge>
+                        <TimeChipGroup>
+                          {sorted.map((schedule, idx) => (
+                            <TimeChip key={idx}>
+                              {formatAlarmTime(schedule.scheduledTime)}
+                            </TimeChip>
+                          ))}
+                        </TimeChipGroup>
+                      </MedicineRow>
+                    );
+                  })
                 ) : (
-                  '등록된 복용약이 없어요'
+                  <EmptyMedicineText>등록된 복용약이 없어요</EmptyMedicineText>
                 )}
-              </MedicineText>
+              </MedicineList>
             </Card>
           </ScrollArea>
+        </Section>
+
+        <ButtonArea>
           <StartButton onClick={handleComplete} disabled={saving}>
             {saving ? '저장 중...' : '완료'}
           </StartButton>
-        </Section>
-
+        </ButtonArea>
       </Content>
 
       {timeEditor && (
@@ -166,6 +182,8 @@ const AlarmTime = () => {
 
 export default AlarmTime;
 
+/* ---------------- Layout & Styling ---------------- */
+
 const Page = styled.div`
   width: calc(100% + 32px);
   height: 100%;
@@ -175,14 +193,11 @@ const Page = styled.div`
 
 const Content = styled.div`
   position: relative;
-
   max-width: 402px;
   height: 100%;
   margin: 0 auto;
-
   padding: 86px 20px 30px;
   box-sizing: border-box;
-
   display: flex;
   flex-direction: column;
 `;
@@ -192,15 +207,12 @@ const BackButton = styled.button`
   top: 35px;
   left: 24px;
   z-index: 10;
-
   width: 40px;
   height: 40px;
-
   border: none;
   padding: 0;
   background: transparent;
   cursor: pointer;
-
   display: flex;
   justify-content: center;
   align-items: center;
@@ -212,8 +224,8 @@ const BackIcon = styled.img`
 `;
 
 const Header = styled.div`
+  width: 100%;
   height: 40px;
-
   display: flex;
   justify-content: center;
   align-items: center;
@@ -221,7 +233,6 @@ const Header = styled.div`
 
 const Title = styled.h1`
   margin: 0;
-
   color: #4A3A2F;
   font-family: Jua;
   font-size: 40px;
@@ -238,23 +249,21 @@ const Progress = styled.div`
   flex: 1;
   height: 6px;
   border-radius: 999px;
-  background: ${({ $active }) => ($active ? '#DBE4A1' : '#DBE4A1')};
+  background: #CBD879;
 `;
 
 const ProgressText = styled.p`
-  margin: 8px 0 0;
-
+  margin: 7px 0 0;
   text-align: center;
-
   color: #A79C8E;
-  font-family: "Noto Sans KR";
+  font-family: 'Noto Sans KR';
   font-size: 16px;
+  font-weight: 400;
 `;
 
 const Section = styled.section`
   flex: 1;
-  margin-top: 20px;
-
+  margin-top: 12px;
   display: flex;
   flex-direction: column;
   min-height: 0;
@@ -262,39 +271,47 @@ const Section = styled.section`
 
 const SectionTitleWrap = styled.div`
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 12px;
+  margin-top: 26px;
 `;
 
 const Heart = styled.img`
   width: 32px;
   height: 32px;
+  flex-shrink: 0;
+  margin-top: 2px;
+`;
+
+const SectionTextWrap = styled.div`
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
 `;
 
 const SectionTitle = styled.h2`
   margin: 0;
-color: #4A3A2F;
-font-family: Jua;
-font-size: 28px;
-font-style: normal;
-font-weight: 400;
-line-height: normal;
+  color: #4A3A2F;
+  font-family: Jua;
+  font-size: 28px;
+  font-weight: 400;
+  line-height: normal;
 `;
 
 const SectionDesc = styled.p`
-  margin: 0 0 0;
+  margin: 4px 0 0;
   color: #A79C8E;
-  font-family: "Noto Sans KR";
-  font-size: 18px;
+  font-family: 'Noto Sans KR';
+  font-size: 16px;
+  font-weight: 400;
+  line-height: normal;
 `;
 
 const ScrollArea = styled.div`
   flex: 1;
   overflow-y: auto;
   min-height: 0;
-
-  margin-top: 22px;
-
+  margin-top: 18px;
   display: flex;
   flex-direction: column;
   gap: 16px;
@@ -306,10 +323,9 @@ const ScrollArea = styled.div`
 
 const Card = styled.div`
   padding: 18px;
-
   border-radius: 18px;
-  border: 1.3px solid rgba(74,58,47,.4);
-  background: rgba(255,255,255,.55);
+  border: 1.3px solid rgba(74, 58, 47, 0.4);
+  background: rgba(255, 255, 255, 0.55);
 `;
 
 const CardHeader = styled.div`
@@ -338,9 +354,8 @@ const ClockIcon = styled.img`
 
 const CardTitle = styled.h3`
   margin: 0;
-
   color: #4A3A2F;
-  font-family: "Noto Sans KR";
+  font-family: 'Noto Sans KR';
   font-size: 16px;
   font-weight: 700;
 `;
@@ -348,79 +363,111 @@ const CardTitle = styled.h3`
 const CardDescBox = styled.div`
   margin-top: 12px;
   padding: 12px 14px;
-
   border-radius: 12px;
-  background: rgba(219,228,161,.25);
-
+  background: rgba(219, 228, 161, 0.25);
   color: #4A3A2F;
-  font-family: "Noto Sans KR";
+  font-family: 'Noto Sans KR';
   font-size: 13px;
   line-height: 1.45;
 `;
 
-// 브라우저 기본 <input type="time"> 대신 앱 톤에 맞춘 모달을 띄우는 버튼.
 const TimeButton = styled.button`
   width: 100%;
   height: 50px;
-
   margin-top: 12px;
   padding: 0 16px;
-
   box-sizing: border-box;
-
   border-radius: 14px;
-  border: 1.3px solid rgba(74,58,47,.4);
-  background: rgba(255,255,255,.8);
-
+  border: 1.3px solid rgba(74, 58, 47, 0.4);
+  background: rgba(255, 255, 255, 0.8);
   color: #4A3A2F;
-  font-family: "Noto Sans KR";
+  font-family: 'Noto Sans KR';
   font-size: 16px;
   font-weight: 700;
-
   text-align: left;
   cursor: pointer;
 `;
 
+/* ---------------- 복약알림 칩 디자인 영역 ---------------- */
+
 const MedicineHeader = styled.div`
   display: flex;
-  justify-content: center;
   align-items: center;
   gap: 8px;
+  margin-bottom: 14px;
 `;
 
-const MedicineText = styled.div`
-  margin: 12px 8px 0;
+const MedicineList = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+`;
 
-  text-align: left;
+const MedicineRow = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.6);
+  border: 1px solid rgba(74, 58, 47, 0.15);
+`;
 
+const MedNameBadge = styled.span`
+  align-self: flex-start;
   color: #4A3A2F;
-  font-family: "Noto Sans KR";
-  font-size: 14px;
+  font-family: 'Noto Sans KR';
+  font-size: 15px;
   font-weight: 700;
 `;
 
-const MedicineItem = styled.div`
-  margin-bottom: 8px;
-
-  &:last-child {
-    margin-bottom: 0;
-  }
+const TimeChipGroup = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
 `;
+
+const TimeChip = styled.span`
+  display: inline-flex;
+  align-items: center;
+  height: 28px;
+  padding: 0 10px;
+  border-radius: 14px;
+  background: #F6EBC7;
+  border: 1px solid rgba(74, 58, 47, 0.35);
+  color: #4A3A2F;
+  font-family: 'Noto Sans KR';
+  font-size: 13px;
+  font-weight: 600;
+`;
+
+const EmptyMedicineText = styled.p`
+  margin: 10px 0 0;
+  text-align: center;
+  color: #A79C8E;
+  font-family: 'Noto Sans KR';
+  font-size: 14px;
+  font-weight: 500;
+`;
+
+/* ---------------- Button ---------------- */
+
+const ButtonArea = styled.div`
+  margin-top: auto;
+  padding-top: 16px;
+`;
+
 const StartButton = styled.button`
   width: 100%;
   height: 56px;
-
-  margin-top: 16px;
   flex-shrink: 0;
-
   border-radius: 16px;
-  border: 1.5px solid rgba(74,58,47,.55);
+  border: 1.5px solid rgba(74, 58, 47, 0.55);
   background: #CBD879;
-color: #4A3A2F;
-text-align: center;
-font-family: Jua;
-font-size: 18px;
-font-style: normal;
-font-weight: 400;
-line-height: normal;
+  color: #4A3A2F;
+  text-align: center;
+  font-family: Jua;
+  font-size: 18px;
+  font-weight: 400;
+  cursor: pointer;
 `;

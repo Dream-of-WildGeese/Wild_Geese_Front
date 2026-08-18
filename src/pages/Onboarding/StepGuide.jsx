@@ -41,7 +41,7 @@ const StepGuide = () => {
                 <HeartIcon src={heart} alt="" />
                 <StepText>
                     <StepTitle>2단계. 건강 프로필</StepTitle>
-                    <StepDescription>정보를 바탕으로 꼭 맞는 건강체크를 도와드려요</StepDescription>
+                    <StepDescription>정보를 바탕으로 건강체크를 도와드려요</StepDescription>
                 </StepText>
                 </Step>
                 <ArrowIcon src={arrow} alt="" />

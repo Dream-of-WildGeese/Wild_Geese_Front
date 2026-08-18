@@ -84,7 +84,7 @@ const Content = styled.div`
   height: 100%;
   min-height: 100%;
   margin: 0 auto;
-  padding: 104px 24px 30px;
+  padding: 104px 20px 30px;
   box-sizing: border-box;
 
   display: flex;
