@@ -192,12 +192,14 @@ function SettingsMain() {
     const nextValue = !setting[key];
 
     // 알림을 ON할 때만 브라우저 Web Push 구독을 준비한다.
+    // 이미 구독이 있는 상태에서 다시 구독을 시도하면 서버가 에러를 낼 수 있는데,
+    // 그렇다고 여기서 멈추면 설정 저장까지 취소돼서 토글이 다시는 안 켜진다.
+    // 구독 실패는 알려주기만 하고, 알림 설정 자체는 그대로 저장한다.
     if (nextValue) {
       try {
         await enablePush();
       } catch (error) {
-        alert(error.message);
-        return;
+        alert(`${error.message}\n알림 설정은 저장했지만, 실제 알림은 오지 않을 수 있어요.`);
       }
     }
     await applyChange({ [key]: nextValue });
