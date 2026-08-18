@@ -20,9 +20,18 @@ const MEDICATION_COLORS = [
 const formatDateLabel = (date) =>
   `${date.getMonth() + 1}월 ${date.getDate()}일 ${WEEKDAY_LABELS[date.getDay()]}요일`;
 
+// 서버가 타임존 표시(Z 또는 +09:00 등) 없이 시각을 내려줄 때가 있는데, 그 값은
+// 사실 UTC라서 그냥 new Date로 읽으면 브라우저 로컬(KST) 시간으로 잘못 해석돼
+// 9시간 이르게 보인다. 타임존 표시가 없으면 UTC로 보고 'Z'를 붙여서 읽는다.
+const HAS_TIMEZONE = /Z$|[+-]\d{2}:?\d{2}$/;
+const parseServerDate = (isoString) => {
+  const normalized = HAS_TIMEZONE.test(isoString) ? isoString : `${isoString}Z`;
+  return new Date(normalized);
+};
+
 const formatTimeLabel = (prefix, isoString) => {
   if (!isoString) return prefix;
-  const date = new Date(isoString);
+  const date = parseServerDate(isoString);
   if (Number.isNaN(date.getTime())) return prefix;
 
   const hour = date.getHours();
@@ -30,6 +39,14 @@ const formatTimeLabel = (prefix, isoString) => {
   const displayHour = hour % 12 === 0 ? 12 : hour % 12;
   return `${prefix} · ${period} ${displayHour}:${String(date.getMinutes()).padStart(2, '0')}`;
 };
+
+// 여러 항목(저녁 답변들)의 시각 중 가장 나중 것 — '최종 업데이트 시간'으로 보여준다.
+const latestAnsweredAt = (items) =>
+  items.reduce((latest, item) => {
+    if (!item.answeredAt) return latest;
+    if (!latest) return item.answeredAt;
+    return parseServerDate(item.answeredAt) > parseServerDate(latest) ? item.answeredAt : latest;
+  }, null);
 
 // 서버는 복약 기록을 scheduleId 단위로 주므로, 약 이름을 붙이려면 복약 목록이 필요하다.
 const buildMedicationEntry = (medicationLog, medications) => {
@@ -85,7 +102,7 @@ const buildTimeline = ({ dailyLog, question, medicationLog, medications }) => {
   if (eveningAnswers.length > 0) {
     timeline.push({
       type: 'healthcheck',
-      time: formatTimeLabel('저녁', eveningAnswers[0].answeredAt),
+      time: formatTimeLabel('저녁', latestAnsweredAt(eveningAnswers)),
       // 아이콘은 화면 쪽에서 metricType으로 고른다.
       lines: eveningAnswers.map((answer) => ({
         metricType: answer.metricType,

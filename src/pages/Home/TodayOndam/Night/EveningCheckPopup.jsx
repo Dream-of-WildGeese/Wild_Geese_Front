@@ -330,80 +330,85 @@ function EveningCheckPopup({ onClose, onCompleted, onAlreadyDone, forceEdit = fa
     );
   }
 
+  // TodayReport의 '수정'처럼 스크롤되는 페이지 안에서 열릴 때도 폰 프레임 기준으로
+  // 뜨도록 PopupPortal로 감싼다. 이걸 빼먹으면 그 페이지의 스크롤 위치에 따라
+  // 팝업이 화면 밖이나 엉뚱한 곳에 걸쳐 보이는 레이아웃 깨짐이 생긴다.
   return (
-    <Backdrop onClick={onClose}>
-      <Card onClick={(event) => event.stopPropagation()}>
-        <InnerBorder />
-        <CloseButton type="button" aria-label="닫기" onClick={onClose}>
-          ✕
-        </CloseButton>
+    <PopupPortal>
+      <Backdrop onClick={onClose}>
+        <Card onClick={(event) => event.stopPropagation()}>
+          <InnerBorder />
+          <CloseButton type="button" aria-label="닫기" onClick={onClose}>
+            ✕
+          </CloseButton>
 
-        <BadgeRow>
-          <ProgressBadge>
-            {stepIndex + 1} / {totalSteps}
-          </ProgressBadge>
-          {isLastStep && <ProgressBadge>마지막 질문이에요</ProgressBadge>}
-        </BadgeRow>
+          <BadgeRow>
+            <ProgressBadge>
+              {stepIndex + 1} / {totalSteps}
+            </ProgressBadge>
+            {isLastStep && <ProgressBadge>마지막 질문이에요</ProgressBadge>}
+          </BadgeRow>
 
-        <Title>{question.content}</Title>
-        {isVoiceStep && <Subtitle>등록하신 건강정보에 맞춰서 준비했어요</Subtitle>}
+          <Title>{question.content}</Title>
+          {isVoiceStep && <Subtitle>등록하신 건강정보에 맞춰서 준비했어요</Subtitle>}
 
-        {isVoiceStep ? (
-          <>
-            {/* 눌러서 녹음 → 다시 눌러 정지 → 서버 STT로 변환된 텍스트가 아래 칸에 채워진다 */}
-            <VoiceButton
+          {isVoiceStep ? (
+            <>
+              {/* 눌러서 녹음 → 다시 눌러 정지 → 서버 STT로 변환된 텍스트가 아래 칸에 채워진다 */}
+              <VoiceButton
+                type="button"
+                onClick={voice.toggle}
+                disabled={!voice.supported || voice.busy}
+                $recording={voice.recording}
+              >
+                <MicCircle $recording={voice.recording}>●</MicCircle>
+                <VoiceLabel>
+                  {!voice.supported
+                    ? '이 브라우저는 녹음을 지원하지 않아요'
+                    : voice.busy
+                      ? '옮겨 적는 중이에요...'
+                      : voice.recording
+                        ? '듣고 있어요. 다 말씀하시면 눌러주세요'
+                        : '눌러서 말해보세요'}
+                </VoiceLabel>
+              </VoiceButton>
+              {voice.error && <VoiceError>{voice.error.message}</VoiceError>}
+              <NoteInput
+                placeholder="또는 직접 적어주세요"
+                value={note}
+                onChange={(event) => setNote(event.target.value)}
+              />
+            </>
+          ) : (
+            choices.map((choice, optionIndex) => (
+              <Option
+                key={choice.label}
+                type="button"
+                $selected={answers[question.questionId] === optionIndex}
+                onClick={() => selectOption(optionIndex)}
+              >
+                <OptionIcon src={FACE_BY_INDEX[optionIndex] ?? faceNormal} alt="" />
+                {choice.label}
+              </Option>
+            ))
+          )}
+
+          {isLastStep ? (
+            <PrimaryButton type="button" onClick={handleFinish} disabled={submitting}>
+              {submitting ? '저장 중...' : '오늘 기록 완료'}
+            </PrimaryButton>
+          ) : (
+            <PrimaryButton
               type="button"
-              onClick={voice.toggle}
-              disabled={!voice.supported || voice.busy}
-              $recording={voice.recording}
+              disabled={answers[question.questionId] == null}
+              onClick={() => setStepIndex(stepIndex + 1)}
             >
-              <MicCircle $recording={voice.recording}>●</MicCircle>
-              <VoiceLabel>
-                {!voice.supported
-                  ? '이 브라우저는 녹음을 지원하지 않아요'
-                  : voice.busy
-                    ? '옮겨 적는 중이에요...'
-                    : voice.recording
-                      ? '듣고 있어요. 다 말씀하시면 눌러주세요'
-                      : '눌러서 말해보세요'}
-              </VoiceLabel>
-            </VoiceButton>
-            {voice.error && <VoiceError>{voice.error.message}</VoiceError>}
-            <NoteInput
-              placeholder="또는 직접 적어주세요"
-              value={note}
-              onChange={(event) => setNote(event.target.value)}
-            />
-          </>
-        ) : (
-          choices.map((choice, optionIndex) => (
-            <Option
-              key={choice.label}
-              type="button"
-              $selected={answers[question.questionId] === optionIndex}
-              onClick={() => selectOption(optionIndex)}
-            >
-              <OptionIcon src={FACE_BY_INDEX[optionIndex] ?? faceNormal} alt="" />
-              {choice.label}
-            </Option>
-          ))
-        )}
-
-        {isLastStep ? (
-          <PrimaryButton type="button" onClick={handleFinish} disabled={submitting}>
-            {submitting ? '저장 중...' : '오늘 기록 완료'}
-          </PrimaryButton>
-        ) : (
-          <PrimaryButton
-            type="button"
-            disabled={answers[question.questionId] == null}
-            onClick={() => setStepIndex(stepIndex + 1)}
-          >
-            다음
-          </PrimaryButton>
-        )}
-      </Card>
-    </Backdrop>
+              다음
+            </PrimaryButton>
+          )}
+        </Card>
+      </Backdrop>
+    </PopupPortal>
   );
 }
 
