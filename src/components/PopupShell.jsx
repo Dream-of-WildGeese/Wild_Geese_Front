@@ -55,10 +55,12 @@ export const PopupInnerBorder = styled.div`
   pointer-events: none;
 `;
 
+// 어르신도 바로 찾을 수 있게 크고 빨갛게 둔다.
 export const PopupClose = styled.button`
   align-self: flex-start;
-  color: #8c8780;
-  font-size: 18px;
+  color: #d1493a;
+  font-size: 30px;
+  font-weight: 700;
   line-height: 1;
 `;
 

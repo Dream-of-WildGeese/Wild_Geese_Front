@@ -30,18 +30,20 @@ import MedicineLogEditPopup from './MedicineLogEditPopup';
 const MEAL_TYPE_BY_LABEL = { 아침: 'BREAKFAST', 점심: 'LUNCH', 저녁: 'DINNER' };
 const MED_FLOWERS = [medFlowerA, medFlowerB];
 
+// 식사 행은 약이 아니라서 살구색 테두리로 따로 구분한다.
 const CheckRow = styled.div`
   width: 100%;
   height: 54px;
-  padding: 0 8px 0 14px;
+  padding: 0 12px 0 14px;
 
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 8px;
 
   border-radius: 10px;
-  border: 1px solid #d8cbb8;
-  background: #fffbf1;
+  border: 1px solid ${({ $meal }) => ($meal ? 'rgba(230, 167, 148, 0.85)' : '#d8cbb8')};
+  background: ${({ $meal }) => ($meal ? '#fdf1ec' : '#fffbf1')};
 `;
 
 const CheckLabel = styled.span`
@@ -56,22 +58,28 @@ const CheckLabel = styled.span`
   white-space: nowrap;
 `;
 
-// Figma는 padding 12/22에 16px이지만 행(54px)을 거의 채워서 답답해 보인다.
-// 행 안에서 여백이 남도록 한 단계 줄였다.
-const CheckButton = styled.button`
+// '먹었어요' 글자 버튼 대신 체크박스로 바꿨다. 누를 곳이 분명하고
+// 여러 줄을 훑을 때 무엇을 체크했는지 한눈에 들어온다.
+const CheckBox = styled.button`
   flex-shrink: 0;
+  width: 34px;
   height: 34px;
-  padding: 0 14px;
-  border-radius: 8px;
+  border-radius: 9px;
 
-  border: 1.5px solid ${({ $on }) => ($on ? 'rgba(87, 107, 26, 0.5)' : '#d8cbb8')};
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border: 2px solid
+    ${({ $on, $meal }) =>
+      $on ? 'rgba(87, 107, 26, 0.6)' : $meal ? 'rgba(201, 113, 88, 0.5)' : '#d8cbb8'};
   background: ${({ $on }) => ($on ? '#cbd879' : '#fff')};
-  color: ${({ $on }) => ($on ? '#364310' : '#8c8780')};
+  color: #364310;
+`;
 
-  font-family: 'Noto Sans KR';
-  font-size: 14px;
-  font-weight: 700;
-  white-space: nowrap;
+const CheckMark = styled.svg`
+  width: 20px;
+  height: 20px;
 `;
 
 const CircleRow = styled.div`
@@ -118,6 +126,20 @@ const EmptyText = styled.p`
   font-family: 'Noto Sans KR';
   font-size: 15px;
 `;
+
+function TickIcon() {
+  return (
+    <CheckMark viewBox="0 0 20 20" fill="none" aria-hidden="true">
+      <path
+        d="M4.5 10.5l4 4 7-8"
+        stroke="currentColor"
+        strokeWidth="2.6"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </CheckMark>
+  );
+}
 
 function MedicineCheckPopup({ onClose }) {
   const [step, setStep] = useState('checklist'); // checklist | complete | edit
@@ -263,15 +285,18 @@ function MedicineCheckPopup({ onClose }) {
 
         {!loading && !error && (
           <>
-            <CheckRow>
+            <CheckRow $meal>
               <CheckLabel>{slotLabel} 드셨어요?</CheckLabel>
-              <CheckButton
+              <CheckBox
                 type="button"
+                $meal
                 $on={checks.meal}
+                aria-pressed={Boolean(checks.meal)}
+                aria-label={`${slotLabel} 먹었어요`}
                 onClick={() => setChecks((prev) => ({ ...prev, meal: !prev.meal }))}
               >
-                먹었어요
-              </CheckButton>
+                {checks.meal && <TickIcon />}
+              </CheckBox>
             </CheckRow>
 
             {medRows.map((med) => (
@@ -281,15 +306,17 @@ function MedicineCheckPopup({ onClose }) {
                     ? `${med.name} (${med.timeLabel}) 드셨어요?`
                     : `${med.name} 드셨어요?`}
                 </CheckLabel>
-                <CheckButton
+                <CheckBox
                   type="button"
                   $on={checks[med.scheduleId]}
+                  aria-pressed={Boolean(checks[med.scheduleId])}
+                  aria-label={`${med.name} 먹었어요`}
                   onClick={() =>
                     setChecks((prev) => ({ ...prev, [med.scheduleId]: !prev[med.scheduleId] }))
                   }
                 >
-                  먹었어요
-                </CheckButton>
+                  {checks[med.scheduleId] && <TickIcon />}
+                </CheckBox>
               </CheckRow>
             ))}
           </>
