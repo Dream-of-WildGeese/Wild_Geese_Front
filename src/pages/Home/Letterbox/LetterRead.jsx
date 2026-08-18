@@ -119,7 +119,8 @@ function LetterRead({ letter, onReply, onClose }) {
 
       <PopupPrimaryButton type="button" onClick={onReply} style={{ height: 52, borderRadius: 12 }}>
         <PopupIcon $size={30} src={pencilBtn} alt="" />
-        답장 쓰기
+        {/* 누구에게 답하는지 보이면 훨씬 분명하다 */}
+        {letter.sender ? `${letter.sender}에게 답장하기` : '답장하기'}
       </PopupPrimaryButton>
     </Wrapper>
   );

@@ -8,6 +8,9 @@ import {
   toMedicationRequest,
   DAY_OPTIONS,
   isEveryDay,
+  isValidTime,
+  isDuplicateName,
+  sortTimeLabels,
 } from '../../../utils/medication';
 import {
   PopupBackdrop,
@@ -187,7 +190,7 @@ const DeleteButton = styled.button`
   font-weight: 500;
 `;
 
-const PRESET_TIMES = ['아침 8:00', '점심 12:00', '저녁 6:00', '취침전 10:00'];
+const PRESET_TIMES = ['오전 8:00', '오후 12:00', '오후 6:00', '오후 10:00'];
 const ALL_DAY_VALUES = DAY_OPTIONS.map((day) => day.value);
 
 function MedicineEdit() {
@@ -205,6 +208,8 @@ function MedicineEdit() {
   const [days, setDays] = useState(ALL_DAY_VALUES);
   // 서버가 수정을 못 받을 때 띄우는 안내
   const [saveBlocked, setSaveBlocked] = useState(false);
+  // 입력값이 잘못됐을 때 알려주는 문구 (시간 형식, 이름 중복 등)
+  const [missing, setMissing] = useState(null);
   const [period, setPeriod] = useState('오전');
   const [hour, setHour] = useState('');
   const [minute, setMinute] = useState('');
@@ -254,8 +259,14 @@ function MedicineEdit() {
 
   const handleAddManualTime = () => {
     if (!hour.trim() || !minute.trim()) return;
+    // 12시 89분 같은 값이 들어오면 서버가 못 알아듣는 시각이 만들어진다.
+    if (!isValidTime(hour, minute)) {
+      setMissing('시간을 다시 확인해주세요 (시 1~12, 분 0~59)');
+      return;
+    }
+
     const label = `${period} ${hour.padStart(2, '0')}:${minute.padStart(2, '0')}`;
-    if (!times.includes(label)) setTimes((prev) => [...prev, label]);
+    if (!times.includes(label)) setTimes((prev) => sortTimeLabels([...prev, label]));
     setHour('');
     setMinute('');
   };
@@ -268,9 +279,17 @@ function MedicineEdit() {
   const handleSave = async () => {
     if (!name.trim() || times.length === 0 || days.length === 0) return;
 
+    // 이름이 겹치면 복약 화면에서 어느 약을 체크한 건지 구분할 수 없다.
+    // 지금 고치는 약 자신은 제외하고 본다.
+    const otherNames = (data ?? []).map(toMedicationView).map((med) => med.name);
+    if (isDuplicateName(name, otherNames, medication.name)) {
+      setMissing('같은 이름의 약이 이미 있어요');
+      return;
+    }
+
     const { ok } = await saveMedication(
       medication.id,
-      toMedicationRequest({ name, times, days }),
+      toMedicationRequest({ name, times: sortTimeLabels(times), days }),
     );
     if (ok) {
       navigate('/home/medicine');
@@ -374,6 +393,21 @@ function MedicineEdit() {
           삭제하기
         </DeleteButton>
       </Content>
+
+      {missing && (
+        <PopupBackdrop onClick={() => setMissing(null)}>
+          <PopupCard $center $gap={16} $padTop={36} onClick={(event) => event.stopPropagation()}>
+            <PopupInnerBorder />
+            <PopupTitle $center $size={22}>
+              다시 확인해주세요
+            </PopupTitle>
+            <BlockedText>{missing}</BlockedText>
+            <PopupPrimaryButton type="button" onClick={() => setMissing(null)}>
+              알겠어요
+            </PopupPrimaryButton>
+          </PopupCard>
+        </PopupBackdrop>
+      )}
 
       {saveBlocked && (
         <PopupBackdrop onClick={() => setSaveBlocked(false)}>
