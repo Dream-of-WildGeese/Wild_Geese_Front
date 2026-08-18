@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import styled from 'styled-components';
 import DatePickerModal from '../../../components/DatePickerModal';
+import { useApiAction } from '../../../hooks/useApi';
+import { createCheckup } from '../../../api/checkup/createCheckup';
 
-
-// "1856-03-02" -> "1856년 3월 2일"
 const formatDateLabel = (value) => {
   const [year, month, day] = String(value).split('-').map(Number);
   return `${year}년 ${month}월 ${day}일`;
@@ -20,7 +20,7 @@ const HEALTH_CHECK_TYPES = [
 
 const ALERT_OPTIONS = ['3일 전', '1일 전', '알림 받지 않기'];
 
-const AddHealthCheck = ({ onClose, onSave }) => {
+const AddHealthCheck = ({ onClose, onSuccess }) => {
   const [checkType, setCheckType] = useState('');
   const [customTypeInput, setCustomTypeInput] = useState('');
   const [customTypes, setCustomTypes] = useState([]);
@@ -29,9 +29,10 @@ const AddHealthCheck = ({ onClose, onSave }) => {
   const [hospital, setHospital] = useState('');
   const [alertOption, setAlertOption] = useState('3일 전');
 
+  const { execute: addCheckup, loading: creating } = useApiAction(createCheckup);
+
   const handleTypeChange = (type) => {
     setCheckType(type);
-
     if (type !== '직접 입력') {
       setCustomTypeInput('');
       setCustomTypes([]);
@@ -40,9 +41,7 @@ const AddHealthCheck = ({ onClose, onSave }) => {
 
   const addCustomType = () => {
     const value = customTypeInput.trim();
-
     if (!value || customTypes.includes(value)) return;
-
     setCustomTypes((prev) => [...prev, value]);
     setCustomTypeInput('');
   };
@@ -51,10 +50,10 @@ const AddHealthCheck = ({ onClose, onSave }) => {
     setCustomTypes((prev) => prev.filter((item) => item !== target));
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     const finalType =
       checkType === '직접 입력'
-        ? customTypes.join(', ')
+        ? (customTypes.length > 0 ? customTypes.join(', ') : customTypeInput.trim())
         : checkType;
 
     if (!finalType) {
@@ -72,14 +71,20 @@ const AddHealthCheck = ({ onClose, onSave }) => {
       return;
     }
 
-    const healthCheckData = {
-      type: finalType,
-      date,
-      hospital: hospital.trim(),
-      alertOption,
-    };
+    // 서버 일정 등록 API 호출 (POST /api/v1/checkups)
+    const { ok, error } = await addCheckup({
+      checkupDate: date,
+      checkupType: finalType,
+      hospitalName: hospital.trim(),
+    });
 
-    onSave?.(healthCheckData);
+    if (!ok) {
+      alert(error.message);
+      return;
+    }
+
+    alert('검진 일정이 등록되었어요!');
+    onSuccess?.();
   };
 
   return (
@@ -91,24 +96,11 @@ const AddHealthCheck = ({ onClose, onSave }) => {
         onClick={(event) => event.stopPropagation()}
       >
         <ModalInner>
-          <Header>
-            <CloseButton
-              type="button"
-              onClick={onClose}
-              aria-label="닫기"
-            >
-              ×
-            </CloseButton>
+          <HeaderTitle id="add-health-check-title">
+            검진 일정 추가하기
+          </HeaderTitle>
 
-            <HeaderTitle id="add-health-check-title">
-              검진 일정 추가하기
-            </HeaderTitle>
-
-            <HeaderSpacer />
-          </Header>
-
-          <Divider />
-
+          {/* 1. 검진 종류 선택 */}
           <FormSection>
             <Label>검진 종류를 골라주세요</Label>
 
@@ -135,6 +127,12 @@ const AddHealthCheck = ({ onClose, onSave }) => {
                     onChange={(event) =>
                       setCustomTypeInput(event.target.value)
                     }
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        addCustomType();
+                      }
+                    }}
                   />
                   <AddTypeButton type="button" onClick={addCustomType}>
                     +
@@ -142,9 +140,9 @@ const AddHealthCheck = ({ onClose, onSave }) => {
                 </AddTypeRow>
 
                 {customTypes.length > 0 && (
-                  <TypeWrap>
+                  <TypeWrap style={{ marginTop: '10px' }}>
                     {customTypes.map((type) => (
-                      <TypeChip key={type} as="span" $active>
+                      <CustomChip key={type}>
                         {type}
                         <RemoveTypeIcon
                           type="button"
@@ -152,18 +150,19 @@ const AddHealthCheck = ({ onClose, onSave }) => {
                         >
                           ×
                         </RemoveTypeIcon>
-                      </TypeChip>
+                      </CustomChip>
                     ))}
                   </TypeWrap>
                 )}
 
                 <FieldHint>
-                  * "직접 입력"을 고르신 경우에만 적어주세요
+                  "직접 입력"을 고르신 경우에만 적어주세요
                 </FieldHint>
               </>
             )}
           </FormSection>
 
+          {/* 2. 날짜 선택 */}
           <FormSection>
             <Label>날짜를 선택해주세요</Label>
 
@@ -171,10 +170,16 @@ const AddHealthCheck = ({ onClose, onSave }) => {
               type="button"
               onClick={() => setIsDatePickerOpen(true)}
             >
-              {date ? formatDateLabel(date) : '날짜를 선택해주세요'}
+              <span>
+                {date ? formatDateLabel(date) : '날짜를 선택해주세요'}
+              </span>
+              <ChevronIcon viewBox="0 0 24 24">
+                <polyline points="6 9 12 15 18 9" />
+              </ChevronIcon>
             </DateSelectButton>
           </FormSection>
 
+          {/* 3. 병원 이름 입력 */}
           <FormSection>
             <Label>병원 이름을 입력해주세요</Label>
 
@@ -186,6 +191,7 @@ const AddHealthCheck = ({ onClose, onSave }) => {
             />
           </FormSection>
 
+          {/* 4. 알림 주기 선택 */}
           <FormSection>
             <Label>언제 알려드릴까요?</Label>
 
@@ -203,11 +209,13 @@ const AddHealthCheck = ({ onClose, onSave }) => {
             </AlertWrap>
           </FormSection>
 
+          {/* 하단 저장 버튼 */}
           <SaveButton
             type="button"
             onClick={handleSave}
+            disabled={creating}
           >
-            저장하기
+            {creating ? '저장 중...' : '저장하기'}
           </SaveButton>
         </ModalInner>
       </Modal>
@@ -243,14 +251,12 @@ const Overlay = styled.div`
   justify-content: center;
 
   padding: 14px;
-
   box-sizing: border-box;
 
   background: rgba(38, 34, 30, 0.52);
 `;
-
 /* =========================
-   Modal
+   Modal & Inner Card
 ========================= */
 
 const Modal = styled.div`
@@ -259,116 +265,67 @@ const Modal = styled.div`
   max-height: calc(100% - 12px);
 
   padding: 8px;
-
   box-sizing: border-box;
 
-  border: 2px solid #4a3a2f;
-  border-radius: 28px;
-
-  background: #fff8ed;
+  border-radius: 10px;
+border: 3px solid rgba(108, 67, 23, 0.70);
+background: #FEF3D5;
 
   box-shadow: 0 10px 40px rgba(74, 58, 47, 0.2);
-
   overflow: hidden;
+  display: flex;
 `;
 
 const ModalInner = styled.div`
   width: 100%;
   max-height: calc(100vh - 48px);
 
-  padding: 18px 16px 18px;
-
+  padding: 20px 16px 18px;
   box-sizing: border-box;
 
-  border: 2px dashed #8d806e;
-  border-radius: 14px;
+  border-radius: 10px;
+  border: 3px dashed rgba(108, 67, 23, 0.70);
 
-  background: #fff8ed;
+  background: #FEF3D5;
 
   overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
 
   &::-webkit-scrollbar {
     display: none;
   }
 `;
 
-/* =========================
-   Header
-========================= */
-
-const Header = styled.div`
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-`;
-
-const CloseButton = styled.button`
-  width: 32px;
-  height: 32px;
-
-  margin: 0;
-  padding: 0;
-
-  border: none;
-  background: transparent;
-
-  display: flex;
-  align-items: center;
-  justify-content: center;
-
-  color: #4a3a2f;
-  font-size: 28px;
-  font-weight: 300;
-  line-height: 1;
-
-  cursor: pointer;
-`;
-
 const HeaderTitle = styled.h1`
-  margin: 0;
-
-  color: #4a3a2f;
-
-  font-family: Jua, sans-serif;
-  font-size: 24px;
-  font-weight: 400;
-
-  text-align: center;
-`;
-
-const HeaderSpacer = styled.div`
-  width: 32px;
-`;
-
-const Divider = styled.div`
-  width: 100%;
-
-  margin: 12px 0 0;
-
-  border-top: 1px solid rgba(74, 58, 47, 0.25);
+  margin: 0 0 6px;
+  color: #4A3A2F;
+text-align: center;
+font-family: "Noto Sans KR";
+font-size: 26px;
+font-style: normal;
+font-weight: 700;
+line-height: normal;
 `;
 
 /* =========================
-   Form
+   Form Sections
 ========================= */
 
-const FormSection = styled.section`
-  margin-top: 20px;
-
-  padding: 14px 14px 16px;
+const FormSection = styled.div`
+  padding: 16px 14px;
+  box-sizing: border-box;
 
   border: 1.3px solid rgba(74, 58, 47, 0.35);
   border-radius: 18px;
-
   background: rgba(255, 255, 255, 0.55);
 `;
 
 const Label = styled.p`
   margin: 0 0 12px;
-
-  color: #4a3a2f;
-
-  font-family: 'Noto Sans KR';
+  color: #4A3A2F;
+font-family: "Noto Sans KR";
   font-size: 15px;
   font-weight: 700;
 `;
@@ -380,88 +337,111 @@ const TypeWrap = styled.div`
 `;
 
 const TypeChip = styled.button`
-  min-height: 36px;
+  height: 38px;
+  padding: 0 16px;
+  box-sizing: border-box;
 
-  padding: 6px 12px;
-
-  border: ${({ $active }) =>
-    $active
-      ? '1.4px solid #9b7b3f'
-      : '1.4px dashed #bdb4a8'};
-
-  border-radius: 999px;
+  border-radius: 20px;
+  border: 1.3px
+    ${({ $active }) =>
+      $active ? 'solid rgba(74, 58, 47, 0.65)' : 'dashed rgba(74, 58, 47, 0.4)'};
 
   background: ${({ $active }) =>
-    $active ? '#f6ebc7' : '#fffdf8'};
+    $active ? '#DDD39A' : 'rgba(255, 255, 255, 0.8)'};
 
-  color: #4a3a2f;
-
-  font-family: 'Noto Sans KR';
-  font-size: 12px;
+  color: #4A3A2F;
+font-family: "Noto Sans KR";
+  font-size: 13px;
   font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s ease;
+`;
 
+const CustomChip = styled.span`
+  display: inline-flex;
+  align-items: center;
+  height: 34px;
+  padding: 0 12px;
+  border-radius: 17px;
+  border: 1.2px solid #8A7B3E;
+  background: #DDD39A;
+  color: #4A3A2F;
+  font-family: 'Noto Sans KR';
+  font-size: 13px;
+  font-weight: 700;
+`;
+
+const RemoveTypeIcon = styled.button`
+  margin-left: 6px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: #4A3A2F;
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1;
   cursor: pointer;
 `;
 
 const Input = styled.input`
   width: 100%;
-  height: 48px;
-
-  margin-top: 12px;
+  height: 46px;
   padding: 0 14px;
-
   box-sizing: border-box;
 
-  border: 1.3px solid #c9c0b4;
+  border: 1.3px solid rgba(74, 58, 47, 0.35);
   border-radius: 14px;
+  background: rgba(255, 255, 255, 0.85);
 
-  background: #fffdf8;
-
-  color: #4a3a2f;
-
-  font-family: 'Noto Sans KR';
+  color: #4A3A2F;
+  font-family: 'Noto Sans KR', sans-serif;
   font-size: 14px;
-
   outline: none;
 
   &::placeholder {
-    color: #aaa196;
+    color: #A79C8E;
   }
 
   &:focus {
-    border-color: #a58a54;
+    border-color: #8A7B3E;
   }
 `;
 
 const DateSelectButton = styled.button`
   width: 100%;
-  height: 48px;
-
-  margin-top: 12px;
+  height: 46px;
   padding: 0 14px;
-
   box-sizing: border-box;
 
-  border: 1.3px solid #c9c0b4;
-  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
 
-  background: #fffdf8;
+  border: 1.3px solid rgba(74, 58, 47, 0.35);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.85);
 
   color: ${({ children }) =>
-    String(children).includes('선택해주세요') ? '#aaa196' : '#4a3a2f'};
+    String(children).includes('선택해주세요') ? '#A79C8E' : '#4A3A2F'};
 
   font-family: 'Noto Sans KR';
   font-size: 14px;
-  text-align: left;
-
   cursor: pointer;
+`;
+
+const ChevronIcon = styled.svg`
+  width: 16px;
+  height: 16px;
+  fill: none;
+  stroke: #8C8780;
+  stroke-width: 2;
 `;
 
 const AddTypeRow = styled.div`
   display: flex;
   align-items: center;
   gap: 8px;
-  margin-top: 12px;
+  margin-top: 10px;
 `;
 
 const TypeInput = styled(Input)`
@@ -470,52 +450,34 @@ const TypeInput = styled(Input)`
 `;
 
 const AddTypeButton = styled.button`
-  flex-shrink: 0;
   width: 44px;
   height: 44px;
+  flex-shrink: 0;
 
   display: flex;
   align-items: center;
   justify-content: center;
 
-  border: 1.4px solid #9b7b3f;
   border-radius: 12px;
-  background: #f6ebc7;
+  border: 1.3px solid rgba(138, 123, 62, 0.9);
+  background: #DDD39A;
 
-  color: #4a3a2f;
-  font-size: 20px;
+  color: #4A3A2F;
+  font-size: 24px;
   font-weight: 700;
-  line-height: 1;
-
-  cursor: pointer;
-`;
-
-const RemoveTypeIcon = styled.button`
-  margin-left: 6px;
-  padding: 0;
-  border: none;
-  background: transparent;
-
-  color: #4a3a2f;
-  font-size: 14px;
-  font-weight: 700;
-  line-height: 1;
-
   cursor: pointer;
 `;
 
 const FieldHint = styled.p`
   margin: 8px 0 0;
-
-  color: #a29a91;
-
+  color: #8C8780;
   font-family: 'Noto Sans KR';
-  font-size: 10px;
+  font-size: 11px;
   line-height: 1.4;
 `;
 
 /* =========================
-   Alert
+   Alert Wrap
 ========================= */
 
 const AlertWrap = styled.div`
@@ -525,50 +487,44 @@ const AlertWrap = styled.div`
 
 const AlertChip = styled.button`
   flex: 1;
-  height: 38px;
+  height: 40px;
+  padding: 0 4px;
 
-  padding: 0 8px;
-
-  border: ${({ $active }) =>
-    $active
-      ? '1.4px solid #a98663'
-      : '1.4px dashed #c0b6aa'};
+  border: 1.3px
+    ${({ $active }) =>
+      $active ? 'solid rgba(74, 58, 47, 0.65)' : 'dashed rgba(74, 58, 47, 0.4)'};
 
   border-radius: 12px;
-
   background: ${({ $active }) =>
-    $active ? '#f6ebc7' : '#fffdf8'};
+    $active ? '#DDD39A' : 'rgba(255, 255, 255, 0.8)'};
 
-  color: #4a3a2f;
-
+  color: #4A3A2F;
   font-family: 'Noto Sans KR';
-  font-size: 11px;
+  font-size: 13px;
   font-weight: 700;
-
   cursor: pointer;
+  transition: all 0.15s ease;
 `;
 
 /* =========================
-   Save
+   Save Button
 ========================= */
 
 const SaveButton = styled.button`
   width: 100%;
-  height: 54px;
+  height: 52px;
+  margin-top: 6px;
 
-  margin-top: 20px;
+  border-radius: 10px;
+border: 1.5px solid rgba(74, 58, 47, 0.55);
+background: #DBE4A1;
 
-  border: 1.5px solid rgba(74, 58, 47, 0.45);
-  border-radius: 14px;
-
-  background: #dbe4a1;
-  color: #4a3a2f;
-
-  font-family: Jua, sans-serif;
-  font-size: 20px;
-  font-weight: 400;
-
-  cursor: pointer;
+  color: #4A3A2F;
+font-family: Jua;
+font-size: 20px;
+font-style: normal;
+font-weight: 400;
+line-height: normal;
 
   &:active {
     transform: translateY(1px);
