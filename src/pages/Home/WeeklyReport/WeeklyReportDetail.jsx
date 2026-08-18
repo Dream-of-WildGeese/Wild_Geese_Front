@@ -567,8 +567,8 @@ function WeeklyReportDetail() {
             {detail.meal.map((item) => (
               <DayCol key={item.day}>
                 <IconWrap>
-                  {/* 기록이 아예 없는 날은 빈 원으로 둔다 */}
-                  {item.score ? (
+                  {/* 기록이 없거나(null) 끼니를 거른 날(1점, '한 끼만 먹었어요')은 빈 원으로 둔다 */}
+                  {item.score > 1 ? (
                     <MealIcon src={mealIcon} alt="" />
                   ) : (
                     <EmptyCircle src={emptyCircleIcon} alt="" />

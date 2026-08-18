@@ -106,7 +106,8 @@ async function loadMonthJournal({ from, to }) {
     cursor.setDate(cursor.getDate() + 1);
   }
 
-  return [...realEntries, ...mockEntries].sort((a, b) => a.date - b.date);
+  // 최신 날짜가 위로 오도록 내림차순 정렬한다.
+  return [...realEntries, ...mockEntries].sort((a, b) => b.date - a.date);
 }
 
 const TOAST_DURATION_MS = 1800;
