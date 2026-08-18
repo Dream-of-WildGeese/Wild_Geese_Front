@@ -1,7 +1,6 @@
 import styled from 'styled-components';
-import sunIcon from '../../../assets/journal/sun.png';
-import pillIcon from '../../../assets/journal/pill.png';
-import moonIcon from '../../../assets/journal/moon.png';
+import pillIcon from '../../assets/journal/pill.png';
+import calendarIcon from '../../assets/journal/m-body.png';
 import {
   PopupBackdrop,
   PopupCard,
@@ -9,19 +8,13 @@ import {
   PopupClose,
   PopupTitle,
   CHOICE_ICON_SIZE,
-} from '../../../components/PopupShell';
+} from '../../components/PopupShell';
 
-// 홈 말풍선을 누르면 아침/복약/저녁 중에서 직접 고른다.
-// 선택지 생김새는 저녁 건강체크(Figma 22)의 Option과 같은 규격을 쓴다.
+// 홈 상단 헬스케어 아이콘을 누르면 뜬다. 복용약과 건강검진으로 갈라진다.
+// 디자인이 따로 없어서 '오늘의 온담' 선택 팝업과 같은 규격으로 맞췄다.
 const OPTIONS = [
-  {
-    type: 'morning',
-    icon: sunIcon,
-    label: '아침 연결 질문',
-    desc: '가족과 오늘의 이야기를 나눠요',
-  },
-  { type: 'medication', icon: pillIcon, label: '약 체크', desc: '오늘 약은 챙겨 드셨나요?' },
-  { type: 'evening', icon: moonIcon, label: '저녁 건강 기록', desc: '오늘의 건강을 기록해요' },
+  { type: 'medicine', icon: pillIcon, label: '복용약', desc: '드시는 약을 관리해요' },
+  { type: 'checkup', icon: calendarIcon, label: '건강검진', desc: '검진 일정을 챙겨요' },
 ];
 
 const OptionList = styled.div`
@@ -81,7 +74,7 @@ const Chevron = styled.span`
   line-height: 1;
 `;
 
-function TodayOndamPicker({ onSelect, onClose }) {
+function HealthPickerPopup({ onSelect, onClose }) {
   return (
     <PopupBackdrop onClick={onClose}>
       <PopupCard $center $gap={16} $padTop={30} onClick={(event) => event.stopPropagation()}>
@@ -91,7 +84,7 @@ function TodayOndamPicker({ onSelect, onClose }) {
         </PopupClose>
 
         <PopupTitle $center $size={24}>
-          오늘도 온담과 함께해요!
+          무엇을 챙겨볼까요?
         </PopupTitle>
 
         <OptionList>
@@ -111,4 +104,4 @@ function TodayOndamPicker({ onSelect, onClose }) {
   );
 }
 
-export default TodayOndamPicker;
+export default HealthPickerPopup;

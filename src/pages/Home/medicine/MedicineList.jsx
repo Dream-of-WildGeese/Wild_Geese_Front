@@ -74,7 +74,9 @@ const MedList = styled.div`
   gap: 12px;
 `;
 
-const MedCard = styled.button`
+// 카드 안에 수정·삭제 버튼이 들어가서 카드 자체는 button이 될 수 없다.
+// (button 안의 button은 브라우저가 무시한다)
+const MedCard = styled.div`
   width: 100%;
   padding: 16px;
   border-radius: 18px;
@@ -86,18 +88,65 @@ const MedCard = styled.button`
 const MedRow = styled.div`
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  gap: 8px;
 `;
 
 const MedName = styled.p`
   margin: 0;
+  flex: 1;
+  min-width: 0;
   font-size: 17px;
   font-weight: 500;
   color: #000;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 `;
 
-const DeleteButton = styled.span`
-  font-size: 18px;
+// 오늘의 건강일지의 수정 버튼과 같은 모양으로 맞춘다.
+const EditButton = styled.button`
+  flex-shrink: 0;
+  padding: 4px 10px;
+
+  border-radius: 8px;
+  border: 1px solid rgba(74, 58, 47, 0.35);
+  background: rgba(255, 255, 255, 0.7);
+
+  color: #8c8172;
+  font-family: 'Noto Sans KR';
+  font-size: 13px;
+  font-weight: 700;
+`;
+
+const DeleteButton = styled.button`
+  flex-shrink: 0;
+  width: 30px;
+  height: 30px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border-radius: 8px;
+  color: #a79c8e;
+
+  &:hover {
+    color: #c15b4a;
+  }
+`;
+
+// 반복 주기. 매일이면 초록, 특정 요일이면 노란 계열로 구분한다.
+const RepeatChip = styled.span`
+  padding: 5px 12px;
+  border-radius: 8px;
+
+  background: ${({ $daily }) => ($daily ? '#edf2d4' : '#f8eed2')};
+  border: 1.2px solid
+    ${({ $daily }) => ($daily ? 'rgba(143, 174, 74, 0.6)' : 'rgba(232, 205, 115, 0.8)')};
+  color: ${({ $daily }) => ($daily ? '#5b7a2e' : '#a8761c')};
+
+  font-size: 14px;
+  font-weight: 700;
 `;
 
 const ChipRow = styled.div`
@@ -134,6 +183,21 @@ const AddButton = styled.button`
   font-size: 16px;
   font-weight: 500;
 `;
+
+// 이모지(🗑)는 기기마다 그림이 달라서 선으로 그린 아이콘으로 바꿨다.
+function TrashIcon() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+      <path
+        d="M3.5 5.5h13M8 5.5V4a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v1.5M5.5 5.5l.7 10a1.5 1.5 0 0 0 1.5 1.4h4.6a1.5 1.5 0 0 0 1.5-1.4l.7-10M8.5 9v4.5M11.5 9v4.5"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
 
 function MedicineList() {
   const navigate = useNavigate();
@@ -179,12 +243,23 @@ function MedicineList() {
         ) : (
           <MedList>
             {medications.map((med) => (
-              <MedCard key={med.id} type="button" onClick={() => navigate(`/home/medicine/${med.id}`)}>
+              <MedCard key={med.id}>
                 <MedRow>
                   <MedName>{med.name}</MedName>
-                  <DeleteButton onClick={(event) => handleDelete(event, med.id)}>🗑</DeleteButton>
+                  <EditButton type="button" onClick={() => navigate(`/home/medicine/${med.id}`)}>
+                    수정
+                  </EditButton>
+                  <DeleteButton
+                    type="button"
+                    aria-label={`${med.name} 삭제`}
+                    onClick={(event) => handleDelete(event, med.id)}
+                  >
+                    <TrashIcon />
+                  </DeleteButton>
                 </MedRow>
                 <ChipRow>
+                  {/* 설정한 반복 주기를 먼저 보여주고, 그 뒤에 복용 시간을 늘어놓는다 */}
+                  <RepeatChip $daily={med.repeat === '매일'}>{med.repeat}</RepeatChip>
                   {med.times.map((time) => (
                     <TimeChip key={time}>{time}</TimeChip>
                   ))}

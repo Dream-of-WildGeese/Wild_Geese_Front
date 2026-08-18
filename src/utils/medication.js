@@ -82,15 +82,29 @@ export const toMedicationView = (medication) => {
     name: medication.name,
     times: schedules.map((schedule) => timeToLabel(schedule.scheduledTime)),
     repeat: daysToRepeat(schedules[0]?.daysOfWeek),
+    days: schedules[0]?.daysOfWeek ?? [],
     schedules,
   };
 };
 
+export const DAY_OPTIONS = [
+  { value: 'MONDAY', label: '월' },
+  { value: 'TUESDAY', label: '화' },
+  { value: 'WEDNESDAY', label: '수' },
+  { value: 'THURSDAY', label: '목' },
+  { value: 'FRIDAY', label: '금' },
+  { value: 'SATURDAY', label: '토' },
+  { value: 'SUNDAY', label: '일' },
+];
+
+export const isEveryDay = (days) => (days?.length ?? 0) >= 7;
+
 // 화면 입력값을 등록/수정 요청 본문으로 바꾼다.
-export const toMedicationRequest = ({ name, times, repeat }) => ({
+// 요일을 직접 고른 화면은 days를 넘기고, 주기 문구만 있는 화면은 repeat을 넘긴다.
+export const toMedicationRequest = ({ name, times, repeat, days }) => ({
   name: name.trim(),
   scheduledTimes: times.map(labelToTime).filter(Boolean),
-  daysOfWeek: repeatToDays(repeat),
+  daysOfWeek: days?.length ? days : repeatToDays(repeat),
 });
 
 // "2026-08-15" — 서버가 날짜만 받는 필드에 쓴다.

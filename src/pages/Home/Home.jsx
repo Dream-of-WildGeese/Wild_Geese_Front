@@ -13,6 +13,7 @@ import EveningCheckPopup from './TodayOndam/Night/EveningCheckPopup';
 import NightCompletePopup from './TodayOndam/Night/NightCompletePopup';
 import Letterbox from './Letterbox/Letterbox';
 import TodayOndamPicker from './TodayOndam/TodayOndamPicker';
+import HealthPickerPopup from './HealthPickerPopup';
 import { getReceivedLetters, markLetterAsRead } from '../../api/letter';
 import { useApi, useApiAction } from '../../hooks/useApi';
 import { toLetterView } from '../../utils/letter';
@@ -93,7 +94,7 @@ function Home() {
     <Stage>
       <Background src={homeBackground} alt="" />
       <HomeTopBar
-        onMedicationClick={() => navigate('/home/medicine')}
+        onMedicationClick={() => setActivePopup('health')}
         onSettingsClick={() => navigate('/home/settings')}
       />
       <HomeCtaBanner onClick={handleCtaClick} />
@@ -119,6 +120,14 @@ function Home() {
       )}
       {activePopup === 'picker' && (
         <TodayOndamPicker onSelect={handlePickStep} onClose={closePopup} />
+      )}
+      {activePopup === 'health' && (
+        <HealthPickerPopup
+          onSelect={(type) =>
+            navigate(type === 'medicine' ? '/home/medicine' : '/home/healthcheck')
+          }
+          onClose={closePopup}
+        />
       )}
       {activePopup === 'morning' && <DayQuestionPopup onClose={closePopup} />}
       {activePopup === 'medication_check' && (

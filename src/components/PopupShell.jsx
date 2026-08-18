@@ -140,3 +140,7 @@ export const PopupIcon = styled.img`
   object-fit: contain;
   flex-shrink: 0;
 `;
+
+// 선택지 앞에 붙는 그림의 크기. 팝업마다 44~56px로 제각각이었는데
+// 큰 쪽에 맞춰 통일했다. 새 선택지 목록을 만들면 이 값을 쓴다.
+export const CHOICE_ICON_SIZE = 56;
