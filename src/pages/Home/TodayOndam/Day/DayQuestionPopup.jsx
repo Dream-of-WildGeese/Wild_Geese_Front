@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import styled from 'styled-components';
 import micIcon from '../../../../assets/popup/mic.png';
 import likeIcon from '../../../../assets/reaction/like.png';
@@ -6,8 +6,13 @@ import cheerIcon from '../../../../assets/reaction/cheer.png';
 import funnyIcon from '../../../../assets/reaction/funny.png';
 import bestIcon from '../../../../assets/reaction/best.png';
 import congratsIcon from '../../../../assets/reaction/congrats.png';
-import { getTodayQuestion, submitMorningAnswer } from '../../../../api/morning';
+import {
+  getTodayQuestion,
+  submitMorningAnswer,
+  transcribeMorningAnswer,
+} from '../../../../api/morning';
 import { useApi, useApiAction } from '../../../../hooks/useApi';
+import { useVoiceRecorder } from '../../../../hooks/useVoiceRecorder';
 import {
   PopupBackdrop,
   PopupCard,
@@ -59,15 +64,28 @@ const VoiceButton = styled.button`
   gap: 8px;
 
   border-radius: 10px;
-  border: 1px solid #d8cbb8;
-  background: #fffbf1;
+  border: 1px solid ${({ $recording }) => ($recording ? '#e6a794' : '#d8cbb8')};
+  background: ${({ $recording }) => ($recording ? '#fdf0e8' : '#fffbf1')};
+
+  &:disabled {
+    opacity: 0.6;
+  }
 `;
 
 const VoiceLabel = styled.span`
-  color: #8c8780;
+  color: ${({ $recording }) => ($recording ? '#c1553c' : '#8c8780')};
   font-family: 'Noto Sans KR';
   font-size: 14px;
   font-weight: 500;
+`;
+
+const VoiceError = styled.p`
+  margin: 0;
+  width: 100%;
+  text-align: center;
+  color: #c1553c;
+  font-family: 'Noto Sans KR';
+  font-size: 13px;
 `;
 
 const HintText = styled.p`
@@ -178,6 +196,22 @@ function DayQuestionPopup({ onClose }) {
     setStep('result');
   };
 
+  // 아침 질문의 음성 API는 텍스트 변환뿐 아니라 답변 저장까지 한 번에 끝내므로,
+  // 녹음이 끝나면 바로 완료 처리한다(따로 '완료' 버튼을 누를 필요가 없다).
+  const transcribe = useCallback(
+    (blob) => transcribeMorningAnswer(question.questionId, blob),
+    [question?.questionId],
+  );
+  const handleVoiceDone = useCallback(
+    async (text) => {
+      setAnswer(text);
+      await refetch();
+      setStep('result');
+    },
+    [refetch],
+  );
+  const voice = useVoiceRecorder(transcribe, handleVoiceDone);
+
   if (step === 'result') {
     return (
       <PopupBackdrop onClick={onClose}>
@@ -261,11 +295,24 @@ function DayQuestionPopup({ onClose }) {
           onChange={(event) => setAnswer(event.target.value)}
         />
 
-        {/* 아침 질문용 STT API가 아직 없어서 버튼만 노출한다 */}
-        <VoiceButton type="button">
+        <VoiceButton
+          type="button"
+          onClick={voice.toggle}
+          disabled={!voice.supported || voice.busy || !question}
+          $recording={voice.recording}
+        >
           <PopupIcon $size={100} src={micIcon} alt="" />
-          <VoiceLabel>음성으로 인식하기</VoiceLabel>
+          <VoiceLabel $recording={voice.recording}>
+            {!voice.supported
+              ? '음성 미지원'
+              : voice.busy
+                ? '옮겨 적는 중...'
+                : voice.recording
+                  ? '눌러서 멈추기'
+                  : '음성으로 인식하기'}
+          </VoiceLabel>
         </VoiceButton>
+        {voice.error && <VoiceError>{voice.error.message}</VoiceError>}
 
         <PopupPrimaryButton
           type="button"
