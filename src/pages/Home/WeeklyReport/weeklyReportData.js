@@ -80,11 +80,16 @@ export const toWeeklyDetail = (report) => {
   const meal = metrics.MEAL;
   const activity = metrics.ACTIVITY;
 
+  const medication = report.medication ?? {};
+  const perDay = medication.perDay ?? 0;
+
   return {
     headline: report.weeklyComment ?? '이번 주 리포트예요',
-    headlineDesc: report.isBaselineSufficient
-      ? ''
-      : '아직 비교할 지난주 기록이 부족해서, 이번 주 기록만 보여드려요.',
+    headlineDesc:
+      report.weeklyDetail ??
+      (report.isBaselineSufficient
+        ? ''
+        : '아직 비교할 지난주 기록이 부족해서, 이번 주 기록만 보여드려요.'),
     condition: toDailyDots(condition),
     conditionTrend: toTrend(condition?.trend),
     conditionNote: condition?.comment ?? '아직 기록이 부족해요.',
@@ -95,12 +100,21 @@ export const toWeeklyDetail = (report) => {
     steps: toDailyBars(activity),
     stepsTrend: toTrend(activity?.trend),
     stepsNote: activity?.comment ?? '아직 기록이 부족해요.',
-    // 주간 리포트는 복약을 주 단위 합계로만 내려줘서 요일별 체크는 만들 수 없다.
-    medsTaken: [],
-    medsTakenCount: report.medication?.takenCount ?? 0,
-    medsTotal: report.medication?.totalCount ?? 0,
-    medsNote: report.medication?.comment ?? '복약 기록이 아직 없어요.',
+    // 서버는 복약을 주 단위 합계로만 준다. 요일별(daily)은 시연용 데이터에만 있어서,
+    // 없으면 요일 칸을 비워 둔다. 합계만으로 앞에서부터 채우면 실제와 다른 그림이 된다.
+    meds: DAYS.map((day, index) => ({
+      day,
+      taken: medication.daily?.[index] ?? null,
+      total: perDay,
+      done: perDay > 0 && medication.daily?.[index] === perDay,
+    })),
+    medsTakenCount: medication.takenCount ?? 0,
+    medsTotal: medication.totalCount ?? 0,
+    medsNote: medication.comment ?? '복약 기록이 아직 없어요.',
     adviceText: report.nextWeekSuggestion ?? '',
+    // 서버가 기록을 분석해서 써주는 문장. 기록이 적으면 '아직 패턴을 분석할 만큼
+    // 기록이 쌓이지 않았어요' 같은 기본 문구가 온다.
+    aiInsight: report.aiCoachInsight ?? '',
     contactMessage: report.weeklyComment ? `"${report.weeklyComment}"` : '"요즘 어떻게 지내세요?"',
   };
 };
