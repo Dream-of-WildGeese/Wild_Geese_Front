@@ -17,6 +17,7 @@ import TimePickerModal from '../../../components/TimePickerModal';
 import ConfirmPopup from './ConfirmPopup';
 import NotificationListPopup from './NotificationListPopup';
 import { useWebPush } from '../../../hooks/useWebPush';
+import { getShowMailbox, setShowMailbox } from '../../../utils/localSettings';
 
 const Page = styled.div`
   position: relative;
@@ -150,6 +151,7 @@ const NOTIFICATION_ROWS = [
   { key: 'eveningEnabled', label: '저녁 건강 체크 알림' },
   { key: 'medicationEnabled', label: '복약 알림' },
   { key: 'familyReactionEnabled', label: '가족 답변/반응 알림' },
+  { key: 'reportEnabled', label: '주간 리포트 알림' },
 ];
 
 function SettingsMain() {
@@ -159,6 +161,14 @@ function SettingsMain() {
   const [popup, setPopup] = useState(null);
   // 어떤 알림 시각을 편집 중인지 ('morningTime' | 'eveningTime' | null)
   const [timeEditor, setTimeEditor] = useState(null);
+  // 홈에 우체통을 띄울지. 서버 설정에 편지 항목이 없어서 이 기기에만 저장한다.
+  const [showMailbox, setShowMailboxState] = useState(getShowMailbox);
+
+  const toggleMailbox = () => {
+    const next = !showMailbox;
+    setShowMailboxState(next);
+    setShowMailbox(next);
+  };
 
   // 알림 설정을 한 번도 저장한 적 없는 계정은 조회가 실패한다.
   // 그때는 기본값으로 화면을 띄워서, 토글을 누르면 그 값으로 새로 저장되게 한다.
@@ -299,6 +309,19 @@ function SettingsMain() {
             </ToggleTrack>
           </ToggleRow>
         ))}
+
+        {/* 서버 알림 설정에 편지 항목이 없어서 이 토글만 기기에 저장된다 */}
+        <ToggleRow>
+          <RowLabel>우편 보기</RowLabel>
+          <ToggleTrack
+            type="button"
+            $on={showMailbox}
+            onClick={toggleMailbox}
+            aria-pressed={showMailbox}
+          >
+            <ToggleThumb $on={showMailbox} />
+          </ToggleTrack>
+        </ToggleRow>
 
         <ClickableRow type="button" onClick={() => setPopup('notifications')}>
           <RowLabel>받은 알림 보기</RowLabel>

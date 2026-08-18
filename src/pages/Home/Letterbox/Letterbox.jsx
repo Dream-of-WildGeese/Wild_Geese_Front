@@ -120,7 +120,8 @@ function Letterbox({ letters, loading, onMarkRead, onSent, onClose, initialStep 
               recipientName={recipientName}
             />
           )}
-          {step === 'sent' && <LetterSent onClose={backToList} recipientName={recipientName} />}
+          {/* 보내고 나면 편지함으로 돌아가지 않고 홈으로 나간다 */}
+          {step === 'sent' && <LetterSent onClose={onClose} recipientName={recipientName} />}
         </div>
       </Backdrop>
     </PopupPortal>

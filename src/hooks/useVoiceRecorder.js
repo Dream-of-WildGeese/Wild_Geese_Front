@@ -85,5 +85,8 @@ export function useVoiceRecorder(transcribe, onTranscript) {
     else start();
   }, [busy, recording, start, stop]);
 
-  return { recording, busy, error, supported, start, stop, toggle };
+  // 오류를 팝업으로 보여주는 화면이 닫을 때 쓴다.
+  const clearError = useCallback(() => setError(null), []);
+
+  return { recording, busy, error, supported, start, stop, toggle, clearError };
 }

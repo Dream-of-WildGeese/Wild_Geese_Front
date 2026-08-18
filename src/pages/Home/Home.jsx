@@ -13,6 +13,8 @@ import EveningCheckPopup from './TodayOndam/Night/EveningCheckPopup';
 import NightCompletePopup from './TodayOndam/Night/NightCompletePopup';
 import Letterbox from './Letterbox/Letterbox';
 import TodayOndamPicker from './TodayOndam/TodayOndamPicker';
+import HealthPickerPopup from './HealthPickerPopup';
+import { getShowMailbox } from '../../utils/localSettings';
 import { getReceivedLetters, markLetterAsRead } from '../../api/letter';
 import { useApi, useApiAction } from '../../hooks/useApi';
 import { toLetterView } from '../../utils/letter';
@@ -48,7 +50,10 @@ function Home() {
   const { execute: markRead } = useApiAction(markLetterAsRead);
 
   // 받은 편지함은 페이지네이션 응답이라 content 배열만 꺼내 쓴다.
-  const letters = (receivedLetters?.content ?? []).map(toLetterView);
+  // 서버가 보내주는 순서가 정해져 있지 않아서, 최신 편지가 위로 오도록 직접 정렬한다.
+  const letters = [...(receivedLetters?.content ?? [])]
+    .sort((a, b) => String(b.createdAt ?? '').localeCompare(String(a.createdAt ?? '')))
+    .map(toLetterView);
   const unreadLetterCount = letters.filter((letter) => !letter.read).length;
 
   const closePopup = () => {
@@ -93,13 +98,14 @@ function Home() {
     <Stage>
       <Background src={homeBackground} alt="" />
       <HomeTopBar
-        onMedicationClick={() => navigate('/home/medicine')}
+        onMedicationClick={() => setActivePopup('health')}
         onSettingsClick={() => navigate('/home/settings')}
       />
       <HomeCtaBanner onClick={handleCtaClick} />
       <HomeCharacterStage
         onMailboxClick={() => setActivePopup('mailbox')}
         unreadLetterCount={unreadLetterCount}
+        showMailbox={getShowMailbox()}
       />
       <HomeBottomNav
         onQuestionBoxClick={() => navigate('/morning-report')}
@@ -119,6 +125,14 @@ function Home() {
       )}
       {activePopup === 'picker' && (
         <TodayOndamPicker onSelect={handlePickStep} onClose={closePopup} />
+      )}
+      {activePopup === 'health' && (
+        <HealthPickerPopup
+          onSelect={(type) =>
+            navigate(type === 'medicine' ? '/home/medicine' : '/home/healthcheck')
+          }
+          onClose={closePopup}
+        />
       )}
       {activePopup === 'morning' && <DayQuestionPopup onClose={closePopup} />}
       {activePopup === 'medication_check' && (

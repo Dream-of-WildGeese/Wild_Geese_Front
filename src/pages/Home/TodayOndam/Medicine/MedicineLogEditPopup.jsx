@@ -1,8 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
 import styled from 'styled-components';
-import pencilIcon from '../../../../assets/popup/pencil.png';
 import medFlowerA from '../../../../assets/popup/med-flower-a.png';
 import medFlowerB from '../../../../assets/popup/med-flower-b.png';
+import flowerA from '../../../../assets/journal/flower-a.png';
+import flowerB from '../../../../assets/journal/flower-b.png';
+import flowerC from '../../../../assets/weekly/flower.png';
 import medEmpty from '../../../../assets/popup/med-empty.png';
 import { useApi, useApiAction } from '../../../../hooks/useApi';
 import { loadTodayMedications, saveMedicationChecks, flattenAll } from './medicationData';
@@ -18,7 +20,9 @@ import {
 // Figma 19: 오늘 복약 기록 수정.
 // 같은 약이 하루에 여러 번이면 카드를 여러 개 만들지 않고, 한 카드 안에서
 // 시간대별로 체크한다. 목록은 약 체크 팝업과 같은 로더에서 가져온다.
-const MED_FLOWERS = [medFlowerA, medFlowerB];
+// 약마다 다른 꽃이 피도록 종류를 늘렸다. 같은 그림이 여러 개면
+// 어느 약이 다 찼는지 구분이 안 된다.
+const MED_FLOWERS = [medFlowerA, medFlowerB, flowerA, flowerB, flowerC];
 
 const SubtitleRow = styled.div`
   display: flex;
@@ -166,7 +170,6 @@ function MedicineLogEditPopup({ onClose, onDone }) {
         </PopupTitle>
 
         <SubtitleRow>
-          <PopupIcon $size={34} src={pencilIcon} alt="" />
           <SubtitleText>드신 약을 눌러주세요</SubtitleText>
         </SubtitleRow>
 
@@ -179,12 +182,15 @@ function MedicineLogEditPopup({ onClose, onDone }) {
         <CardList>
           {(data?.items ?? []).map((item, index) => {
             const takenCount = item.schedules.filter((s) => taken[s.scheduleId]).length;
+            // 그 약의 하루치를 전부 먹어야 꽃이 핀다. 한 번만 먹고 꽃이 피면
+            // 다 챙긴 것처럼 보인다.
+            const allTaken = takenCount === item.schedules.length;
             return (
               <MedCard key={item.medicationId}>
                 <CardHead>
                   <PopupIcon
                     $size={40}
-                    src={takenCount > 0 ? MED_FLOWERS[index % MED_FLOWERS.length] : medEmpty}
+                    src={allTaken ? MED_FLOWERS[index % MED_FLOWERS.length] : medEmpty}
                     alt=""
                   />
                   <MedName>{item.name}</MedName>

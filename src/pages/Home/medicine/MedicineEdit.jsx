@@ -3,7 +3,19 @@ import { useNavigate, useParams } from 'react-router-dom';
 import styled from 'styled-components';
 import { getMedications, updateMedication, deleteMedication } from '../../../api/medication';
 import { useApi, useApiAction } from '../../../hooks/useApi';
-import { toMedicationView, toMedicationRequest } from '../../../utils/medication';
+import {
+  toMedicationView,
+  toMedicationRequest,
+  DAY_OPTIONS,
+  isEveryDay,
+} from '../../../utils/medication';
+import {
+  PopupBackdrop,
+  PopupCard,
+  PopupInnerBorder,
+  PopupTitle,
+  PopupPrimaryButton,
+} from '../../../components/PopupShell';
 
 const Page = styled.div`
   position: relative;
@@ -103,15 +115,54 @@ const AddTimeButton = styled.button`
   font-weight: 500;
 `;
 
-const RepeatSelect = styled.select`
+// '매일'을 먼저 두고, 그 아래에 요일을 따로 고를 수 있게 한다.
+const DailyToggle = styled.button`
   width: 100%;
   height: 50px;
-  padding: 0 14px;
-  border-radius: 10px;
-  border: 1.3px solid rgba(74,58,47,.4);
+  border-radius: 12px;
+
+  border: 2px solid ${({ $on }) => ($on ? 'rgba(143, 174, 74, 0.7)' : 'rgba(74, 58, 47, 0.3)')};
+  background: ${({ $on }) => ($on ? '#edf2d4' : '#fffdf6')};
+  color: ${({ $on }) => ($on ? '#5b7a2e' : '#8c8172')};
+
   font-size: 16px;
-  color: #000;
-  background: #FFF8ED;
+  font-weight: 700;
+`;
+
+const DayRow = styled.div`
+  margin-top: 10px;
+  display: flex;
+  gap: 6px;
+`;
+
+const DayChip = styled.button`
+  flex: 1;
+  min-width: 0;
+  height: 46px;
+  border-radius: 12px;
+
+  border: 1.5px solid ${({ $on }) => ($on ? 'rgba(232, 205, 115, 0.9)' : 'rgba(74, 58, 47, 0.25)')};
+  background: ${({ $on }) => ($on ? '#f8eed2' : '#fffdf6')};
+  color: ${({ $on }) => ($on ? '#a8761c' : '#a79c8e')};
+
+  font-size: 15px;
+  font-weight: 700;
+`;
+
+const HelpText = styled.p`
+  margin: 8px 0 0;
+  font-size: 13px;
+  color: #8c8780;
+`;
+
+const BlockedText = styled.p`
+  margin: 0;
+  width: 100%;
+  text-align: center;
+  color: #6b6661;
+  font-family: 'Noto Sans KR';
+  font-size: 16px;
+  line-height: 1.5;
 `;
 
 const SaveButton = styled.button`
@@ -137,7 +188,7 @@ const DeleteButton = styled.button`
 `;
 
 const PRESET_TIMES = ['아침 8:00', '점심 12:00', '저녁 6:00', '취침전 10:00'];
-const REPEAT_OPTIONS = ['매일', '이틀에 한 번', '주 3회', '필요할 때만'];
+const ALL_DAY_VALUES = DAY_OPTIONS.map((day) => day.value);
 
 function MedicineEdit() {
   const navigate = useNavigate();
@@ -151,7 +202,9 @@ function MedicineEdit() {
 
   const [name, setName] = useState('');
   const [times, setTimes] = useState([]);
-  const [repeat, setRepeat] = useState('매일');
+  const [days, setDays] = useState(ALL_DAY_VALUES);
+  // 서버가 수정을 못 받을 때 띄우는 안내
+  const [saveBlocked, setSaveBlocked] = useState(false);
   const [period, setPeriod] = useState('오전');
   const [hour, setHour] = useState('');
   const [minute, setMinute] = useState('');
@@ -164,7 +217,8 @@ function MedicineEdit() {
     initializedIdRef.current = medication.id;
     setName(medication.name);
     setTimes(medication.times);
-    setRepeat(medication.repeat);
+    // 요일이 비어 있으면(옛 데이터) 매일로 본다
+    setDays(medication.days.length > 0 ? medication.days : ALL_DAY_VALUES);
   }, [medication]);
 
   if (loading) {
@@ -206,14 +260,26 @@ function MedicineEdit() {
     setMinute('');
   };
 
+  const toggleDay = (value) =>
+    setDays((prev) =>
+      prev.includes(value) ? prev.filter((day) => day !== value) : [...prev, value],
+    );
+
   const handleSave = async () => {
-    if (!name.trim() || times.length === 0) return;
-    const { ok, error } = await saveMedication(medication.id, toMedicationRequest({ name, times, repeat }));
+    if (!name.trim() || times.length === 0 || days.length === 0) return;
+
+    const { ok } = await saveMedication(
+      medication.id,
+      toMedicationRequest({ name, times, days }),
+    );
     if (ok) {
       navigate('/home/medicine');
       return;
     }
-    alert(error.message);
+
+    // 서버가 '복약 기록이 있는 약'의 수정을 아직 못 받는다(500).
+    // 에러 문구를 그대로 보여주면 무슨 뜻인지 알 수 없어서 할 수 있는 방법을 알려준다.
+    setSaveBlocked(true);
   };
 
   const handleDelete = async () => {
@@ -275,22 +341,58 @@ function MedicineEdit() {
           </AddTimeButton>
         </CustomTimeRow>
 
-        <Label>얼마나 자주 먹나요?</Label>
-        <RepeatSelect value={repeat} onChange={(e) => setRepeat(e.target.value)}>
-          {REPEAT_OPTIONS.map((option) => (
-            <option key={option} value={option}>
-              {option}
-            </option>
+        <Label>무슨 요일에 드시나요?</Label>
+        <DailyToggle
+          type="button"
+          $on={isEveryDay(days)}
+          onClick={() => setDays(isEveryDay(days) ? [] : ALL_DAY_VALUES)}
+        >
+          매일 먹어요
+        </DailyToggle>
+        <DayRow>
+          {DAY_OPTIONS.map((day) => (
+            <DayChip
+              key={day.value}
+              type="button"
+              $on={days.includes(day.value)}
+              onClick={() => toggleDay(day.value)}
+            >
+              {day.label}
+            </DayChip>
           ))}
-        </RepeatSelect>
+        </DayRow>
+        {days.length === 0 && <HelpText>드시는 요일을 하나 이상 골라주세요.</HelpText>}
 
-        <SaveButton type="button" onClick={handleSave} disabled={!name.trim() || times.length === 0}>
+        <SaveButton
+          type="button"
+          onClick={handleSave}
+          disabled={!name.trim() || times.length === 0 || days.length === 0}
+        >
           저장하기
         </SaveButton>
         <DeleteButton type="button" onClick={handleDelete}>
-          이 약 삭제하기
+          삭제하기
         </DeleteButton>
       </Content>
+
+      {saveBlocked && (
+        <PopupBackdrop onClick={() => setSaveBlocked(false)}>
+          <PopupCard $center $gap={16} $padTop={36} onClick={(event) => event.stopPropagation()}>
+            <PopupInnerBorder />
+            <PopupTitle $center $size={22}>
+              지금은 수정할 수 없어요
+            </PopupTitle>
+            <BlockedText>
+              이미 복약을 체크한 약은 아직 고칠 수 없어요.
+              <br />
+              약을 지우고 다시 등록해주세요.
+            </BlockedText>
+            <PopupPrimaryButton type="button" onClick={() => setSaveBlocked(false)}>
+              알겠어요
+            </PopupPrimaryButton>
+          </PopupCard>
+        </PopupBackdrop>
+      )}
     </Page>
   );
 }
