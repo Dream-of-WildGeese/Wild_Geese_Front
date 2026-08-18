@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import styled, { keyframes } from 'styled-components';
 import mascotImg from '../../assets/mascot.png';
-import mailboxImg from '../../assets/mailbox.png';
+import mailboxImg from '../../assets/home/mailbox.png';
 import paperplaneImg from '../../assets/paperplane.png';
 
 // 오리를 누르면 하나씩 뜨는 인삿말. 기능은 없고 말만 거는 자리다.
@@ -61,25 +61,26 @@ const popIn = keyframes`
   to   { opacity: 1; transform: translateY(0) scale(1); }
 `;
 
-// 오리 머리 왼쪽 위. 우체통(left 272)과 겹치지 않도록 폭을 제한한다.
+// 오리 머리 오른쪽 위. 우체통을 왼쪽으로 옮겨서 이 자리가 비었다.
+// 팝업들과 같은 크림색·점선 테두리로 맞춰 온담 화면에 어울리게 했다.
 const GreetingBubble = styled.div`
   position: absolute;
-  left: 34px;
-  top: 372px;
-  max-width: 226px;
+  right: 14px;
+  top: 330px;
+  width: 244px;
 
-  padding: 12px 16px;
+  padding: 20px 22px;
   box-sizing: border-box;
 
-  border-radius: 18px;
-  border: 1.5px solid rgba(74, 58, 47, 0.35);
-  background: #fffdf6;
-  box-shadow: 0 4px 10px rgba(74, 58, 47, 0.12);
+  border-radius: 24px;
+  border: 2.5px solid rgba(108, 67, 23, 0.55);
+  background: #fef3d5;
+  box-shadow: 0 6px 16px rgba(74, 58, 47, 0.2);
 
   color: #4a3a2f;
   font-family: Jua;
-  font-size: 17px;
-  line-height: 1.35;
+  font-size: 22px;
+  line-height: 1.4;
   text-align: center;
   word-break: keep-all;
 
@@ -90,27 +91,39 @@ const GreetingBubble = styled.div`
     animation: none;
   }
 
-  /* 오른쪽 아래로 향하는 꼬리 */
+  /* 카드 안쪽 점선 — 다른 팝업과 같은 장식 */
+  &::before {
+    content: '';
+    position: absolute;
+    inset: 7px;
+    border-radius: 18px;
+    border: 2px dashed rgba(108, 67, 23, 0.45);
+    pointer-events: none;
+  }
+
+  /* 왼쪽 아래(오리 쪽)로 향하는 꼬리 */
   &::after {
     content: '';
     position: absolute;
-    right: 34px;
-    bottom: -9px;
-    width: 16px;
-    height: 16px;
-    background: #fffdf6;
-    border-right: 1.5px solid rgba(74, 58, 47, 0.35);
-    border-bottom: 1.5px solid rgba(74, 58, 47, 0.35);
+    left: 34px;
+    bottom: -12px;
+    width: 22px;
+    height: 22px;
+    background: #fef3d5;
+    border-right: 2.5px solid rgba(108, 67, 23, 0.55);
+    border-bottom: 2.5px solid rgba(108, 67, 23, 0.55);
     transform: rotate(45deg);
   }
 `;
 
+// 오른쪽에 있던 것을 왼쪽으로 옮겼다. 그 자리는 인삿말 말풍선이 쓴다.
+// 크기는 Figma 1405:258의 130px를 따른다.
 const MailboxButton = styled.button`
   position: absolute;
-  left: 272px;
-  top: 393px;
-  width: 119px;
-  height: 119px;
+  left: 8px;
+  top: 386px;
+  width: 130px;
+  height: 130px;
   pointer-events: auto;
 `;
 
@@ -123,7 +136,8 @@ const heartbeat = keyframes`
 const MailboxImage = styled.img`
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  /* 새 그림은 여백을 포함한 정사각형이라 cover면 가장자리가 잘린다 */
+  object-fit: contain;
   pointer-events: none;
   animation: ${({ $pulse }) => ($pulse ? heartbeat : 'none')} 1.1s ease-in-out infinite;
 `;
@@ -174,7 +188,7 @@ const tiltAndFlip = keyframes`
 // 그림은 44x32지만 손가락으로 누르기엔 작아서, 버튼만 키우고 그림을 가운데 둔다.
 const PaperPlaneButton = styled.button`
   position: absolute;
-  left: 300px;
+  left: 40px;
   top: 340px;
   width: 64px;
   height: 52px;
