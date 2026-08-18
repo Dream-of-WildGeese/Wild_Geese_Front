@@ -13,6 +13,9 @@ const SLOTS = [
 
 export const getSlotLabel = (hour) => SLOTS.find((slot) => hour < slot.endHour)?.label ?? '저녁';
 
+const DAY_NAMES = ['SUNDAY', 'MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY'];
+const todayDayName = () => DAY_NAMES[new Date().getDay()];
+
 export const slotOfTime = (scheduledTime) => getSlotLabel(parseTime(scheduledTime).hour);
 
 // 서버는 TAKEN을 되돌리지 못한다. status를 NOT_RECORDED로 다시 보내면 200을 주면서
@@ -46,9 +49,11 @@ export async function loadTodayMedications() {
   ]);
 
   const unchecked = readUnchecked(recordDate);
+  const today = todayDayName();
 
-  // 서버는 오늘 해당하는 스케줄만 기록에 담아준다.
-  // 여기 없는 스케줄은 오늘 먹는 약이 아니므로 화면에서도 빼야 한다.
+  // 서버는 아직 시간이 안 지난 스케줄의 기록 행을 미리 만들어주지 않는다.
+  // 그래서 '오늘 먹는 약인지'는 로그 존재 여부가 아니라 daysOfWeek로 직접 판단한다.
+  // (로그 유무는 '먹었는지 여부'에만 쓴다 — 없으면 아직 안 먹은 것으로 본다)
   const statusBySchedule = new Map(
     (log?.medications ?? []).map((item) => [item.scheduleId, item.status]),
   );
@@ -58,7 +63,7 @@ export async function loadTodayMedications() {
       medicationId: medication.medicationId,
       name: medication.name,
       schedules: (medication.schedules ?? [])
-        .filter((schedule) => statusBySchedule.has(schedule.scheduleId))
+        .filter((schedule) => (schedule.daysOfWeek ?? []).includes(today))
         .map((schedule) => ({
           scheduleId: schedule.scheduleId,
           scheduledTime: schedule.scheduledTime,
