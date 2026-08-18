@@ -45,11 +45,12 @@ function HomeBottomNav({ onQuestionBoxClick, onHomeClick, onWeeklyReportClick })
     <Nav>
       <NavItem type="button" onClick={onQuestionBoxClick}>
         <NavIcon src={navQuestionIcon} alt="" $height={56} />
-        <NavLabel>질문함</NavLabel>
+        {/* 지난 질문·답변이 쌓이는 곳이라 '질문함'보다 이 이름이 맞다 */}
+        <NavLabel>우리의 추억</NavLabel>
       </NavItem>
       <NavItem type="button" onClick={onHomeClick}>
         <NavIcon src={navHomeIcon} alt="" $height={63} />
-        <NavLabel>오늘의 온담</NavLabel>
+        <NavLabel>건강 일지</NavLabel>
       </NavItem>
       <NavItem type="button" onClick={onWeeklyReportClick}>
         <NavIcon src={navWeeklyIcon} alt="" $height={64} />

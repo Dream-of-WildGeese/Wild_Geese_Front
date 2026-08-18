@@ -12,6 +12,16 @@ import { useAppData } from '../../../store/AppDataContext';
 import aiIcon from '../../../assets/journal/ai.png';
 import trashBin from '../../../assets/trash_bin.svg';
 import DatePickerModal from '../../../components/DatePickerModal';
+import { getCheckupAlert } from '../../../utils/localSettings';
+import {
+  PopupBackdrop,
+  PopupCard,
+  PopupInnerBorder,
+  PopupTitle,
+  PopupPrimaryButton,
+  PopupSecondaryButton,
+  PopupButtonRow,
+} from '../../../components/PopupShell';
 
 const WEEKDAYS = ['일', '월', '화', '수', '목', '금', '토'];
 
@@ -87,14 +97,17 @@ const HealthCheck = () => {
     setIsMonthPickerOpen(false);
   };
 
-  const handleDelete = async (checkupId) => {
-    if (!window.confirm('검진 일정을 삭제하시겠어요?')) return;
-    const { ok, error } = await removeCheckup(checkupId);
+  // 어떤 일정을 지울지 물어보는 중인지 (checkupId | null)
+  const [deleteTarget, setDeleteTarget] = useState(null);
+  const [deleteError, setDeleteError] = useState(null);
+
+  const handleDelete = async () => {
+    const { ok, error } = await removeCheckup(deleteTarget);
+    setDeleteTarget(null);
     if (!ok) {
-      alert(error.message || '삭제에 실패했어요.');
+      setDeleteError(error);
       return;
     }
-    alert('검진 일정이 삭제되었어요.');
     refetch();
   };
 
@@ -107,7 +120,11 @@ const HealthCheck = () => {
   // =========================
   // 달력 월 이동 상태 (년, 월)
   // =========================
-  const [currentDate, setCurrentDate] = useState(() => new Date(2026, 7, 1)); // 2026년 8월 기준
+  // 이번 달부터 보여준다. 특정 달을 박아두면 달이 바뀐 뒤 지난 달이 먼저 뜬다.
+  const [currentDate, setCurrentDate] = useState(() => {
+    const today = new Date();
+    return new Date(today.getFullYear(), today.getMonth(), 1);
+  });
 
   const currentYear = currentDate.getFullYear();
   const currentMonth = currentDate.getMonth();
@@ -127,11 +144,15 @@ const HealthCheck = () => {
   for (let i = 0; i < firstDayIndex; i += 1) calendarDays.push(null);
   for (let day = 1; day <= daysInMonth; day += 1) calendarDays.push(day);
 
+  // pastList는 매 렌더 새 배열이라 의존성으로 두면 memo가 무의미해진다.
+  // 원본인 checkupData를 기준으로 잡는다.
   const checkupDaysInView = useMemo(() => {
     const daySet = new Set();
     const allCheckups = [];
-    if (upcoming?.checkupDate) allCheckups.push(upcoming.checkupDate);
-    pastList.forEach((p) => {
+    if (checkupData?.upcomingCheckup?.checkupDate) {
+      allCheckups.push(checkupData.upcomingCheckup.checkupDate);
+    }
+    (checkupData?.pastCheckups ?? []).forEach((p) => {
       if (p.checkupDate) allCheckups.push(p.checkupDate);
     });
 
@@ -143,7 +164,7 @@ const HealthCheck = () => {
     });
 
     return daySet;
-  }, [upcoming, pastList, currentYear, currentMonth]);
+  }, [checkupData, currentYear, currentMonth]);
 
   return (
     <Page>
@@ -282,7 +303,7 @@ const HealthCheck = () => {
                   type="button"
                   aria-label="삭제"
                   disabled={deleting}
-                  onClick={() => handleDelete(upcoming.checkupId)}
+                  onClick={() => setDeleteTarget(upcoming.checkupId)}
                 >
                   <TrashIcon src={trashBin} alt="삭제" />
                 </DeleteIconButton>
@@ -290,6 +311,11 @@ const HealthCheck = () => {
               <ChipGroup>
                 <InfoChip>{formatMonthDay(upcoming.checkupDate)}</InfoChip>
                 <InfoChip>{upcoming.hospitalName}</InfoChip>
+                {/* 알림 시점은 서버에 자리가 없어 이 기기에 저장된 값이다 */}
+                {getCheckupAlert(upcoming.checkupId) &&
+                  getCheckupAlert(upcoming.checkupId) !== '알림 받지 않기' && (
+                    <InfoChip>{getCheckupAlert(upcoming.checkupId)} 알림</InfoChip>
+                  )}
               </ChipGroup>
             </UpcomingCard>
           ) : (
@@ -346,6 +372,52 @@ const HealthCheck = () => {
               refetch();
             }}
           />
+        )}
+
+        {/* 삭제는 되돌릴 수 없어서 한 번 물어본다 */}
+        {deleteTarget !== null && (
+          <PopupBackdrop onClick={() => setDeleteTarget(null)}>
+            <PopupCard
+              $center
+              $gap={16}
+              $padTop={36}
+              onClick={(event) => event.stopPropagation()}
+            >
+              <PopupInnerBorder />
+              <PopupTitle $center $size={22}>
+                이 검진 일정을 지울까요?
+              </PopupTitle>
+              <PopupMessage>지우면 다시 되돌릴 수 없어요.</PopupMessage>
+              <PopupButtonRow>
+                <PopupSecondaryButton type="button" onClick={() => setDeleteTarget(null)}>
+                  그대로 둘래요
+                </PopupSecondaryButton>
+                <PopupPrimaryButton type="button" disabled={deleting} onClick={handleDelete}>
+                  {deleting ? '지우는 중...' : '지울래요'}
+                </PopupPrimaryButton>
+              </PopupButtonRow>
+            </PopupCard>
+          </PopupBackdrop>
+        )}
+
+        {deleteError && (
+          <PopupBackdrop onClick={() => setDeleteError(null)}>
+            <PopupCard
+              $center
+              $gap={16}
+              $padTop={36}
+              onClick={(event) => event.stopPropagation()}
+            >
+              <PopupInnerBorder />
+              <PopupTitle $center $size={22}>
+                지우지 못했어요
+              </PopupTitle>
+              <PopupMessage>{deleteError.message}</PopupMessage>
+              <PopupPrimaryButton type="button" onClick={() => setDeleteError(null)}>
+                알겠어요
+              </PopupPrimaryButton>
+            </PopupCard>
+          </PopupBackdrop>
         )}
       </Content>
     </Page>
@@ -489,12 +561,16 @@ const CalendarNavHeader = styled.div`
   padding: 0 4px;
 `;
 
-const MonthTitle = styled.h3`
+// 삭제 확인·실패 팝업의 본문
+const PopupMessage = styled.p`
   margin: 0;
-  color: #4A3A2F;
+  width: 100%;
+  text-align: center;
+  color: #6b6661;
   font-family: 'Noto Sans KR', sans-serif;
-  font-size: 17px;
-  font-weight: 800;
+  font-size: 16px;
+  line-height: 1.5;
+  word-break: keep-all;
 `;
 
 const NavArrowButton = styled.button`

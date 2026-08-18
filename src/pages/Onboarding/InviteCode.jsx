@@ -100,9 +100,7 @@ const InviteCode = () => {
             <Heart src={heart} alt="" />
             <SectionTextWrap>
               <SectionTitle>1단계. 가족 연결</SectionTitle>
-              <SectionDescription>
-                가족과 서로의 하루를 자연스럽게 나누어 보세요.
-              </SectionDescription>
+              <SectionDescription>코드를 통해 가족과 연결되세요</SectionDescription>
             </SectionTextWrap>
           </SectionTitleWrap>
 
@@ -120,8 +118,8 @@ const InviteCode = () => {
 
             <CodeHelp>
               {inviteCode
-                ? '가족에게 초대 코드를 공유해주세요'
-                : '아직 발급된 코드가 없어요. 아래에서 가족 코드를 입력해 연결할 수 있어요.'}
+                ? '가족에게 이 코드를 보내주세요'
+                : '아직 코드가 없어요. 아래에 가족 코드를 넣어 연결하세요'}
             </CodeHelp>
           </CodeBox>
 
@@ -144,9 +142,7 @@ const InviteCode = () => {
               {joining ? '연결 중...' : '확인하기'}
             </ConfirmButton>
 
-            <HelpText>
-              가족의 초대코드를 입력하면 다음으로 넘어가요
-            </HelpText>
+            <HelpText>가족이 보내준 코드를 입력하세요</HelpText>
           </CodeBox>
         </Section>
       </Content>

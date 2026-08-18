@@ -10,3 +10,23 @@ export const getShowMailbox = () => localStorage.getItem(MAILBOX_KEY) !== 'off';
 export const setShowMailbox = (on) => {
   localStorage.setItem(MAILBOX_KEY, on ? 'on' : 'off');
 };
+
+// 검진 알림 시점('3일 전' 등). HealthCheckupRequest에 해당 필드가 없어서
+// 서버에 못 보내고 이 기기에만 남긴다. checkupId별로 저장한다.
+const CHECKUP_ALERT_KEY = 'ondam:checkup-alerts';
+
+const readCheckupAlerts = () => {
+  try {
+    return JSON.parse(localStorage.getItem(CHECKUP_ALERT_KEY) ?? '{}');
+  } catch {
+    return {};
+  }
+};
+
+export const getCheckupAlert = (checkupId) => readCheckupAlerts()[String(checkupId)] ?? null;
+
+export const setCheckupAlert = (checkupId, option) => {
+  const saved = readCheckupAlerts();
+  saved[String(checkupId)] = option;
+  localStorage.setItem(CHECKUP_ALERT_KEY, JSON.stringify(saved));
+};

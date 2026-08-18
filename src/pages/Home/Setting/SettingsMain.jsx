@@ -19,6 +19,13 @@ import ConfirmPopup from './ConfirmPopup';
 import NotificationListPopup from './NotificationListPopup';
 import { useWebPush } from '../../../hooks/useWebPush';
 import { getShowMailbox, setShowMailbox } from '../../../utils/localSettings';
+import {
+  PopupBackdrop,
+  PopupCard,
+  PopupInnerBorder,
+  PopupTitle,
+  PopupPrimaryButton,
+} from '../../../components/PopupShell';
 
 
 const Page = styled.div`
@@ -136,6 +143,17 @@ const ToggleThumb = styled.span`
   transition: left 0.15s ease;
 `;
 
+const PushErrorText = styled.p`
+  margin: 0;
+  width: 100%;
+  text-align: center;
+  color: #6b6661;
+  font-family: 'Noto Sans KR', sans-serif;
+  font-size: 16px;
+  line-height: 1.5;
+  word-break: keep-all;
+`;
+
 const DEFAULT_NOTIFICATION_SETTING = {
   morningTime: '08:30',
   morningEnabled: true,
@@ -198,59 +216,56 @@ function SettingsMain() {
     }
   };
 
-  const { enablePush } = useWebPush();
+  const { enablePush, removeBrowserSubscription } = useWebPush();
+  // 푸시를 켜지 못했을 때 알려주는 팝업 (권한 거부, VAPID 키 누락 등)
+  const [pushError, setPushError] = useState(null);
 
-// SettingsMain.jsx 내부 handleToggle 수정
-const handleToggle = async (key) => {
-  if (!setting) return;
-  const nextValue = !setting[key];
-  const nextSetting = { ...setting, [key]: nextValue };
+  // 켜고 끌 때 브라우저 구독과 서버 구독이 함께 움직여야 한다.
+  // 예전에는 전부 끌 때 서버 구독만 지우고 브라우저 구독은 남겨둬서,
+  // 다시 켜면 브라우저는 '구독 있음' / 서버는 '없음'으로 어긋났다.
+  const handleToggle = async (key) => {
+    if (!setting) return;
+    const nextValue = !setting[key];
 
-  // 4개 알림 중 하나라도 켜져 있는지 확인
-  const isAnyEnabled = NOTIFICATION_ROWS.some((row) =>
-    row.key === key ? nextValue : Boolean(setting[row.key])
-  );
+    // 이번 조작까지 반영했을 때 켜진 알림이 하나라도 남는지
+    const anyEnabled = NOTIFICATION_ROWS.some((row) =>
+      row.key === key ? nextValue : Boolean(setting[row.key]),
+    );
 
-  // 1. 알림을 켤 때: 푸시 구독 생성 및 백엔드 등록
-  if (nextValue) {
-    try {
-      const sub = await enablePush();
+    if (nextValue) {
+      try {
+        const sub = await enablePush();
+        const toBase64 = (raw) =>
+          raw ? btoa(String.fromCharCode(...new Uint8Array(raw))) : '';
 
-      const rawP256dh = sub.getKey ? sub.getKey('p256dh') : null;
-      const rawAuth = sub.getKey ? sub.getKey('auth') : null;
-
-      const p256dh = rawP256dh
-        ? btoa(String.fromCharCode.apply(null, new Uint8Array(rawP256dh)))
-        : '';
-      const auth = rawAuth
-        ? btoa(String.fromCharCode.apply(null, new Uint8Array(rawAuth)))
-        : '';
-
-      await subscribePush({
-        endpoint: sub.endpoint,
-        p256dh,
-        auth,
-      }).catch((err) => {
-        // 이미 등록된 토큰 에러(409 등)는 무시하고 진행
-        console.warn('구독 등록 응답 알림:', err);
-      });
-    } catch (error) {
-      console.warn('푸시 알림 활성화 경고:', error);
+        await subscribePush({
+          endpoint: sub.endpoint,
+          p256dh: toBase64(sub.getKey?.('p256dh')),
+          auth: toBase64(sub.getKey?.('auth')),
+        }).catch((error) => {
+          // 이미 등록된 구독이면 서버가 거절하는데, 그건 우리가 원한 상태라 넘어간다.
+          console.warn('구독 등록 응답:', error);
+        });
+      } catch (error) {
+        // 권한 거부·VAPID 키 누락 등. 여기서 그냥 넘어가면 서버에는 '켜짐'으로
+        // 저장되는데 실제 알림은 안 와서, 설정과 동작이 어긋난다.
+        setPushError(error);
+        return;
+      }
     }
-  }
 
-  // 2. 알림 설정 서버 저장
-  await applyChange({ [key]: nextValue });
+    await applyChange({ [key]: nextValue });
 
-  // 3. 만약 4개 알림이 전부 꺼졌다면 서버 푸시 구독 정보 삭제
-  if (!isAnyEnabled) {
-    try {
-      await unsubscribePush();
-    } catch (error) {
-      console.warn('푸시 구독 해제 실패:', error);
+    // 전부 껐으면 서버와 브라우저 양쪽 구독을 함께 지운다.
+    if (!anyEnabled) {
+      try {
+        await unsubscribePush();
+      } catch (error) {
+        console.warn('서버 푸시 구독 해제 실패:', error);
+      }
+      await removeBrowserSubscription();
     }
-  }
-};
+  };
   const handleTimeConfirm = (nextTime) => {
     applyChange({ [timeEditor]: nextTime });
     setTimeEditor(null);
@@ -258,23 +273,26 @@ const handleToggle = async (key) => {
 
   // 유저 식별 헤더가 빠지기 전에(clearUserId 이전에) 구독 삭제 요청을 보내야 한다.
   // 실패해도 로그아웃/탈퇴 자체는 막지 않는다.
-  const handleLogout = async () => {
+  // 서버 구독만 지우면 이 기기에는 구독이 남아서 알림이 계속 온다.
+  // 브라우저 쪽까지 함께 지운다.
+  const clearPushEverywhere = async () => {
     try {
       await unsubscribePush();
     } catch (error) {
-      console.error('푸시 구독 해제 실패:', error);
+      console.error('서버 푸시 구독 해제 실패:', error);
     }
+    await removeBrowserSubscription();
+  };
+
+  const handleLogout = async () => {
+    await clearPushEverywhere();
     clearUserId();
     setPopup(null);
     navigate('/');
   };
 
   const handleWithdraw = async () => {
-    try {
-      await unsubscribePush();
-    } catch (error) {
-      console.error('푸시 구독 해제 실패:', error);
-    }
+    await clearPushEverywhere();
     clearUserId();
     resetAppData();
     setPopup(null);
@@ -398,6 +416,22 @@ const handleToggle = async (key) => {
           onConfirm={handleTimeConfirm}
           onClose={() => setTimeEditor(null)}
         />
+      )}
+
+      {/* 푸시를 켜지 못하면 설정만 켜진 채로 알림이 안 와서, 이유를 알려준다 */}
+      {pushError && (
+        <PopupBackdrop onClick={() => setPushError(null)}>
+          <PopupCard $center $gap={16} $padTop={36} onClick={(event) => event.stopPropagation()}>
+            <PopupInnerBorder />
+            <PopupTitle $center $size={22}>
+              알림을 켜지 못했어요
+            </PopupTitle>
+            <PushErrorText>{pushError.message}</PushErrorText>
+            <PopupPrimaryButton type="button" onClick={() => setPushError(null)}>
+              알겠어요
+            </PopupPrimaryButton>
+          </PopupCard>
+        </PopupBackdrop>
       )}
     </Page>
   );

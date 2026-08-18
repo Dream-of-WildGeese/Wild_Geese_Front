@@ -1,11 +1,13 @@
 // 화면은 '아침 8:00' 같은 한글 라벨로 복용 시간을 다루고, 서버는 '08:00' 문자열을 쓴다.
 // 두 표현을 오가는 변환을 여기 모아둔다.
 
+// '아침 8:00' '취침전 10:00'처럼 때를 가리키는 말과 시각이 섞여 있으면
+// 목록에서 순서를 가늠하기 어렵다. 오전/오후로 통일한다.
 const PRESET_TO_TIME = {
-  '아침 8:00': '08:00',
-  '점심 12:00': '12:00',
-  '저녁 6:00': '18:00',
-  '취침전 10:00': '22:00',
+  '오전 8:00': '08:00',
+  '오후 12:00': '12:00',
+  '오후 6:00': '18:00',
+  '오후 10:00': '22:00',
 };
 
 const TIME_TO_PRESET = Object.fromEntries(
@@ -27,7 +29,7 @@ export const labelToTime = (label) => {
   return `${String(hour).padStart(2, '0')}:${minute}`;
 };
 
-// '08:00' | '08:00:00' -> '아침 8:00'. 프리셋에 없으면 '오전 8:00' 형태로 만든다.
+// '08:00' | '08:00:00' -> '오전 8:00'
 export const timeToLabel = (time) => {
   const hhmm = String(time).slice(0, 5);
   if (TIME_TO_PRESET[hhmm]) return TIME_TO_PRESET[hhmm];
@@ -80,7 +82,11 @@ export const toMedicationView = (medication) => {
   return {
     id: medication.medicationId,
     name: medication.name,
-    times: schedules.map((schedule) => timeToLabel(schedule.scheduledTime)),
+    // 서버가 주는 순서가 등록 순이라, 이른 시각부터 보이도록 정렬해서 넘긴다.
+    times: schedules
+      .map((schedule) => schedule.scheduledTime)
+      .sort((a, b) => String(a).localeCompare(String(b)))
+      .map(timeToLabel),
     repeat: daysToRepeat(schedules[0]?.daysOfWeek),
     days: schedules[0]?.daysOfWeek ?? [],
     schedules,
@@ -98,6 +104,30 @@ export const DAY_OPTIONS = [
 ];
 
 export const isEveryDay = (days) => (days?.length ?? 0) >= 7;
+
+// 복용 시간은 이른 시각부터 보여준다. 고른 순서대로 두면 '오후 6시 → 오전 8시'처럼
+// 뒤죽박죽 보여서 하루 흐름을 못 읽는다.
+export const sortTimeLabels = (labels) =>
+  [...labels].sort((a, b) => String(labelToTime(a)).localeCompare(String(labelToTime(b))));
+
+// 사용자가 직접 넣은 시·분이 실제 시각인지 본다. (12시 89분 같은 입력을 막는다)
+export const isValidTime = (hour, minute) => {
+  const h = Number(hour);
+  const m = Number(minute);
+  return Number.isInteger(h) && Number.isInteger(m) && h >= 1 && h <= 12 && m >= 0 && m <= 59;
+};
+
+// 같은 이름의 약을 또 만들면 복약 화면에서 어느 쪽을 체크한 건지 알 수 없다.
+// 공백과 대소문자만 다른 것도 같은 약으로 본다.
+const normalizeName = (name) => String(name ?? '').replace(/\s+/g, '').toLowerCase();
+
+export const isDuplicateName = (name, existingNames, exceptName = null) => {
+  const target = normalizeName(name);
+  if (!target) return false;
+  return existingNames
+    .filter((item) => normalizeName(item) !== normalizeName(exceptName))
+    .some((item) => normalizeName(item) === target);
+};
 
 // 화면 입력값을 등록/수정 요청 본문으로 바꾼다.
 // 요일을 직접 고른 화면은 days를 넘기고, 주기 문구만 있는 화면은 repeat을 넘긴다.

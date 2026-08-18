@@ -8,7 +8,6 @@ import HomeCharacterStage from './HomeCharacterStage';
 import HomeBottomNav from './HomeBottomNav';
 import DayQuestionPopup from './TodayOndam/Day/DayQuestionPopup';
 import MedicineCheckPopup from './TodayOndam/Medicine/MedicineCheckPopup';
-import NightIntroPopup from './TodayOndam/Night/NightIntroPopup';
 import EveningCheckPopup from './TodayOndam/Night/EveningCheckPopup';
 import NightCompletePopup from './TodayOndam/Night/NightCompletePopup';
 import Letterbox from './Letterbox/Letterbox';
@@ -91,7 +90,10 @@ function Home() {
     // 기록 수정 화면이 읽는 목록과 어긋나서 저장이 사라진 것처럼 보인다.
     //
     // 상단 약 아이콘의 'medication'(복용약 관리) 팝업과 이름이 겹치지 않도록 구분한다.
-    setActivePopup(type === 'medication' ? 'medication_check' : type);
+    // 저녁은 안내 화면을 건너뛰고 첫 질문(컨디션)으로 바로 들어간다.
+    if (type === 'medication') return setActivePopup('medication_check');
+    if (type === 'evening') return setActivePopup('eveningCheck');
+    setActivePopup(type);
   };
 
   return (
@@ -138,9 +140,8 @@ function Home() {
       {activePopup === 'medication_check' && (
         <MedicineCheckPopup onClose={closePopup} />
       )}
-      {activePopup === 'evening' && (
-        <NightIntroPopup onStart={() => setActivePopup('eveningCheck')} onClose={closePopup} />
-      )}
+      {/* 안내 팝업을 한 번 거치던 걸 없애고 컨디션 질문으로 바로 들어간다.
+          '시작하기'만 누르는 화면이라 단계만 늘렸다. */}
       {activePopup === 'eveningCheck' && (
         <EveningCheckPopup
           onClose={closePopup}

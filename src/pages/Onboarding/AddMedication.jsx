@@ -2,13 +2,20 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
 import back from '../../assets/onboarding/x.svg';
-import { createMedication } from '../../api/medication';
-import { useApiAction } from '../../hooks/useApi';
-import { toMedicationRequest } from '../../utils/medication';
+import { createMedication, getMedications } from '../../api/medication';
+import { useApi, useApiAction } from '../../hooks/useApi';
+import {
+  toMedicationRequest,
+  toMedicationView,
+  sortTimeLabels,
+  isDuplicateName,
+} from '../../utils/medication';
 
 const AddMedication = () => {
   const navigate = useNavigate();
   const { execute: addMedication } = useApiAction(createMedication);
+  // 이름 중복을 막으려면 이미 등록된 약 목록이 필요하다.
+  const { data: medications } = useApi(getMedications);
 
   const [name, setName] = useState('');
   const [times, setTimes] = useState([]);
@@ -20,12 +27,8 @@ const AddMedication = () => {
 
   const repeatList = ['매일', '월', '화', '수', '목', '금', '토', '일'];
 
-  const timeOptions = [
-    '아침 8:00',
-    '점심 12:00',
-    '저녁 6:00',
-    '취침전 10:00',
-  ];
+  // 때를 가리키는 말 대신 오전/오후로 통일한다.
+  const timeOptions = ['오전 8:00', '오후 12:00', '오후 6:00', '오후 10:00'];
 
   // 직접 추가한 커스텀 시간만 필터링
   const customTimes = times.filter((t) => !timeOptions.includes(t));
@@ -91,7 +94,8 @@ const AddMedication = () => {
       return;
     }
 
-    setTimes((prev) => [...prev, label]);
+    // 이른 시각부터 보이도록 정렬해서 넣는다.
+    setTimes((prev) => sortTimeLabels([...prev, label]));
     setHour('');
     setMinute('');
   };
@@ -100,8 +104,16 @@ const AddMedication = () => {
 
   const handleSave = async () => {
     if (!name.trim() || times.length === 0) return;
+
+    // 이름이 겹치면 복약 화면에서 어느 약을 체크한 건지 구분할 수 없다.
+    const existingNames = (medications ?? []).map(toMedicationView).map((med) => med.name);
+    if (isDuplicateName(name, existingNames)) {
+      alert('같은 이름의 약이 이미 있어요.');
+      return;
+    }
+
     const { ok, error } = await addMedication(
-      toMedicationRequest({ name, times, repeat: repeat[0] ?? '매일' }),
+      toMedicationRequest({ name, times: sortTimeLabels(times), repeat: repeat[0] ?? '매일' }),
     );
     if (!ok) {
       alert(error.message);

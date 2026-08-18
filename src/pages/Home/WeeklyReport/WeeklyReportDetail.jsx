@@ -397,8 +397,10 @@ const DayButtonLabel = styled.span`
   color: #4a3a2f;
   font-family: Jua;
   font-size: 13px;
+  line-height: 1;
 `;
 
+// 요일과 같은 크기로 맞춘다. 11px과 13px로 달라서 한 덩어리로 안 읽혔다.
 const DayButtonDate = styled.span`
   position: absolute;
   top: 52px;
@@ -407,7 +409,8 @@ const DayButtonDate = styled.span`
   text-align: center;
   color: #4a3a2f;
   font-family: Jua;
-  font-size: 11px;
+  font-size: 13px;
+  line-height: 1;
 `;
 
 const StatusText = styled.p`
@@ -498,7 +501,8 @@ function WeeklyReportDetail() {
 
       <GreenCard>
         <AiIcon src={aiIcon} alt="" />
-        <GreenLabel>이번 주 한마디</GreenLabel>
+        {/* 아직 한 주가 안 끝난 주는 '한마디' 대신 진행 중이라는 걸 알린다 */}
+        <GreenLabel>{detail.inProgress ? '아직 쌓이는 중이에요' : '이번 주 한마디'}</GreenLabel>
         <Headline>“{detail.headline}”</Headline>
         {detail.headlineDesc && <GreenText>{detail.headlineDesc}</GreenText>}
       </GreenCard>

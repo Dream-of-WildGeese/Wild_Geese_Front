@@ -68,5 +68,18 @@ export function useWebPush() {
     return subscription;
   };
 
-  return { enablePush };
+  // 브라우저에 남아 있는 구독을 지운다. 서버 구독만 지우면 다음에 켤 때
+  // 브라우저는 '구독 있음', 서버는 '없음'으로 어긋난 채로 시작한다.
+  const removeBrowserSubscription = async () => {
+    if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
+    try {
+      const registration = await navigator.serviceWorker.ready;
+      const subscription = await registration.pushManager.getSubscription();
+      if (subscription) await subscription.unsubscribe();
+    } catch (error) {
+      console.warn('브라우저 푸시 구독 해제 실패:', error);
+    }
+  };
+
+  return { enablePush, removeBrowserSubscription };
 }

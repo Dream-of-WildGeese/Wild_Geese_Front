@@ -1,10 +1,10 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
 import { useLocation } from 'react-router-dom';
 import back from '../../assets/onboarding/back.svg';
 import { useAppData } from '../../store/AppDataContext';
-import { getMe, updateHealthProfile } from '../../api/user';
+import { getMe, updateHealthProfile, getHealthProfile } from '../../api/user';
 import { getMedications } from '../../api/medication';
 import { useApi, useApiAction } from '../../hooks/useApi';
 import BirthDatePickerModal from '../../components/BirthDatePickerModal';
@@ -21,6 +21,8 @@ const formatBirthLabel = (value) => {
 const GENDER_VALUES = { male: 'MALE', female: 'FEMALE' };
 
 // 건강 관심사도 서버가 enum만 받는다. 한글 라벨을 그대로 보내면 400이 난다.
+// 화면에 보여주던 목록('체력관리' 등)이 이 키와 달라서, 무엇을 골라도
+// 변환 결과가 비어 저장이 안 되고 있었다. 목록을 이 키에 맞춘다.
 const INTEREST_VALUES = {
   수면: 'SLEEP',
   활동량: 'ACTIVITY',
@@ -28,6 +30,23 @@ const INTEREST_VALUES = {
   복약: 'MEDICINE',
   기분: 'MOOD',
 };
+
+const INTEREST_LABELS = Object.fromEntries(
+  Object.entries(INTEREST_VALUES).map(([label, value]) => [value, label]),
+);
+
+const GENDER_LABELS = { MALE: 'male', FEMALE: 'female' };
+
+const DISEASE_LIST = [
+  '고혈압',
+  '당뇨',
+  '고지혈증',
+  '심장질환',
+  '관절·허리 통증',
+  '골다공증',
+  '기타',
+  '없음',
+];
 
 // 만 나이 기준 가입 가능 연령. 개인정보보호법상 만 14세 미만은 법정대리인 동의가
 // 필요해서, 그 절차가 없는 지금은 14세를 하한으로 둔다.
@@ -65,6 +84,36 @@ const HealthSet = () => {
     }
   }, [me]);
 
+  // 이미 저장해둔 건강 프로필이 있으면 그 값으로 채워서 연다.
+  // 빈 화면에서 다시 고르게 하면 저장돼 있던 값이 지워진 것처럼 보인다.
+  const { data: healthProfile } = useApi(getHealthProfile);
+  const prefilledRef = useRef(false);
+  useEffect(() => {
+    if (prefilledRef.current || !healthProfile) return;
+    prefilledRef.current = true;
+
+    if (healthProfile.birthDate) {
+      setBirth(healthProfile.birthDate);
+      setProfile({ birth: healthProfile.birthDate });
+    }
+    if (GENDER_LABELS[healthProfile.gender]) {
+      setGender(GENDER_LABELS[healthProfile.gender]);
+      setProfile({ gender: GENDER_LABELS[healthProfile.gender] });
+    }
+    if (healthProfile.diseases?.length) {
+      setConditions(healthProfile.diseases);
+      // 목록에 없는 병명은 '기타'로 직접 넣은 것이다.
+      setOtherDiseases(healthProfile.diseases.filter((d) => !DISEASE_LIST.includes(d)));
+    }
+    if (healthProfile.wellnessInterests?.length) {
+      const labels = healthProfile.wellnessInterests
+        .map((value) => INTEREST_LABELS[value])
+        .filter(Boolean);
+      setInterests(labels);
+      saveInterests(labels);
+    }
+  }, [healthProfile]);
+
   const { data: medicationList } = useApi(getMedications);
   const medications = (medicationList ?? []).map((med) => ({
     id: med.medicationId,
@@ -100,7 +149,7 @@ const HealthSet = () => {
     navigate('/onboarding/complete/2');
   };
 
-  const interestList = ['체력관리', '스트레스 관리', '수면 개선', '식습관 개선'];
+  const interestList = Object.keys(INTEREST_VALUES);
 
   const toggleInterest = (item) => {
     const next = interests.includes(item) ? interests.filter((v) => v !== item) : [...interests, item];
@@ -167,17 +216,8 @@ const HealthSet = () => {
         ...(updated.length ? ['기타', ...updated] : []),
       ]);
     };
-  const diseaseList = [
-    '고혈압',
-    '당뇨',
-    '고지혈증',
-    '심장질환',
-    '관절·허리 통증',
-    '골다공증',
-    '기타',
-    '없음',
-  ];
-  
+  const diseaseList = DISEASE_LIST;
+
 
   const selectedDiseases = data.conditions || [];
   const [otherDiseaseInput, setOtherDiseaseInput] = useState('');

@@ -3,6 +3,14 @@ import styled from 'styled-components';
 import DatePickerModal from '../../../components/DatePickerModal';
 import { useApiAction } from '../../../hooks/useApi';
 import { createCheckup } from '../../../api/checkup/createCheckup';
+import { setCheckupAlert } from '../../../utils/localSettings';
+import {
+  PopupBackdrop,
+  PopupCard,
+  PopupInnerBorder,
+  PopupTitle,
+  PopupPrimaryButton,
+} from '../../../components/PopupShell';
 
 const formatDateLabel = (value) => {
   const [year, month, day] = String(value).split('-').map(Number);
@@ -50,40 +58,36 @@ const AddHealthCheck = ({ onClose, onSuccess }) => {
     setCustomTypes((prev) => prev.filter((item) => item !== target));
   };
 
+  // 못 채운 항목을 알려주는 팝업 ('검진 종류' 등) / 저장 실패 팝업
+  const [missing, setMissing] = useState(null);
+  const [saveError, setSaveError] = useState(null);
+
   const handleSave = async () => {
     const finalType =
       checkType === '직접 입력'
         ? (customTypes.length > 0 ? customTypes.join(', ') : customTypeInput.trim())
         : checkType;
 
-    if (!finalType) {
-      alert('검진 종류를 선택해주세요.');
-      return;
-    }
-
-    if (!date) {
-      alert('날짜를 선택해주세요.');
-      return;
-    }
-
-    if (!hospital.trim()) {
-      alert('병원 이름을 입력해주세요.');
-      return;
-    }
+    if (!finalType) return setMissing('검진 종류를 골라주세요');
+    if (!date) return setMissing('날짜를 골라주세요');
+    if (!hospital.trim()) return setMissing('병원 이름을 적어주세요');
 
     // 서버 일정 등록 API 호출 (POST /api/v1/checkups)
-    const { ok, error } = await addCheckup({
+    const { ok, data, error } = await addCheckup({
       checkupDate: date,
       checkupType: finalType,
       hospitalName: hospital.trim(),
     });
 
     if (!ok) {
-      alert(error.message);
+      setSaveError(error);
       return;
     }
 
-    alert('검진 일정이 등록되었어요!');
+    // 알림 시점은 서버 요청 본문에 자리가 없어서 이 기기에만 남긴다.
+    // POST 응답(ApiResponseLong)은 새 checkupId를 숫자로 그대로 돌려준다.
+    if (data != null) setCheckupAlert(data, alertOption);
+
     onSuccess?.();
   };
 
@@ -231,6 +235,33 @@ const AddHealthCheck = ({ onClose, onSuccess }) => {
           onClose={() => setIsDatePickerOpen(false)}
         />
       )}
+
+      {/* 못 채운 항목 안내 / 저장 실패. 브라우저 기본 알림창은 폰 프레임 밖에 뜬다 */}
+      {(missing || saveError) && (
+        <PopupBackdrop
+          onClick={() => {
+            setMissing(null);
+            setSaveError(null);
+          }}
+        >
+          <PopupCard $center $gap={16} $padTop={36} onClick={(event) => event.stopPropagation()}>
+            <PopupInnerBorder />
+            <PopupTitle $center $size={22}>
+              {missing ? '아직 안 고른 게 있어요' : '등록하지 못했어요'}
+            </PopupTitle>
+            <NoticeText>{missing ?? saveError.message}</NoticeText>
+            <PopupPrimaryButton
+              type="button"
+              onClick={() => {
+                setMissing(null);
+                setSaveError(null);
+              }}
+            >
+              알겠어요
+            </PopupPrimaryButton>
+          </PopupCard>
+        </PopupBackdrop>
+      )}
     </Overlay>
   );
 };
@@ -240,6 +271,17 @@ export default AddHealthCheck;
 /* =========================
    Overlay
 ========================= */
+
+const NoticeText = styled.p`
+  margin: 0;
+  width: 100%;
+  text-align: center;
+  color: #6b6661;
+  font-family: 'Noto Sans KR', sans-serif;
+  font-size: 16px;
+  line-height: 1.5;
+  word-break: keep-all;
+`;
 
 const Overlay = styled.div`
   position: absolute;
