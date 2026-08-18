@@ -84,16 +84,20 @@ const DateRange = styled.p`
 `;
 
 // 이름이 길어지면 40px에서 두 줄로 넘쳐 카드를 밀어낸다. 좁은 화면에서만 줄인다.
+// vw는 브라우저 창 너비 기준이라, 폰 프레임(최대 402px)보다 훨씬 넓은 데스크톱
+// 화면에서는 항상 clamp 최댓값(40px)으로 찍혀서 '엄마의/아빠의' 같은 긴 제목이
+// 한 줄에 안 들어가고 줄바꿈됐다. 프레임 안에서 늘 한 줄에 들어가는 고정 크기로 바꿨다.
 const FlowTitle = styled.h1`
   margin: 0;
   width: 100%;
   text-align: center;
   color: #4a3a2f;
   font-family: Jua;
-  font-size: clamp(28px, 9vw, 40px);
+  font-size: 34px;
   font-weight: 400;
   line-height: 1.2;
   word-break: keep-all;
+  white-space: nowrap;
 `;
 
 const TitleDivider = styled.div`
