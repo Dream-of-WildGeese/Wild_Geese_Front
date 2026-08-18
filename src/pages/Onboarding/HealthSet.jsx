@@ -109,17 +109,38 @@ const HealthSet = () => {
   };
 
   const toggleDisease = (disease) => {
-        if (disease === '기타' && selectedDiseases.includes('기타')) {
-          setOtherDiseases([]);
-          setOtherDiseaseInput('');
-        }
+    // 1. '없음'을 클릭한 경우
+    if (disease === '없음') {
+      const isNoneSelected = selectedDiseases.includes('없음');
+      if (isNoneSelected) {
+        // 이미 '없음'이 켜져 있는 상태에서 다시 누르면 해제
+        setConditions([]);
+      } else {
+        // '없음'을 켜면 기존 모든 질환 및 '기타' 입력값 전체 초기화
+        setConditions(['없음']);
+        setOtherDiseases([]);
+        setOtherDiseaseInput('');
+      }
+      return;
+    }
 
-        setConditions(
-          selectedDiseases.includes(disease)
-            ? selectedDiseases.filter((d) => d !== disease)
-            : [...selectedDiseases, disease]
-        );
-      };
+    // 2. '없음'이 아닌 다른 질환을 클릭한 경우 ('없음'은 자동으로 제외)
+    let nextDiseases = selectedDiseases.filter((d) => d !== '없음');
+
+    if (disease === '기타' && nextDiseases.includes('기타')) {
+      // '기타'를 해제할 때는 직접 입력한 기타 질환 목록 초기화
+      setOtherDiseases([]);
+      setOtherDiseaseInput('');
+    }
+
+    if (nextDiseases.includes(disease)) {
+      nextDiseases = nextDiseases.filter((d) => d !== disease);
+    } else {
+      nextDiseases = [...nextDiseases, disease];
+    }
+
+    setConditions(nextDiseases);
+  };
     const addOtherDisease = () => {
       const value = otherDiseaseInput.trim();
 
@@ -199,7 +220,7 @@ const [otherDiseases, setOtherDiseases] = useState(
         </BackButton>
 
         <Header>
-          <Title>건강 프로필 설정</Title>
+          <Title>건강 프로필</Title>
         </Header>
 
         <ProgressWrapper>
@@ -210,12 +231,11 @@ const [otherDiseases, setOtherDiseases] = useState(
 
         <SubText>전체 3단계 중 2단계예요</SubText>
         <StageBlock>
-          <StageTitleRow>
-            <StageIcon src={heart} alt="" />
+          <StageIcon src={heart} alt="" />
+          <StageTextWrap>
             <StageTitle>2단계. 건강 프로필 설정</StageTitle>
-          </StageTitleRow>
-
-          <StageDesc>가족과 나누고 싶은 건강 정보를 알려주세요</StageDesc>
+            <StageDesc>가족과 나누고 싶은 건강 정보를 알려주세요</StageDesc>
+          </StageTextWrap>
         </StageBlock>
         <ScrollArea>
             <Card>
@@ -261,22 +281,6 @@ const [otherDiseases, setOtherDiseases] = useState(
             </InputGroup>
             </Card>
 
-            <AgreeBox>
-            <input
-                type="checkbox"
-                checked={agreed}
-                onChange={() => setAgreed(!agreed)}
-            />
-
-            <span>
-                이름, 생년월일, 성별, 건강 상태, 복용 약물 등 개인정보 및
-                건강에 관한 민감정보를 수집하며, 수집된 정보는 가족 간 건강
-                상태 공유 및 서비스 제공 목적으로만 이용됩니다. 동의하신 가족
-                구성원에게만 제공되며, 목적 외 용도로는 사용되지 않습니다.
-            </span>
-            </AgreeBox>
-
-            
             <Card>
               <CardTitle>현재 꾸준히 관리하고 있는 건강 문제가 있나요?</CardTitle>
 
@@ -362,6 +366,20 @@ const [otherDiseases, setOtherDiseases] = useState(
                 <AddChip onClick={() => navigate('/onboarding/medication/add')}>+ 추가</AddChip>
             </ChipWrap>
             </Card>
+            <AgreeBox>
+            <input
+                type="checkbox"
+                checked={agreed}
+                onChange={() => setAgreed(!agreed)}
+            />
+
+            <span>
+                이름, 생년월일, 성별, 건강 상태, 복용 약물 등 개인정보 및
+                건강에 관한 민감정보를 수집하며, 수집된 정보는 가족 간 건강
+                상태 공유 및 서비스 제공 목적으로만 이용됩니다. 동의하신 가족
+                구성원에게만 제공되며, 목적 외 용도로는 사용되지 않습니다.
+            </span>
+            </AgreeBox>
 
         </ScrollArea>
 
@@ -377,6 +395,8 @@ const [otherDiseases, setOtherDiseases] = useState(
         <NextButton onClick={handleNext} disabled={saving}>
           {saving ? '저장 중...' : '다음'}
         </NextButton>
+
+        
       </Content>
 
       {isMissingPopupOpen && (
@@ -410,7 +430,11 @@ const Page = styled.div`
 
 const Content = styled.div`
   position: relative;
+
+  max-width: 402px;
   height: 100%;
+  margin: 0 auto;
+
   display: flex;
   flex-direction: column;
   box-sizing: border-box;
@@ -490,40 +514,39 @@ const SubText = styled.p`
 `;
 
 const StageBlock = styled.div`
-  margin: 0 0 18px;
-`;
-
-const StageTitleRow = styled.div`
   display: flex;
-  align-items: center;
-  gap: 4px;
+  align-items: flex-start;
+  gap: 12px;
+  margin-top: 2px;
 `;
 
 const StageIcon = styled.img`
-  width: 40px;
-  height: 40px;
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
+  margin-top: 2px;
+`;
+
+const StageTextWrap = styled.div`
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
 `;
 
 const StageTitle = styled.h2`
   margin: 0;
   color: #4A3A2F;
-font-family: Jua;
-font-size: 28px;
-font-style: normal;
-font-weight: 400;
-line-height: normal;
+  font-family: Jua;
+  font-size: 28px;
+  font-weight: 400;
 `;
 
 const StageDesc = styled.p`
-  margin: 0 3px 0;
+  margin: 0 0 0;
   color: #A79C8E;
-font-family: "Noto Sans KR";
-font-size: 18px;
-font-style: normal;
-font-weight: 400;
-line-height: normal;
-flex-direction: column;
-justify-content: center;
+  font-family: 'Noto Sans KR';
+  font-size: 16px;
+  font-weight: 400;
 `;
 
 const Card = styled.div`
@@ -700,7 +723,7 @@ const MedChip = styled.div`
   padding: 8px 14px;
   border-radius: 999px;
   border: 1px solid rgba(74,58,47,.2);
-  background: #E8DEB6;
+  background: #F6EBC7;
   color: #4A3A2F;
   font-size: 14px;
   font-weight: 600;
@@ -730,22 +753,20 @@ const Manage = styled.button`
 `;
 
 const NextButton = styled.button`
-  width: 100%;
+  width:100%;
   height: 56px;
 
-  margin-top: 8px;
-
-  border-radius: 18px;
-  border: 1.5px solid rgba(74,58,47,.45);
-
+  border-radius: 16px;
+  border: 1.5px solid rgba(74,58,47,.55);
   background: #CBD879;
-  color: #4A3A2F;
 
-  font-family: Jua, sans-serif;
-  font-size: 22px;
+  color: #4A3A2F;
+  font-family: Jua;
+  font-size: 18px;
   font-weight: 400;
 
   cursor: pointer;
+
 `;
 
 const DiseaseInput = styled(Input)`

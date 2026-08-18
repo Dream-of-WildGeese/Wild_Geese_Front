@@ -1,9 +1,14 @@
 self.addEventListener('push', (event) => {
+  console.log('🔥 REAL PUSH RECEIVED');
+
   let data = {};
 
   try {
     data = event.data ? event.data.json() : {};
-  } catch {
+    console.log('🔥 PUSH PAYLOAD:', data);
+  } catch (e) {
+    console.log('🔥 PUSH PARSE ERROR:', e);
+
     data = {
       title: '온담',
       body: event.data?.text?.() || '',
@@ -12,7 +17,7 @@ self.addEventListener('push', (event) => {
 
   event.waitUntil(
     self.registration.showNotification(data.title || '온담', {
-      body: data.content||data.body || '',
+      body: data.content || data.body || '',
       icon: '/icons/pinkflower.svg',
       badge: '/icons/pinkflower.svg',
       data: {

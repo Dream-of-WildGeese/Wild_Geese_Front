@@ -46,7 +46,7 @@ const StepComplete = () => {
     title: `${familyName}님과 연결됐어요`,
     description: '이제부터 서로의 하루를 함께 챙길 수 있어요',
     icon: completeFlower2,
-    buttonText: `${familyName} 보러가기`,
+    buttonText: `온담 시작하기`,
     next: '/home',
     back: '/onboarding/alarm',
   },
@@ -149,8 +149,8 @@ const StepBadge = styled.div`
   left: 50%;
   transform: translateX(-50%);
 
-  min-width: 120px;
-  height: 30px;
+  min-width: 160px;
+  height: 40px;
   padding: 0 14px;
 
   display: flex;
@@ -158,13 +158,13 @@ const StepBadge = styled.div`
   align-items: center;
   white-space: nowrap;
 
-  border-radius: 19px;
+  border-radius: 25px;
   border: 1.3px solid rgba(74,58,47,.35);
   background: #F6EBC7;
 
   color: #4A3A2F;
   font-family: Jua;
-  font-size: 14px;
+  font-size: 20px;
   font-weight: 400;
 `;
 
@@ -210,6 +210,7 @@ const Description = styled.p`
 
 const ButtonArea = styled.div`
   margin-top: auto;
+  padding-top: 51px;
 `;
 
 const ContinueButton = styled.button`

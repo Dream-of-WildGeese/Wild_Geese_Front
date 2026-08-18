@@ -1,5 +1,13 @@
 import React, { useState } from 'react';
 import styled from 'styled-components';
+import DatePickerModal from '../../../components/DatePickerModal';
+import { useApiAction } from '../../../hooks/useApi';
+import { createCheckup } from '../../../api/checkup/createCheckup';
+
+const formatDateLabel = (value) => {
+  const [year, month, day] = String(value).split('-').map(Number);
+  return `${year}년 ${month}월 ${day}일`;
+};
 
 const HEALTH_CHECK_TYPES = [
   '일반검진',
@@ -12,25 +20,40 @@ const HEALTH_CHECK_TYPES = [
 
 const ALERT_OPTIONS = ['3일 전', '1일 전', '알림 받지 않기'];
 
-const AddHealthCheck = ({ onClose, onSave }) => {
+const AddHealthCheck = ({ onClose, onSuccess }) => {
   const [checkType, setCheckType] = useState('');
-  const [customType, setCustomType] = useState('');
+  const [customTypeInput, setCustomTypeInput] = useState('');
+  const [customTypes, setCustomTypes] = useState([]);
   const [date, setDate] = useState('');
+  const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
   const [hospital, setHospital] = useState('');
   const [alertOption, setAlertOption] = useState('3일 전');
 
+  const { execute: addCheckup, loading: creating } = useApiAction(createCheckup);
+
   const handleTypeChange = (type) => {
     setCheckType(type);
-
     if (type !== '직접 입력') {
-      setCustomType('');
+      setCustomTypeInput('');
+      setCustomTypes([]);
     }
   };
 
-  const handleSave = () => {
+  const addCustomType = () => {
+    const value = customTypeInput.trim();
+    if (!value || customTypes.includes(value)) return;
+    setCustomTypes((prev) => [...prev, value]);
+    setCustomTypeInput('');
+  };
+
+  const removeCustomType = (target) => {
+    setCustomTypes((prev) => prev.filter((item) => item !== target));
+  };
+
+  const handleSave = async () => {
     const finalType =
       checkType === '직접 입력'
-        ? customType.trim()
+        ? (customTypes.length > 0 ? customTypes.join(', ') : customTypeInput.trim())
         : checkType;
 
     if (!finalType) {
@@ -48,15 +71,20 @@ const AddHealthCheck = ({ onClose, onSave }) => {
       return;
     }
 
-    const healthCheckData = {
-      type: finalType,
-      date,
-      hospital: hospital.trim(),
-      alertOption,
-    };
+    // 서버 일정 등록 API 호출 (POST /api/v1/checkups)
+    const { ok, error } = await addCheckup({
+      checkupDate: date,
+      checkupType: finalType,
+      hospitalName: hospital.trim(),
+    });
 
-    // 아직 API가 없으므로 부모에게 데이터만 전달
-    onSave?.(healthCheckData);
+    if (!ok) {
+      alert(error.message);
+      return;
+    }
+
+    alert('검진 일정이 등록되었어요!');
+    onSuccess?.();
   };
 
   return (
@@ -67,25 +95,12 @@ const AddHealthCheck = ({ onClose, onSave }) => {
         aria-labelledby="add-health-check-title"
         onClick={(event) => event.stopPropagation()}
       >
-        <Header>
-          <CloseButton
-            type="button"
-            onClick={onClose}
-            aria-label="닫기"
-          >
-            ×
-          </CloseButton>
-
+        <ModalInner>
           <HeaderTitle id="add-health-check-title">
             검진 일정 추가하기
           </HeaderTitle>
 
-          <HeaderSpacer />
-        </Header>
-
-        <Divider />
-
-        <Content>
+          {/* 1. 검진 종류 선택 */}
           <FormSection>
             <Label>검진 종류를 골라주세요</Label>
 
@@ -104,32 +119,67 @@ const AddHealthCheck = ({ onClose, onSave }) => {
 
             {checkType === '직접 입력' && (
               <>
-                <Input
-                  type="text"
-                  placeholder="예: 유방암 초음파, 위내시경 등"
-                  value={customType}
-                  onChange={(event) =>
-                    setCustomType(event.target.value)
-                  }
-                />
+                <AddTypeRow>
+                  <TypeInput
+                    type="text"
+                    placeholder="예: 유방암 초음파, 위내시경 등"
+                    value={customTypeInput}
+                    onChange={(event) =>
+                      setCustomTypeInput(event.target.value)
+                    }
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        addCustomType();
+                      }
+                    }}
+                  />
+                  <AddTypeButton type="button" onClick={addCustomType}>
+                    +
+                  </AddTypeButton>
+                </AddTypeRow>
+
+                {customTypes.length > 0 && (
+                  <TypeWrap style={{ marginTop: '10px' }}>
+                    {customTypes.map((type) => (
+                      <CustomChip key={type}>
+                        {type}
+                        <RemoveTypeIcon
+                          type="button"
+                          onClick={() => removeCustomType(type)}
+                        >
+                          ×
+                        </RemoveTypeIcon>
+                      </CustomChip>
+                    ))}
+                  </TypeWrap>
+                )}
 
                 <FieldHint>
-                  * 직접 입력을 선택한 경우만 적어주세요
+                  "직접 입력"을 고르신 경우에만 적어주세요
                 </FieldHint>
               </>
             )}
           </FormSection>
 
+          {/* 2. 날짜 선택 */}
           <FormSection>
             <Label>날짜를 선택해주세요</Label>
 
-            <Input
-              type="date"
-              value={date}
-              onChange={(event) => setDate(event.target.value)}
-            />
+            <DateSelectButton
+              type="button"
+              onClick={() => setIsDatePickerOpen(true)}
+            >
+              <span>
+                {date ? formatDateLabel(date) : '날짜를 선택해주세요'}
+              </span>
+              <ChevronIcon viewBox="0 0 24 24">
+                <polyline points="6 9 12 15 18 9" />
+              </ChevronIcon>
+            </DateSelectButton>
           </FormSection>
 
+          {/* 3. 병원 이름 입력 */}
           <FormSection>
             <Label>병원 이름을 입력해주세요</Label>
 
@@ -141,6 +191,7 @@ const AddHealthCheck = ({ onClose, onSave }) => {
             />
           </FormSection>
 
+          {/* 4. 알림 주기 선택 */}
           <FormSection>
             <Label>언제 알려드릴까요?</Label>
 
@@ -158,116 +209,125 @@ const AddHealthCheck = ({ onClose, onSave }) => {
             </AlertWrap>
           </FormSection>
 
+          {/* 하단 저장 버튼 */}
           <SaveButton
             type="button"
             onClick={handleSave}
+            disabled={creating}
           >
-            저장하기
+            {creating ? '저장 중...' : '저장하기'}
           </SaveButton>
-        </Content>
+        </ModalInner>
       </Modal>
+
+      {isDatePickerOpen && (
+        <DatePickerModal
+          value={date}
+          title="검진 날짜 선택"
+          onConfirm={(nextDate) => {
+            setDate(nextDate);
+            setIsDatePickerOpen(false);
+          }}
+          onClose={() => setIsDatePickerOpen(false)}
+        />
+      )}
     </Overlay>
   );
 };
 
 export default AddHealthCheck;
 
+/* =========================
+   Overlay
+========================= */
+
 const Overlay = styled.div`
   position: absolute;
   inset: 0;
-  z-index: 1000;
+  z-index: 9999;
 
   display: flex;
-  align-items: flex-end;
+  align-items: center;
   justify-content: center;
 
-  background: rgba(49, 41, 35, 0.25);
+  padding: 14px;
+  box-sizing: border-box;
+
+  background: rgba(38, 34, 30, 0.52);
 `;
+/* =========================
+   Modal & Inner Card
+========================= */
 
 const Modal = styled.div`
   width: 100%;
-  max-width: 402px;
-  max-height: 88vh;
+  max-width: 390px;
+  max-height: calc(100% - 12px);
 
-  padding: 20px 16px 24px;
+  padding: 8px;
   box-sizing: border-box;
 
+  border-radius: 10px;
+border: 3px solid rgba(108, 67, 23, 0.70);
+background: #FEF3D5;
+
+  box-shadow: 0 10px 40px rgba(74, 58, 47, 0.2);
+  overflow: hidden;
+  display: flex;
+`;
+
+const ModalInner = styled.div`
+  width: 100%;
+  max-height: calc(100vh - 48px);
+
+  padding: 20px 16px 18px;
+  box-sizing: border-box;
+
+  border-radius: 10px;
+  border: 3px dashed rgba(108, 67, 23, 0.70);
+
+  background: #FEF3D5;
+
   overflow-y: auto;
-
-  border-radius: 24px 24px 0 0;
-  border: 1px solid rgba(74, 58, 47, 0.15);
-
-  background: #fff8ed;
-
-  box-shadow: 0 -8px 30px rgba(74, 58, 47, 0.14);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
 
   &::-webkit-scrollbar {
     display: none;
   }
 `;
 
-const Header = styled.div`
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-`;
-
-const CloseButton = styled.button`
-  width: 32px;
-  height: 32px;
-
-  padding: 0;
-  border: none;
-  background: transparent;
-
-  display: flex;
-  align-items: center;
-  justify-content: center;
-
-  color: #4a3a2f;
-  font-size: 28px;
-  font-weight: 300;
-  line-height: 1;
-
-  cursor: pointer;
-`;
-
 const HeaderTitle = styled.h1`
-  margin: 0;
-
-  color: #4a3a2f;
-  font-family: 'Noto Sans KR';
-  font-size: 17px;
-  font-weight: 700;
+  margin: 0 0 6px;
+  color: #4A3A2F;
+text-align: center;
+font-family: "Noto Sans KR";
+font-size: 26px;
+font-style: normal;
+font-weight: 700;
+line-height: normal;
 `;
 
-const HeaderSpacer = styled.div`
-  width: 32px;
-`;
+/* =========================
+   Form Sections
+========================= */
 
-const Divider = styled.div`
-  width: 100%;
-  margin-top: 12px;
+const FormSection = styled.div`
+  padding: 16px 14px;
+  box-sizing: border-box;
 
-  border-top: 1px solid #e5ddd2;
-`;
-
-const Content = styled.div`
-  padding-top: 4px;
-`;
-
-const FormSection = styled.section`
-  margin-top: 20px;
+  border: 1.3px solid rgba(74, 58, 47, 0.35);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.55);
 `;
 
 const Label = styled.p`
-  margin: 0 0 10px;
-
-  color: #7b736b;
-
-  font-family: 'Noto Sans KR';
-  font-size: 12px;
-  font-weight: 500;
+  margin: 0 0 12px;
+  color: #4A3A2F;
+font-family: "Noto Sans KR";
+  font-size: 15px;
+  font-weight: 700;
 `;
 
 const TypeWrap = styled.div`
@@ -277,65 +337,148 @@ const TypeWrap = styled.div`
 `;
 
 const TypeChip = styled.button`
-  min-height: 34px;
-  padding: 7px 12px;
+  height: 38px;
+  padding: 0 16px;
+  box-sizing: border-box;
 
-  border: 1.2px solid
+  border-radius: 20px;
+  border: 1.3px
     ${({ $active }) =>
-      $active ? '#c97956' : '#d8d0c6'};
-
-  border-radius: 999px;
+      $active ? 'solid rgba(74, 58, 47, 0.65)' : 'dashed rgba(74, 58, 47, 0.4)'};
 
   background: ${({ $active }) =>
-    $active ? '#f8e1d2' : '#fffdf8'};
+    $active ? '#DDD39A' : 'rgba(255, 255, 255, 0.8)'};
 
-  color: ${({ $active }) =>
-    $active ? '#c97158' : '#5d554d'};
+  color: #4A3A2F;
+font-family: "Noto Sans KR";
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s ease;
+`;
 
+const CustomChip = styled.span`
+  display: inline-flex;
+  align-items: center;
+  height: 34px;
+  padding: 0 12px;
+  border-radius: 17px;
+  border: 1.2px solid #8A7B3E;
+  background: #DDD39A;
+  color: #4A3A2F;
   font-family: 'Noto Sans KR';
-  font-size: 11px;
-  font-weight: 600;
+  font-size: 13px;
+  font-weight: 700;
+`;
 
+const RemoveTypeIcon = styled.button`
+  margin-left: 6px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: #4A3A2F;
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1;
   cursor: pointer;
 `;
 
 const Input = styled.input`
   width: 100%;
-  height: 44px;
-
-  margin-top: 10px;
-  padding: 0 12px;
-
+  height: 46px;
+  padding: 0 14px;
   box-sizing: border-box;
 
-  border: 1.2px solid #d8d0c6;
-  border-radius: 10px;
+  border: 1.3px solid rgba(74, 58, 47, 0.35);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.85);
 
-  background: #fffdf8;
-
-  color: #4a3a2f;
-
-  font-family: 'Noto Sans KR';
-  font-size: 12px;
-
+  color: #4A3A2F;
+  font-family: 'Noto Sans KR', sans-serif;
+  font-size: 14px;
   outline: none;
 
   &::placeholder {
-    color: #a79f96;
+    color: #A79C8E;
   }
 
   &:focus {
-    border-color: #c98263;
+    border-color: #8A7B3E;
   }
 `;
 
-const FieldHint = styled.p`
-  margin: 6px 0 0;
+const DateSelectButton = styled.button`
+  width: 100%;
+  height: 46px;
+  padding: 0 14px;
+  box-sizing: border-box;
 
-  color: #a79f96;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
 
-  font-size: 9px;
+  border: 1.3px solid rgba(74, 58, 47, 0.35);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.85);
+
+  color: ${({ children }) =>
+    String(children).includes('선택해주세요') ? '#A79C8E' : '#4A3A2F'};
+
+  font-family: 'Noto Sans KR';
+  font-size: 14px;
+  cursor: pointer;
 `;
+
+const ChevronIcon = styled.svg`
+  width: 16px;
+  height: 16px;
+  fill: none;
+  stroke: #8C8780;
+  stroke-width: 2;
+`;
+
+const AddTypeRow = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 10px;
+`;
+
+const TypeInput = styled(Input)`
+  flex: 1;
+  margin-top: 0;
+`;
+
+const AddTypeButton = styled.button`
+  width: 44px;
+  height: 44px;
+  flex-shrink: 0;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border-radius: 12px;
+  border: 1.3px solid rgba(138, 123, 62, 0.9);
+  background: #DDD39A;
+
+  color: #4A3A2F;
+  font-size: 24px;
+  font-weight: 700;
+  cursor: pointer;
+`;
+
+const FieldHint = styled.p`
+  margin: 8px 0 0;
+  color: #8C8780;
+  font-family: 'Noto Sans KR';
+  font-size: 11px;
+  line-height: 1.4;
+`;
+
+/* =========================
+   Alert Wrap
+========================= */
 
 const AlertWrap = styled.div`
   display: flex;
@@ -344,42 +487,46 @@ const AlertWrap = styled.div`
 
 const AlertChip = styled.button`
   flex: 1;
-  height: 38px;
+  height: 40px;
+  padding: 0 4px;
 
-  border: 1.2px solid
+  border: 1.3px
     ${({ $active }) =>
-      $active ? '#c97956' : '#d8d0c6'};
+      $active ? 'solid rgba(74, 58, 47, 0.65)' : 'dashed rgba(74, 58, 47, 0.4)'};
 
-  border-radius: 10px;
-
+  border-radius: 12px;
   background: ${({ $active }) =>
-    $active ? '#f4dfd1' : '#fffdf8'};
+    $active ? '#DDD39A' : 'rgba(255, 255, 255, 0.8)'};
 
-  color: ${({ $active }) =>
-    $active ? '#c97158' : '#635b53'};
-
+  color: #4A3A2F;
   font-family: 'Noto Sans KR';
-  font-size: 11px;
-  font-weight: 600;
-
+  font-size: 13px;
+  font-weight: 700;
   cursor: pointer;
+  transition: all 0.15s ease;
 `;
+
+/* =========================
+   Save Button
+========================= */
 
 const SaveButton = styled.button`
   width: 100%;
-  height: 50px;
+  height: 52px;
+  margin-top: 6px;
 
-  margin-top: 28px;
+  border-radius: 10px;
+border: 1.5px solid rgba(74, 58, 47, 0.55);
+background: #DBE4A1;
 
-  border: 1.5px solid rgba(74, 58, 47, 0.35);
-  border-radius: 14px;
+  color: #4A3A2F;
+font-family: Jua;
+font-size: 20px;
+font-style: normal;
+font-weight: 400;
+line-height: normal;
 
-  background: #d17b55;
-  color: #fffdf8;
-
-  font-family: Jua, sans-serif;
-  font-size: 17px;
-  font-weight: 400;
-
-  cursor: pointer;
+  &:active {
+    transform: translateY(1px);
+  }
 `;
