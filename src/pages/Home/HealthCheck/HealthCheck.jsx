@@ -7,6 +7,7 @@ import { useFamilyRelation } from '../../../hooks/useFamilyRelation';
 import { useApi, useApiAction } from '../../../hooks/useApi';
 import { getCheckups, deleteCheckup } from '../../../api/checkup';
 import { getMyFamily } from '../../../api/family';
+import { getUserId } from '../../../api/client';
 import { useAppData } from '../../../store/AppDataContext';
 import aiIcon from '../../../assets/journal/ai.png';
 import trashBin from '../../../assets/trash_bin.svg';
@@ -19,16 +20,15 @@ const formatMonthDay = (dateString) => {
   const [, month, day] = dateString.split('-').map(Number);
   return `${month}월 ${day}일`;
 };
+
 const getSubjectWithJosa = (name) => {
   if (!name) return '';
   const lastChar = name.charCodeAt(name.length - 1);
-  // 한글 유니코드 범위 확인
   if (lastChar < 0xac00 || lastChar > 0xd7a3) return `${name}이(가)`;
   const hasBatchim = (lastChar - 0xac00) % 28 > 0;
   return `${name}${hasBatchim ? '이' : '가'}`;
 };
 
-// 탭(person)과 호칭(partnerLabel)에 맞춰 문구를 생성하는 함수
 const getInsightSubTitle = (person, partnerLabel) => {
   if (person === 'me') {
     return '내가 매일 남긴 건강일지에서 찾은 패턴이에요';
@@ -44,19 +44,20 @@ const getInsightSubTitle = (person, partnerLabel) => {
 
 const HealthCheck = () => {
   const navigate = useNavigate();
-  const [person, setPerson] = useState('family'); // 'me' | 'family'
+  // 1. 기본 탭을 'me'(나)로 시작
+  const [person, setPerson] = useState('me'); 
   const [showAddModal, setShowAddModal] = useState(false);
   const { partnerLabel } = useFamilyRelation();
   const { data: appData } = useAppData();
 
-  // 1. 내 가족 목록 조회 (/api/v1/families/me)
+  // 2. 가족 목록 조회
   const { data: familyData } = useApi(getMyFamily);
 
-  // 2. 가족 목록(members) 중 내가 아닌 상대방의 userId 추출
-  const myUserId = appData?.profile?.userId;
+  // 3. getUserId()를 통해 현재 유저와 상대방 ID 분리
+  const currentMyId = getUserId();
   const partnerMember = (familyData?.members || []).find(
-    (member) => member.userId !== myUserId
-  ) || (familyData?.members || [])[0];
+    (member) => String(member.userId) !== String(currentMyId)
+  );
 
   const partnerUserId =
     partnerMember?.userId ||
@@ -64,14 +65,13 @@ const HealthCheck = () => {
     appData?.family?.connectedUserId ||
     appData?.family?.userId;
 
-  // 3. '나' 선택 시 undefined (내 검진), '가족' 선택 시 상대방 userId
+  // '나' 선택 시 undefined (내 검진), '가족' 선택 시 상대방 userId
   const targetId = person === 'family' ? partnerUserId : undefined;
 
-  // 4. 검진 데이터 조회 (targetId 변경 시 자동 재호출)
-  const { data: checkupData, refetch } = useApi(
-    () => getCheckups(targetId),
-    [targetId, person]
-  );
+  // 4. useApi 규격에 맞게 args 전달 (targetId 변경 시 자동 재조회)
+  const { data: checkupData, refetch } = useApi(getCheckups, {
+    args: targetId ? [targetId] : [],
+  });
 
   // 5. 검진 삭제 액션
   const { execute: removeCheckup, loading: deleting } = useApiAction(deleteCheckup);
@@ -110,7 +110,7 @@ const HealthCheck = () => {
   const [currentDate, setCurrentDate] = useState(() => new Date(2026, 7, 1)); // 2026년 8월 기준
 
   const currentYear = currentDate.getFullYear();
-  const currentMonth = currentDate.getMonth(); // 0~11
+  const currentMonth = currentDate.getMonth();
 
   const handlePrevMonth = () => {
     setCurrentDate((prev) => new Date(prev.getFullYear(), prev.getMonth() - 1, 1));
@@ -120,7 +120,6 @@ const HealthCheck = () => {
     setCurrentDate((prev) => new Date(prev.getFullYear(), prev.getMonth() + 1, 1));
   };
 
-  // 달력 날짜 그리드 생성
   const firstDayIndex = new Date(currentYear, currentMonth, 1).getDay();
   const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
 
@@ -128,7 +127,6 @@ const HealthCheck = () => {
   for (let i = 0; i < firstDayIndex; i += 1) calendarDays.push(null);
   for (let day = 1; day <= daysInMonth; day += 1) calendarDays.push(day);
 
-  // 현재 보고 있는 연/월에 해당하는 모든 검진 날짜(일자) Set 생성
   const checkupDaysInView = useMemo(() => {
     const daySet = new Set();
     const allCheckups = [];
@@ -150,7 +148,6 @@ const HealthCheck = () => {
   return (
     <Page>
       <Content>
-        {/* 상단 뒤로가기 버튼 */}
         <BackButton
           type="button"
           onClick={() => navigate('/home')}
@@ -159,14 +156,13 @@ const HealthCheck = () => {
           <BackIcon src={back} alt="뒤로가기" />
         </BackButton>
 
-        {/* 정중앙 헤더 타이틀 & 하단 점선 */}
         <HeaderArea>
           <HeaderTitle>건강검진</HeaderTitle>
         </HeaderArea>
         <HeaderDivider />
 
         <ScrollArea>
-          {/* 나 / 엄마 탭 토글 */}
+          {/* 나 / 가족 탭 토글 */}
           <ToggleWrap>
             <ToggleButton
               type="button"
@@ -186,14 +182,13 @@ const HealthCheck = () => {
             </ToggleButton>
           </ToggleWrap>
 
-          {/* 달력 카드 (이전/다음 달 이동 가능) */}
+          {/* 달력 카드 */}
           <CalendarCard>
             <CalendarNavHeader>
               <NavArrowButton type="button" onClick={handlePrevMonth} aria-label="이전 달">
                 ‹
               </NavArrowButton>
 
-              {/* 연/월 텍스트 클릭 시 데이트피커 모달 오픈 */}
               <MonthTitleButton
                 type="button"
                 onClick={() => setIsMonthPickerOpen(true)}
@@ -232,14 +227,16 @@ const HealthCheck = () => {
               })}
             </CalendarGrid>
           </CalendarCard>
+
           {isMonthPickerOpen && (
-          <DatePickerModal
-            value={`${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-01`}
-            title="연/월 선택"
-            onConfirm={handleJumpDate}
-            onClose={() => setIsMonthPickerOpen(false)}
-          />
-        )}
+            <DatePickerModal
+              value={`${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-01`}
+              title="연/월 선택"
+              onConfirm={handleJumpDate}
+              onClose={() => setIsMonthPickerOpen(false)}
+            />
+          )}
+
           {/* 다음 검진 배너 */}
           {upcoming ? (
             <UpcomingBanner>
@@ -308,7 +305,6 @@ const HealthCheck = () => {
                 <InsightMainTitle>
                   진료 때 이런 걸 여쭤보시면 좋을 것 같아요
                 </InsightMainTitle>
-                {/* 동적 조사 및 문구 적용 */}
                 <InsightSubTitle>
                   {getInsightSubTitle(person, partnerLabel)}
                 </InsightSubTitle>
@@ -342,7 +338,6 @@ const HealthCheck = () => {
           </AddButtonArea>
         </ScrollArea>
 
-        {/* 검진 일정 추가 모달 */}
         {showAddModal && (
           <AddHealthCheck
             onClose={() => setShowAddModal(false)}
