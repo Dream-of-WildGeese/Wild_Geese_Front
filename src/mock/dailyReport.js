@@ -122,7 +122,7 @@ export function getMockDailyReport({ role, weeksAgo, date, personLabel, isMine }
         type: 'healthcheck',
         time: '저녁 · 오후 9:00',
         lines: [
-          { metricType: 'CONDITION', text: CONDITION_TEXT[condition] ?? '-' },
+          { metricType: 'CONDITION', text: CONDITION_TEXT[condition] ?? '-', choiceValue: condition },
           { metricType: 'SLEEP', text: SLEEP_TEXT[sleep] ?? '-' },
           { metricType: 'MEAL', text: MEAL_TEXT[meal] ?? '-' },
           { metricType: 'ACTIVITY', text: ACTIVITY_TEXT[activity] ?? '-' },
@@ -132,7 +132,7 @@ export function getMockDailyReport({ role, weeksAgo, date, personLabel, isMine }
     cta: isMine
       ? null
       : {
-          title: '이제 가족과 안부를 나눠볼까요?',
+          title: `이제 ${personLabel}와 안부를 나눠볼까요?`,
           suggestedMessage: `"${week.weeklyComment}"`,
         },
   };
