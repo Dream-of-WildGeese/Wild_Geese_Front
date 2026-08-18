@@ -8,6 +8,7 @@ import {
   getNotificationSetting,
   updateNotificationSetting,
   unsubscribePush,
+  subscribePush,
 } from '../../../api/user';
 import { getMyFamily } from '../../../api/family';
 import { getUserId } from '../../../api/client';
@@ -17,6 +18,7 @@ import TimePickerModal from '../../../components/TimePickerModal';
 import ConfirmPopup from './ConfirmPopup';
 import NotificationListPopup from './NotificationListPopup';
 import { useWebPush } from '../../../hooks/useWebPush';
+
 
 const Page = styled.div`
   position: relative;
@@ -188,27 +190,57 @@ function SettingsMain() {
 
   const { enablePush } = useWebPush();
 
+// SettingsMain.jsx 내부 handleToggle 수정
 const handleToggle = async (key) => {
-    const nextValue = !setting[key];
+  if (!setting) return;
+  const nextValue = !setting[key];
+  const nextSetting = { ...setting, [key]: nextValue };
 
-    // 알림을 켤 때 브라우저 권한 및 구독 준비
-    if (nextValue) {
-      try {
-        await enablePush();
-      } catch (error) {
-        console.warn('푸시 알림 활성화 경고:', error);
-        // 이미 권한이 있는데 백엔드 중복 등으로 에러가 난 경우 토글 저장은 계속 진행되도록 허용
-        if (Notification.permission !== 'granted') {
-          alert('브라우저 알림 권한을 허용해주세요.');
-          return;
-        }
-      }
+  // 4개 알림 중 하나라도 켜져 있는지 확인
+  const isAnyEnabled = NOTIFICATION_ROWS.some((row) =>
+    row.key === key ? nextValue : Boolean(setting[row.key])
+  );
+
+  // 1. 알림을 켤 때: 푸시 구독 생성 및 백엔드 등록
+  if (nextValue) {
+    try {
+      const sub = await enablePush();
+
+      const rawP256dh = sub.getKey ? sub.getKey('p256dh') : null;
+      const rawAuth = sub.getKey ? sub.getKey('auth') : null;
+
+      const p256dh = rawP256dh
+        ? btoa(String.fromCharCode.apply(null, new Uint8Array(rawP256dh)))
+        : '';
+      const auth = rawAuth
+        ? btoa(String.fromCharCode.apply(null, new Uint8Array(rawAuth)))
+        : '';
+
+      await subscribePush({
+        endpoint: sub.endpoint,
+        p256dh,
+        auth,
+      }).catch((err) => {
+        // 이미 등록된 토큰 에러(409 등)는 무시하고 진행
+        console.warn('구독 등록 응답 알림:', err);
+      });
+    } catch (error) {
+      console.warn('푸시 알림 활성화 경고:', error);
     }
+  }
 
-    // 서버 설정값 저장
-    await applyChange({ [key]: nextValue });
-  };
-  
+  // 2. 알림 설정 서버 저장
+  await applyChange({ [key]: nextValue });
+
+  // 3. 만약 4개 알림이 전부 꺼졌다면 서버 푸시 구독 정보 삭제
+  if (!isAnyEnabled) {
+    try {
+      await unsubscribePush();
+    } catch (error) {
+      console.warn('푸시 구독 해제 실패:', error);
+    }
+  }
+};
   const handleTimeConfirm = (nextTime) => {
     applyChange({ [timeEditor]: nextTime });
     setTimeEditor(null);

@@ -1,60 +1,72 @@
-import { subscribePush } from '../api/user/subscribePush';
-
-const VAPID_PUBLIC_KEY = 'BAnynaBx52ozCxuLCHj00bbrNXg6Qj-8tuSVt3fcVAhfkj9959c0SSXzsZ_8eVtG1csdHuFXAB3P_9sjxZu6gYU';
-
-const urlBase64ToUint8Array = (base64String) => {
+// src/hooks/useWebPush.js
+function urlBase64ToUint8Array(base64String) {
+  if (!base64String) {
+    throw new Error('VAPID PUBLIC KEY가 비어있습니다.');
+  }
   const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
-
   const base64 = (base64String + padding)
     .replace(/-/g, '+')
     .replace(/_/g, '/');
 
   const rawData = window.atob(base64);
+  const outputArray = new Uint8Array(rawData.length);
 
-  return Uint8Array.from(
-    [...rawData].map((char) => char.charCodeAt(0))
-  );
-};
+  for (let i = 0; i < rawData.length; ++i) {
+    outputArray[i] = rawData.charCodeAt(i);
+  }
+  return outputArray;
+}
 
-export const useWebPush = () => {
+export function useWebPush() {
   const enablePush = async () => {
-    if (!('Notification' in window)) {
-      throw new Error('이 브라우저는 알림을 지원하지 않아요.');
+    console.group('🔔 푸시 구독 활성화 시도');
+
+    // 1. 브라우저 지원 여부
+    if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
+      console.groupEnd();
+      throw new Error('이 브라우저는 푸시 알림을 지원하지 않습니다.');
     }
 
-    if (!('serviceWorker' in navigator)) {
-      throw new Error('이 브라우저는 Service Worker를 지원하지 않아요.');
-    }
-
+    // 2. 권한 확인
     const permission = await Notification.requestPermission();
+    console.log('1. 알림 권한 상태:', permission);
     if (permission !== 'granted') {
-      throw new Error('알림 권한이 허용되지 않았어요.');
+      console.groupEnd();
+      throw new Error('알림 권한이 허용되지 않았습니다.');
     }
 
-    await navigator.serviceWorker.register('/sw.js');
+    // 3. 서비스 워커 준비 대기
     const registration = await navigator.serviceWorker.ready;
+    console.log('2. 서비스 워커 ready 상태 확인 완료');
 
-    // 1. 기존 구독 재사용
+    // 4. 기존 구독이 이미 살아있다면 해제하지 않고 그대로 재사용 (락 방지)
     let subscription = await registration.pushManager.getSubscription();
-
-    // 2. 구독이 아예 없을 때만 새로 생성
-    if (!subscription) {
-      subscription = await registration.pushManager.subscribe({
-        userVisibleOnly: true,
-        applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
-      });
+    if (subscription) {
+      console.log('3. 기존 유효 구독 재사용:', subscription.endpoint);
+      console.groupEnd();
+      return subscription;
     }
 
-    // 3. 백엔드 등록 (이미 등록된 엔드포인트여도 안전하게 통과)
-    try {
-      await subscribePush(subscription.toJSON());
-    } catch (err) {
-      // 서버에서 이미 존재하는 구독(409 등)으로 에러를 던져도 정상 처리로 간주
-      console.warn('백엔드 푸시 구독 등록 결과:', err?.message || err);
+    // 5. 기존 구독이 없을 때만 신규 생성
+    const vapidPublicKey = import.meta.env.VITE_VAPID_PUBLIC_KEY;
+    if (!vapidPublicKey) {
+      console.groupEnd();
+      throw new Error('.env 파일의 VITE_VAPID_PUBLIC_KEY가 로드되지 않았습니다.');
     }
+
+    const convertedKey = urlBase64ToUint8Array(vapidPublicKey);
+
+    console.log('8. pushManager.subscribe 호출 시작...');
+    subscription = await registration.pushManager.subscribe({
+      userVisibleOnly: true,
+      applicationServerKey: convertedKey,
+    });
+
+    console.log('🎉 9. 푸시 신규 구독 성공! 생성된 엔드포인트:', subscription.endpoint);
+    console.groupEnd();
 
     return subscription;
   };
 
   return { enablePush };
-};
+}

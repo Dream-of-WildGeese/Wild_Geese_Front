@@ -1,22 +1,18 @@
 self.addEventListener('push', (event) => {
-  console.log('[SW] PUSH EVENT RECEIVED');
+  console.log('🔥 REAL PUSH RECEIVED');
 
   let data = {};
 
-  if (event.data) {
-    try {
-      data = event.data.json();
-      console.log('[SW] JSON DATA:', data);
-    } catch (e) {
-      const text = event.data.text();
+  try {
+    data = event.data ? event.data.json() : {};
+    console.log('🔥 PUSH PAYLOAD:', data);
+  } catch (e) {
+    console.log('🔥 PUSH PARSE ERROR:', e);
 
-      console.log('[SW] TEXT DATA:', text);
-
-      data = {
-        title: '온담',
-        content: text,
-      };
-    }
+    data = {
+      title: '온담',
+      body: event.data?.text?.() || '',
+    };
   }
 
   event.waitUntil(
@@ -28,5 +24,15 @@ self.addEventListener('push', (event) => {
         url: data.url || '/',
       },
     })
+  );
+});
+
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+
+  const url = event.notification.data?.url || '/';
+
+  event.waitUntil(
+    clients.openWindow(url)
   );
 });
