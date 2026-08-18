@@ -1,6 +1,5 @@
 import styled from 'styled-components';
 import { useNavigate } from 'react-router-dom';
-import calendarIcon from '../../assets/calendar.png';
 import closeIcon from '../../assets/journal/close.png';
 
 const HeaderWrap = styled.div`
@@ -33,21 +32,11 @@ const BackIcon = styled.img`
   object-fit: contain;
 `;
 
-const CalendarButton = styled.button`
-  width: 50px;
-  height: 50px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 12px;
-  background: #fff8ed;
-`;
-
-const CalendarImage = styled.img`
-  width: 38px;
-  height: 38px;
-  object-fit: contain;
-  pointer-events: none;
+// 닫기 버튼과 균형을 맞추는 빈 자리. 없으면 닫기가 가운데로 밀린다.
+const TopRowSpacer = styled.div`
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
 `;
 
 const MonthNav = styled.div`
@@ -58,11 +47,14 @@ const MonthNav = styled.div`
   width: 100%;
 `;
 
-const YearLabel = styled.p`
-  margin: 0;
+// 연도·월을 눌러 연월 빠른 이동을 연다. 달력 아이콘을 따로 두면
+// 누르는 곳이 화면 구석이라 눈에 잘 안 띄었다.
+const YearLabel = styled.button`
+  padding: 0 8px;
   font-family: 'Jua', sans-serif;
   font-size: 46px;
   color: #4a3a2f;
+  line-height: 1.1;
 `;
 
 const MonthRow = styled.div`
@@ -80,11 +72,20 @@ const MonthArrow = styled.button`
   color: #4a3a2f;
 `;
 
-const MonthLabel = styled.p`
-  margin: 0;
+const MonthLabel = styled.button`
+  padding: 0 8px;
   font-family: 'Jua', sans-serif;
   font-size: 34px;
   color: #4a3a2f;
+  line-height: 1.1;
+`;
+
+// 눌러서 옮길 수 있다는 걸 알려주는 한 줄
+const JumpHint = styled.p`
+  margin: 2px 0 0;
+  font-family: 'Noto Sans KR', sans-serif;
+  font-size: 12px;
+  color: #a79c8e;
 `;
 
 function MorningReportHeader({ year, month, onPrevMonth, onNextMonth, onOpenPicker }) {
@@ -96,21 +97,24 @@ function MorningReportHeader({ year, month, onPrevMonth, onNextMonth, onOpenPick
         <BackButton type="button" aria-label="닫기" onClick={() => navigate('/home')}>
           <BackIcon src={closeIcon} alt="" />
         </BackButton>
-        <CalendarButton type="button" aria-label="연월 빠른 이동" onClick={onOpenPicker}>
-          <CalendarImage src={calendarIcon} alt="" />
-        </CalendarButton>
+        <TopRowSpacer />
       </TopRow>
       <MonthNav>
-        <YearLabel>{year}</YearLabel>
+        <YearLabel type="button" aria-label="연월 빠른 이동" onClick={onOpenPicker}>
+          {year}
+        </YearLabel>
         <MonthRow>
           <MonthArrow type="button" aria-label="이전 달" onClick={onPrevMonth}>
             ‹
           </MonthArrow>
-          <MonthLabel>{month}월</MonthLabel>
+          <MonthLabel type="button" aria-label="연월 빠른 이동" onClick={onOpenPicker}>
+            {month}월
+          </MonthLabel>
           <MonthArrow type="button" aria-label="다음 달" onClick={onNextMonth}>
             ›
           </MonthArrow>
         </MonthRow>
+        <JumpHint>연도나 달을 누르면 옮길 수 있어요</JumpHint>
       </MonthNav>
     </HeaderWrap>
   );
