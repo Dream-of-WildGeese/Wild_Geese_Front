@@ -1,5 +1,6 @@
 import styled from 'styled-components';
 import PopupPortal from '../../../../components/PopupPortal';
+import pencilImg from '../../../../assets/evening/pencil.svg';
 
 // Figma 24: 저녁 건강체크 완료. 버튼이 '닫기'에서 '오늘의 건강일지 보러가기'로 바뀌었다.
 const Backdrop = styled.div`
@@ -45,9 +46,14 @@ const IconRing = styled.div`
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #edf3d5;
-  border: 1.5px solid #cbd879;
-  font-size: 36px;
+  background: #FEF3D5;
+  border: 1.5px solid #FEF3D5;
+`;
+
+const PencilIcon = styled.img`
+  width: 44px;
+  height: 44px;
+  object-fit: contain;
 `;
 
 const Title = styled.p`
@@ -97,7 +103,7 @@ function NightCompletePopup({ onClose, onGoToJournal }) {
       <Backdrop onClick={onClose}>
         <Card onClick={(event) => event.stopPropagation()}>
           <InnerBorder />
-          <IconRing>✎</IconRing>
+          <IconRing><PencilIcon src={pencilImg} alt="연필 아이콘" /></IconRing>
           <Title>오늘의 건강기록도 잘 남겨주셨어요!</Title>
           <Description>
             매일의 건강기록은

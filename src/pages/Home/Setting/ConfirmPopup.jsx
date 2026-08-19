@@ -1,6 +1,6 @@
 import styled from 'styled-components';
 import logoutDaughter from '../../../assets/character/logout-daughter.png';
-import logoutSon from '../../../assets/character/logout-son.png';
+import logoutSon from '../../../assets/character/logout-son.svg';
 import withdrawDaughter from '../../../assets/character/withdraw-daughter.png';
 import withdrawSon from '../../../assets/character/withdraw-son.png';
 import {

@@ -1,6 +1,6 @@
 import styled from 'styled-components';
-import envelopeEmpty from '../../../assets/letterbox/envelope-empty-img.png';
-import pencilBtn from '../../../assets/letterbox/pencil-btn.png';
+import envelopeEmpty from '../../../assets/letterbox/envelope-empty-img.svg';
+import pencilBtn from '../../../assets/letterbox/pencil-btn.svg';
 import {
   PopupCard,
   PopupInnerBorder,

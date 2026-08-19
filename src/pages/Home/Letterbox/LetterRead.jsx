@@ -1,7 +1,7 @@
 import styled from 'styled-components';
 import letterPaper from '../../../assets/letterbox/letter-paper-read.png';
 import ruledLines from '../../../assets/letterbox/ruled-lines-read.svg';
-import pencilBtn from '../../../assets/letterbox/pencil-btn.png';
+import pencilBtn from '../../../assets/letterbox/pencil-btn.svg';
 import { PopupPrimaryButton, PopupIcon } from '../../../components/PopupShell';
 
 // Figma 35b ver02: 편지를 펼친 화면.
