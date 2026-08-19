@@ -5,7 +5,6 @@ import { getMyFamily } from '../../../api/family';
 import { getUserId } from '../../../api/client';
 import { toDateString, timeToLabel, activeSchedules } from '../../../utils/medication';
 import { getRelationLabel, withCompanionJosa } from '../../../utils/family';
-import { getRelationLabel } from '../../../utils/family';
 import { findMyLatestAnswer } from '../../../utils/morningAnswer';
 import { getWeekStart } from '../WeeklyReport/weeklyReportData';
 import { getMockDailyReport } from '../../../mock/dailyReport';
