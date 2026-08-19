@@ -1,7 +1,7 @@
 import styled from 'styled-components';
-import envelopeBox from '../../../assets/letterbox/envelope-box.png';
+import envelopeBox from '../../../assets/letterbox/envelope-box.svg';
 import avatarChild from '../../../assets/letterbox/avatar-child.png';
-import pencilBtn from '../../../assets/letterbox/pencil-btn.png';
+import pencilBtn from '../../../assets/letterbox/pencil-btn.svg';
 import {
   PopupCard,
   PopupInnerBorder,

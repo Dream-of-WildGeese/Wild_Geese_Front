@@ -116,7 +116,7 @@ const AddHealthCheck = ({ onClose, onSuccess, editing = null }) => {
       >
         <ModalInner>
           <HeaderTitle id="add-health-check-title">
-            {editing ? '검진 일정 고치기' : '검진 일정 추가하기'}
+            {editing ? '검진 일정 수정하기' : '검진 일정 추가하기'}
           </HeaderTitle>
 
           {/* 1. 검진 종류 선택 */}

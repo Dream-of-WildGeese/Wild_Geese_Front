@@ -2,7 +2,7 @@ import { useCallback, useRef, useState } from 'react';
 import styled from 'styled-components';
 import letterPaper from '../../../assets/letterbox/letter-paper.png';
 import ruledLines from '../../../assets/letterbox/ruled-lines.svg';
-import heartIcon from '../../../assets/letterbox/heart.png';
+import heartIcon from '../../../assets/letterbox/heart.svg';
 import micIcon from '../../../assets/letterbox/mic-small.png';
 import planeIcon from '../../../assets/letterbox/plane.png';
 import { transcribeVoiceLetter } from '../../../api/letter';
