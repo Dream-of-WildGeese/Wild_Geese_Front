@@ -62,24 +62,24 @@ const popIn = keyframes`
 `;
 
 // 오리 머리 오른쪽 위. 우체통을 왼쪽으로 옮겨서 이 자리가 비었다.
-// 팝업들과 같은 크림색·점선 테두리로 맞춰 온담 화면에 어울리게 했다.
+// 팝업들과 같은 크림색·굵은 테두리 카드 톤을 맞추되, 점선 장식 없이 깔끔하게 둔다.
 const GreetingBubble = styled.div`
   position: absolute;
-  right: 14px;
-  top: 330px;
-  width: 244px;
+  right: 10px;
+  top: 320px;
+  width: 276px;
 
-  padding: 20px 22px;
+  padding: 22px 26px;
   box-sizing: border-box;
 
-  border-radius: 24px;
+  border-radius: 26px;
   border: 2.5px solid rgba(108, 67, 23, 0.55);
   background: #fef3d5;
   box-shadow: 0 6px 16px rgba(74, 58, 47, 0.2);
 
   color: #4a3a2f;
   font-family: Jua;
-  font-size: 22px;
+  font-size: 23px;
   line-height: 1.4;
   text-align: center;
   word-break: keep-all;
@@ -89,16 +89,6 @@ const GreetingBubble = styled.div`
 
   @media (prefers-reduced-motion: reduce) {
     animation: none;
-  }
-
-  /* 카드 안쪽 점선 — 다른 팝업과 같은 장식 */
-  &::before {
-    content: '';
-    position: absolute;
-    inset: 7px;
-    border-radius: 18px;
-    border: 2px dashed rgba(108, 67, 23, 0.45);
-    pointer-events: none;
   }
 
   /* 왼쪽 아래(오리 쪽)로 향하는 꼬리 */

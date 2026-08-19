@@ -4,6 +4,7 @@ import PopupPortal from '../../../../components/PopupPortal';
 import faceGood from '../../../../assets/evening/face-good.svg';
 import faceNormal from '../../../../assets/evening/face-normal.svg';
 import faceBad from '../../../../assets/evening/face-bad.svg';
+import micIcon from '../../../../assets/evening/mic-icon.png';
 import {
   getTodayEveningQuestions,
   submitEveningAnswers,
@@ -90,9 +91,8 @@ const BackButton = styled.button`
 `;
 
 const CloseButton = styled.button`
-  color: #d1493a;
-  font-size: 30px;
-  font-weight: 700;
+  color: #8c8780;
+  font-size: 18px;
   line-height: 1;
 `;
 
@@ -177,8 +177,8 @@ const VoiceButton = styled.button`
   justify-content: center;
   gap: 14px;
 
-  border-radius: 10px;
-  border: 1px solid ${({ $recording }) => ($recording ? '#e6a794' : '#d8cbb8')};
+  border-radius: 14px;
+  border: 1.5px solid ${({ $recording }) => ($recording ? '#e6a794' : '#d8cbb8')};
   background: ${({ $recording }) => ($recording ? '#fdf0e8' : '#fffbf1')};
 
   &:disabled {
@@ -186,18 +186,10 @@ const VoiceButton = styled.button`
   }
 `;
 
-const MicCircle = styled.span`
+const MicIcon = styled.img`
   width: 100px;
   height: 100px;
-  border-radius: 50px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-
-  background: ${({ $recording }) => ($recording ? '#f6d9cd' : '#edf3d5')};
-  border: 1.5px solid ${({ $recording }) => ($recording ? '#d97d65' : '#cbd879')};
-  color: ${({ $recording }) => ($recording ? '#c1553c' : 'inherit')};
-  font-size: 40px;
+  object-fit: contain;
 
   animation: ${({ $recording }) => ($recording ? pulse : 'none')} 1.2s ease-in-out infinite;
 `;
@@ -321,9 +313,11 @@ function EveningCheckPopup({ onClose, onCompleted, onAlreadyDone, forceEdit = fa
       .map((item) => {
         const choice = item.choices?.[answers[item.questionId]];
         const isCustom = (item.choices ?? []).length === 0;
+        // 커스텀(TEXT) 질문은 choiceValue가 없다. null을 명시적으로 보내면 백엔드의
+        // 재제출(덮어쓰기) 경로가 500을 낸다 — 아침 질문 제출과 동일하게 키 자체를 뺀다.
         return {
           questionId: item.questionId,
-          choiceValue: choice ? String(choice.value) : null,
+          ...(choice ? { choiceValue: String(choice.value) } : {}),
           textValue: isCustom ? note.trim() : (choice?.label ?? ''),
           inputType: isCustom ? 'TEXT' : 'CHOICE',
         };
@@ -403,7 +397,7 @@ function EveningCheckPopup({ onClose, onCompleted, onAlreadyDone, forceEdit = fa
                 disabled={!voice.supported || voice.busy}
                 $recording={voice.recording}
               >
-                <MicCircle $recording={voice.recording}>●</MicCircle>
+                <MicIcon src={micIcon} alt="" $recording={voice.recording} />
                 <VoiceLabel>
                   {!voice.supported
                     ? '이 브라우저는 녹음을 지원하지 않아요'
