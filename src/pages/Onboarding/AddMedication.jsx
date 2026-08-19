@@ -9,7 +9,18 @@ import {
   toMedicationView,
   sortTimeLabels,
   isDuplicateName,
+  dayLabelsToValues,
+  toTimeLabel,
+  includesTime,
+  ALL_DAY_VALUES,
 } from '../../utils/medication';
+import {
+  PopupBackdrop,
+  PopupCard,
+  PopupInnerBorder,
+  PopupTitle,
+  PopupPrimaryButton,
+} from '../../components/PopupShell';
 
 const AddMedication = () => {
   const navigate = useNavigate();
@@ -20,6 +31,9 @@ const AddMedication = () => {
   const [name, setName] = useState('');
   const [times, setTimes] = useState([]);
   const [repeat, setRepeat] = useState([]);
+
+  // 이미 골라둔 시각을 또 넣으려 할 때 알려줄 시각
+  const [duplicateTime, setDuplicateTime] = useState(null);
 
   const [period, setPeriod] = useState('오전');
   const [hour, setHour] = useState('');
@@ -87,10 +101,10 @@ const AddMedication = () => {
       return;
     }
 
-    const label = `${period} ${String(numHour)}:${minute.padStart(2, '0')}`;
+    const label = toTimeLabel(period, numHour, numMinute);
 
-    if (times.includes(label)) {
-      alert('이미 추가된 시간이에요.');
+    if (includesTime(times, label)) {
+      setDuplicateTime(label);
       return;
     }
 
@@ -112,8 +126,16 @@ const AddMedication = () => {
       return;
     }
 
+    // '매일'을 골랐거나 아무 요일도 안 골랐으면 7일 모두로 본다.
+    // 예전에는 고른 요일('월' 같은 한 글자)을 그대로 넘겼는데, 요청을 만드는 쪽이
+    // 그 말을 못 알아들어서 무엇을 고르든 매일로 저장됐다.
+    const days =
+      repeat.includes('매일') || repeat.length === 0
+        ? ALL_DAY_VALUES
+        : dayLabelsToValues(repeat);
+
     const { ok, error } = await addMedication(
-      toMedicationRequest({ name, times: sortTimeLabels(times), repeat: repeat[0] ?? '매일' }),
+      toMedicationRequest({ name, times: sortTimeLabels(times), days }),
     );
     if (!ok) {
       alert(error.message);
@@ -234,6 +256,25 @@ const AddMedication = () => {
           </SaveButton>
         </ButtonArea>
       </Content>
+
+      {duplicateTime && (
+        <PopupBackdrop onClick={() => setDuplicateTime(null)}>
+          <PopupCard $center $gap={16} $padTop={36} onClick={(event) => event.stopPropagation()}>
+            <PopupInnerBorder />
+            <PopupTitle $center $size={22}>
+              이미 넣은 시간이에요
+            </PopupTitle>
+            <PopupMessage>
+              {duplicateTime}
+              <br />
+              같은 시간을 두 번 넣을 수는 없어요.
+            </PopupMessage>
+            <PopupPrimaryButton type="button" onClick={() => setDuplicateTime(null)}>
+              알겠어요
+            </PopupPrimaryButton>
+          </PopupCard>
+        </PopupBackdrop>
+      )}
     </Page>
   );
 };
@@ -507,6 +548,17 @@ const RepeatChip = styled.button`
 `;
 
 /* ---------------- Save ---------------- */
+
+const PopupMessage = styled.p`
+  margin: 0;
+  width: 100%;
+  text-align: center;
+  color: #6b6661;
+  font-family: 'Noto Sans KR', sans-serif;
+  font-size: 16px;
+  line-height: 1.5;
+  word-break: keep-all;
+`;
 
 const ButtonArea = styled.div`
   position: absolute;

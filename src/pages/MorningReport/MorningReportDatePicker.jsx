@@ -41,8 +41,8 @@ const CloseButton = styled.button`
   align-items: center;
   justify-content: center;
   border-radius: 999px;
-  color: #d1493a;
-  font-size: 24px;
+  color: #8c8780;
+  font-size: 22px;
   font-weight: 700;
   line-height: 1;
 `;

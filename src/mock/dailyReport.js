@@ -5,11 +5,15 @@
 // 그대로 꺼내 쓴다. 주간 화면의 월요일 컨디션과 하루 화면의 컨디션은 같은 값이다.
 
 import { getMockWeek } from './weeklyReport';
+import { getMockSteps, buildStepsMessage } from './steps';
+import { toDateString } from '../utils/medication';
 
 const WEEKDAY_LABELS = ['일', '월', '화', '수', '목', '금', '토'];
 
 // 저녁 건강체크 점수(1~3)를 선택지 문구로 되돌린다.
 const CONDITION_TEXT = { 3: '좋았어요', 2: '보통이에요', 1: '힘들었어요' };
+// 상단 요약 칩에 들어가는 짧은 표기
+const CONDITION_SHORT = { 3: '좋음', 2: '보통', 1: '나쁨' };
 const SLEEP_TEXT = { 3: '7시간 이상 잤어요', 2: '5~7시간 잤어요', 1: '5시간도 못 잤어요' };
 const MEAL_TEXT = { 3: '세 끼 모두 챙겼어요', 2: '두 끼 챙겼어요', 1: '한 끼만 먹었어요' };
 const ACTIVITY_TEXT = { 3: '많이 걸었어요', 2: '조금 걸었어요', 1: '거의 안 걸었어요' };
@@ -68,15 +72,26 @@ const formatDateLabel = (date) =>
 // 월요일이 0이 되도록 맞춘다. 주간 리포트의 배열 순서와 같다.
 const dayIndexOf = (date) => (date.getDay() + 6) % 7;
 
+// 이름이 겹치는 약(하루 여러 번)은 몇 번째인지 붙여서 구분한다.
 const buildMedications = (role, takenCount) => {
   const names = MED_NAMES_BY_ROLE[role] ?? MED_NAMES_BY_ROLE.parent;
-  return names.map((name, index) => ({
-    scheduleId: `mock-${index}`,
-    name,
-    // 앞에서부터 챙긴 것으로 본다. 개수는 주간 리포트의 그 요일 값과 같다.
-    taken: index < takenCount,
-    ...MEDICATION_COLORS[index % MEDICATION_COLORS.length],
-  }));
+  const counts = names.reduce((acc, name) => {
+    acc[name] = (acc[name] ?? 0) + 1;
+    return acc;
+  }, {});
+  const seen = {};
+
+  return names.map((name, index) => {
+    seen[name] = (seen[name] ?? 0) + 1;
+    return {
+      scheduleId: `mock-${index}`,
+      name,
+      label: counts[name] > 1 ? `${name} ${seen[name]}번째` : name,
+      // 앞에서부터 챙긴 것으로 본다. 개수는 주간 리포트의 그 요일 값과 같다.
+      taken: index < takenCount,
+      ...MEDICATION_COLORS[index % MEDICATION_COLORS.length],
+    };
+  });
 };
 
 // role: 'parent' | 'child' / weeksAgo: 이번 주가 0, 지난 주가 1
@@ -87,6 +102,24 @@ export function getMockMorningEntry({ role, weeksAgo, date }) {
   const index = dayIndexOf(date);
   return (MORNING_BY_ROLE[role] ?? MORNING_BY_ROLE.parent)[index];
 }
+
+// 걸음 수는 활동량 점수와 어긋나지 않게 그 날의 점수 구간에서 고른다.
+// 어제와 비교하려면 전날 점수도 필요한데, 월요일이면 지지난 주의 일요일을 본다.
+const buildMockSteps = (role, weeksAgo, date, index, activity) => {
+  const previousActivity =
+    index > 0
+      ? getMockWeek(role, weeksAgo)?.activity.daily[index - 1]
+      : getMockWeek(role, weeksAgo + 1)?.activity.daily[6];
+
+  const previousDate = new Date(date);
+  previousDate.setDate(previousDate.getDate() - 1);
+
+  const count = getMockSteps(toDateString(date), activity);
+  const previousCount =
+    previousActivity != null ? getMockSteps(toDateString(previousDate), previousActivity) : null;
+
+  return { count, message: buildStepsMessage(count, previousCount, false) };
+};
 
 // role: 'parent' | 'child' / weeksAgo: 이번 주가 0, 지난 주가 1
 export function getMockDailyReport({ role, weeksAgo, date, personLabel, isMine }) {
@@ -110,9 +143,9 @@ export function getMockDailyReport({ role, weeksAgo, date, personLabel, isMine }
     summary: {
       questionStatus: '완료',
       medication: `${takenCount}/${week.meds.perDay}`,
-      condition: CONDITION_TEXT[condition] ?? '-',
-      conditionScore: condition ?? null,
+      condition: CONDITION_SHORT[condition] ?? '-',
     },
+    steps: buildMockSteps(role, weeksAgo, date, index, activity),
     aiComment: AI_COMMENT_BY_CONDITION[condition] ?? '',
     eveningComment: EVENING_COMMENT_BY_ACTIVITY[activity] ?? '',
     timeline: [
@@ -126,7 +159,6 @@ export function getMockDailyReport({ role, weeksAgo, date, personLabel, isMine }
         type: 'medication',
         time: '복약',
         medications,
-        hasMissed: missed.length > 0,
         note:
           missed.length > 0
             ? `${missed.map((item) => item.name).join(', ')}은 기록되지 않았어요`

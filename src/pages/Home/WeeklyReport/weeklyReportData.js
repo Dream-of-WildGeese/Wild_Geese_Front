@@ -89,23 +89,27 @@ export const toWeeklyDetail = (report) => {
   const medication = report.medication ?? {};
   const perDay = medication.perDay ?? 0;
 
+  const inProgress = Boolean(report.inProgress);
+
   return {
-    headline: report.weeklyComment ?? '이번 주 리포트예요',
-    headlineDesc:
-      report.weeklyDetail ??
-      (report.isBaselineSufficient
-        ? ''
-        : '아직 비교할 지난주 기록이 부족해서, 이번 주 기록만 보여드려요.'),
+    // 아직 쌓이는 중인 주는 문구를 만들지 않는다.
+    headline: inProgress ? '' : (report.weeklyComment ?? ''),
+    headlineDesc: inProgress
+      ? ''
+      : (report.weeklyDetail ??
+        (report.isBaselineSufficient
+          ? ''
+          : '아직 비교할 지난주 기록이 부족해서, 이번 주 기록만 보여드려요.')),
     condition: toDailyDots(condition),
     conditionTrend: toTrend(condition?.trend),
-    conditionNote: condition?.comment ?? '아직 기록이 부족해요.',
+    conditionNote: condition?.comment ?? '',
     sleep: toDailyBars(sleep),
-    sleepNote: sleep?.comment ?? '아직 기록이 부족해요.',
+    sleepNote: sleep?.comment ?? '',
     meal: toDailyDots(meal),
-    mealNote: meal?.comment ?? '아직 기록이 부족해요.',
+    mealNote: meal?.comment ?? '',
     steps: toDailyBars(activity),
     stepsTrend: toTrend(activity?.trend),
-    stepsNote: activity?.comment ?? '아직 기록이 부족해요.',
+    stepsNote: activity?.comment ?? '',
     // 서버는 복약을 주 단위 합계로만 준다. 요일별(daily)은 시연용 데이터에만 있어서,
     // 없으면 요일 칸을 비워 둔다. 합계만으로 앞에서부터 채우면 실제와 다른 그림이 된다.
     meds: DAYS.map((day, index) => ({
@@ -116,8 +120,8 @@ export const toWeeklyDetail = (report) => {
     })),
     medsTakenCount: medication.takenCount ?? 0,
     medsTotal: medication.totalCount ?? 0,
-    medsNote: medication.comment ?? '복약 기록이 아직 없어요.',
-    inProgress: Boolean(report.inProgress),
+    medsNote: medication.comment ?? '',
+    inProgress,
     adviceText: report.nextWeekSuggestion ?? '',
     // 서버가 기록을 분석해서 써주는 문장. 기록이 적으면 '아직 패턴을 분석할 만큼
     // 기록이 쌓이지 않았어요' 같은 기본 문구가 온다.
@@ -142,7 +146,8 @@ const toWeekSummary = (report, start) => {
       start.getFullYear() === new Date().getFullYear()
         ? `${start.getMonth() + 1}월`
         : `${start.getFullYear()}년 ${start.getMonth() + 1}월`,
-    comment: report?.weeklyComment ?? '아직 리포트가 준비되지 않았어요',
+    // 한 주가 다 차지 않은 리포트는 한 줄평을 만들지 않는다(목록에서도 비워둔다).
+    comment: report?.inProgress ? '' : (report?.weeklyComment ?? ''),
     // 이번 주는 아직 쌓이는 중이라 목록에서 '입력 중'으로 표시한다.
     inProgress: Boolean(report?.inProgress),
   };
@@ -204,41 +209,30 @@ async function resolveCurrentWeek(fetched, role, weekStartDate) {
   if (hasRecords(fetched) || built) {
     const base = fetched ?? {};
 
-    // 아직 한 주가 안 끝났는데 서버는 '이번 주 35번 중 30번 챙기셨어요' 같은
-    // 완결된 문장을 준다. 지표 코멘트도 '데이터를 확인해보세요.' 고정 문구다.
-    // 진행 중이라는 게 드러나도록 여기서 바꿔 쓴다.
-    const progressNote = `${days}일치까지 담겼어요. 일요일에 이번 주 리포트가 만들어져요.`;
+    // 한 주가 다 차기 전에는 어떤 문장도 만들지 않는다.
+    // 서버는 '이번 주 35번 중 30번 챙기셨어요' 같은 완결된 문장을 미리 주는데,
+    // 아직 이틀치만 쌓인 주에 그런 말을 붙이면 사실과 다른 요약이 된다.
+    // 그래프(요일별 값)만 보여주고 한 줄평·다음 주 제안·AI 코멘트는 모두 비운다.
     const meds = base.medication ?? {};
 
     return {
       ...base,
       inProgress: true,
-      weeklyComment: '이번 주는 아직 쌓이는 중이에요',
-      weeklyDetail: progressNote,
-      // 다음 주 제안·AI 코멘트는 한 주가 끝나야 의미가 있어서 진행 중엔 감춘다.
+      weeklyComment: '',
+      weeklyDetail: '',
       nextWeekSuggestion: '',
       aiCoachInsight: '',
       metrics: Object.fromEntries(
-        EVENING_ORDER.map((metric) => {
-          const daily = built ? built[metric] : (base.metrics?.[metric]?.daily ?? []);
-          const recorded = daily.filter((value) => value != null).length;
-          return [
-            metric,
-            {
-              ...(base.metrics?.[metric] ?? {}),
-              daily,
-              comment: recorded > 0 ? `지금까지 ${recorded}일 기록했어요.` : '아직 기록이 없어요.',
-            },
-          ];
-        }),
+        EVENING_ORDER.map((metric) => [
+          metric,
+          {
+            ...(base.metrics?.[metric] ?? {}),
+            daily: built ? built[metric] : (base.metrics?.[metric]?.daily ?? []),
+            comment: '',
+          },
+        ]),
       ),
-      medication: {
-        ...meds,
-        comment:
-          (meds.totalCount ?? 0) > 0
-            ? `지금까지 ${meds.totalCount}번 중 ${meds.takenCount}번 챙기셨어요.`
-            : '아직 복약 기록이 없어요.',
-      },
+      medication: { ...meds, comment: '' },
     };
   }
 

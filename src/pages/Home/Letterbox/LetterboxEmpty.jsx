@@ -1,6 +1,5 @@
 import styled from 'styled-components';
 import envelopeEmpty from '../../../assets/letterbox/envelope-empty-img.svg';
-import pencilBtn from '../../../assets/letterbox/pencil-btn.svg';
 import {
   PopupCard,
   PopupInnerBorder,
@@ -61,7 +60,6 @@ function LetterboxEmpty({ onWrite, onClose }) {
       </TextBlock>
 
       <PopupPrimaryButton type="button" onClick={onWrite}>
-        <PopupIcon $size={30} src={pencilBtn} alt="" />
         편지 쓰러가기
       </PopupPrimaryButton>
     </PopupCard>

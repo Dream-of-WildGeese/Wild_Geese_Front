@@ -59,7 +59,7 @@ function LetterSent({ onClose, recipientName }) {
       <TextBlock>
         <Title>편지를 보냈어요!</Title>
         <Subtitle>
-          {recipientName ? `${recipientName}님께` : '가족에게'} 마음이 전해졌어요.
+          {recipientName ? `${recipientName}에게` : '가족에게'} 마음이 전해졌어요.
           <br />
           답장이 오면 우체통으로 알려드릴게요.
         </Subtitle>

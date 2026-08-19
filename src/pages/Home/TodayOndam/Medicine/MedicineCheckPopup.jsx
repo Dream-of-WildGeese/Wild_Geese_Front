@@ -21,6 +21,8 @@ import {
   PopupInnerBorder,
   PopupTitle,
   PopupPrimaryButton,
+  PopupSecondaryButton,
+  PopupButtonRow,
   PopupIcon,
 } from '../../../../components/PopupShell';
 import MedicineLogEditPopup from './MedicineLogEditPopup';
@@ -30,22 +32,26 @@ import MedicineLogEditPopup from './MedicineLogEditPopup';
 const MEAL_TYPE_BY_LABEL = { 아침: 'BREAKFAST', 점심: 'LUNCH', 저녁: 'DINNER' };
 const MED_FLOWERS = [medFlowerA, medFlowerB];
 
-// 식사 행은 약이 아니라서 살구색 테두리로 따로 구분한다.
+// 식사 행은 약이 아니라서 초록색으로 따로 구분한다.
+// 이름이 길어도 잘리지 않도록 높이를 고정하지 않고 줄이 늘어나게 둔다.
 const CheckRow = styled.div`
   width: 100%;
-  height: 54px;
-  padding: 0 12px 0 14px;
+  min-height: 54px;
+  padding: 10px 12px 10px 14px;
+  box-sizing: border-box;
 
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 8px;
+  gap: 10px;
 
   border-radius: 10px;
-  border: 1px solid ${({ $meal }) => ($meal ? 'rgba(230, 167, 148, 0.85)' : '#d8cbb8')};
-  background: ${({ $meal }) => ($meal ? '#fdf1ec' : '#fffbf1')};
+  border: 1px solid ${({ $meal }) => ($meal ? 'rgba(143, 174, 74, 0.6)' : '#d8cbb8')};
+  background: ${({ $meal }) => ($meal ? '#edf2d4' : '#fffbf1')};
 `;
 
+// 예전에는 한 줄로 고정하고 넘치면 '...'으로 잘라서, 이름이 조금만 길어도
+// 무슨 약인지 알 수 없었다. 어절 단위로 줄을 바꿔 끝까지 보여준다.
 const CheckLabel = styled.span`
   flex: 1;
   min-width: 0;
@@ -53,18 +59,20 @@ const CheckLabel = styled.span`
   font-family: 'Noto Sans KR';
   font-size: 18px;
   font-weight: 500;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  line-height: 1.35;
+  word-break: keep-all;
 `;
 
 // '먹었어요' 글자 버튼 대신 체크박스로 바꿨다. 누를 곳이 분명하고
 // 여러 줄을 훑을 때 무엇을 체크했는지 한눈에 들어온다.
+//
+// 체크했을 때의 배경·테두리·체크 표시 색을 아래 '완료' 버튼과 똑같이 맞췄다.
+// 예전에는 체크박스만 더 진한 연두라 같은 화면에서 초록이 두 가지로 보였다.
 const CheckBox = styled.button`
   flex-shrink: 0;
-  width: 34px;
-  height: 34px;
-  border-radius: 9px;
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
 
   display: flex;
   align-items: center;
@@ -72,14 +80,14 @@ const CheckBox = styled.button`
 
   border: 2px solid
     ${({ $on, $meal }) =>
-      $on ? 'rgba(87, 107, 26, 0.6)' : $meal ? 'rgba(201, 113, 88, 0.5)' : '#d8cbb8'};
-  background: ${({ $on }) => ($on ? '#cbd879' : '#fff')};
-  color: #364310;
+      $on ? 'rgba(74, 58, 47, 0.55)' : $meal ? 'rgba(143, 174, 74, 0.6)' : '#d8cbb8'};
+  background: ${({ $on }) => ($on ? '#dbe4a1' : '#fff')};
+  color: #4a3a2f;
 `;
 
 const CheckMark = styled.svg`
-  width: 20px;
-  height: 20px;
+  width: 18px;
+  height: 18px;
 `;
 
 const CircleRow = styled.div`
@@ -94,19 +102,20 @@ const MedIconWrap = styled.div`
   flex-direction: column;
   align-items: center;
   gap: 4px;
-  width: 64px;
+  width: 78px;
 `;
 
+// 여기도 한 줄로 자르지 않는다. 꽃 아래에서 줄을 바꿔 이름을 끝까지 보여준다.
 const MedLabel = styled.p`
   margin: 0;
   max-width: 100%;
+  text-align: center;
   color: ${({ $taken }) => ($taken ? '#2e2117' : '#8c8780')};
   font-family: 'Noto Sans KR';
-  font-size: 16px;
+  font-size: 15px;
   font-weight: ${({ $taken }) => ($taken ? 700 : 500)};
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  line-height: 1.3;
+  word-break: keep-all;
 `;
 
 const CompleteNote = styled.p`
@@ -116,6 +125,19 @@ const CompleteNote = styled.p`
   font-family: 'Noto Sans KR';
   font-size: 16px;
   font-weight: 500;
+`;
+
+// '닫기'가 초록으로 채워진 주 버튼이라, 옆의 '기록 수정하기'는 글자와 테두리를
+// 진하게 둬서 흐릿해 보이지 않게 한다.
+const EditRecordButton = styled(PopupSecondaryButton)`
+  border: 1.5px solid rgba(74, 58, 47, 0.55);
+  color: #4a3a2f;
+  cursor: pointer;
+  transition: background 0.15s ease;
+
+  &:hover {
+    background: #f6ebc7;
+  }
 `;
 
 const EmptyText = styled.p`
@@ -256,9 +278,14 @@ function MedicineCheckPopup({ onClose }) {
 
           <CompleteNote>{note}</CompleteNote>
 
-          <PopupPrimaryButton type="button" onClick={() => setStep('edit')}>
-            기록 수정하기 ›
-          </PopupPrimaryButton>
+          <PopupButtonRow>
+            <EditRecordButton type="button" onClick={() => setStep('edit')}>
+              기록 수정하기
+            </EditRecordButton>
+            <PopupPrimaryButton type="button" onClick={onClose}>
+              닫기
+            </PopupPrimaryButton>
+          </PopupButtonRow>
         </PopupCard>
       </PopupBackdrop>
     );

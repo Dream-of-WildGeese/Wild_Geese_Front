@@ -11,6 +11,8 @@ import {
   isValidTime,
   isDuplicateName,
   sortTimeLabels,
+  toTimeLabel,
+  includesTime,
 } from '../../../utils/medication';
 import {
   PopupBackdrop,
@@ -19,48 +21,16 @@ import {
   PopupTitle,
   PopupPrimaryButton,
 } from '../../../components/PopupShell';
-
-const Page = styled.div`
-  position: relative;
-  width: 100%;
-  height: 100%;
-  overflow-y: auto;
-  background: #FFF8ED;
-
-  &::-webkit-scrollbar {
-    display: none;
-  }
-`;
-
-const Content = styled.div`
-  padding: 16px 20px 30px;
-`;
-
-const Header = styled.div`
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding-bottom: 12px;
-  border-bottom: 1.3px solid rgba(74,58,47,.25);
-`;
-
-const BackButton = styled.button`
-  width: 20px;
-  font-size: 22px;
-  color: #000;
-  line-height: 1;
-`;
-
-const Title = styled.p`
-  margin: 0;
-  font-size: 18px;
-  font-weight: 500;
-  color: #000;
-`;
-
-const HeaderSpacer = styled.div`
-  width: 20px;
-`;
+import {
+  PageFrame,
+  PageContent,
+  PageBack,
+  PageHeader,
+  PageTitle,
+  PageDivider,
+  PageScrollArea,
+  PageFooter,
+} from '../../../components/PageShell';
 
 const Label = styled.p`
   margin: 20px 0 6px;
@@ -168,21 +138,42 @@ const BlockedText = styled.p`
   line-height: 1.5;
 `;
 
+// 저장하기만 화면 아래에 고정한다. 삭제는 되돌릴 수 없어서 목록 끝까지
+// 내려야 닿도록 스크롤 영역 안에 남겨둔다.
+//
+// 연두 배경에 흰 글자라 글씨가 배경에 묻혀 있었다. 다른 화면의 주요 버튼과 같은
+// 진한 글자·테두리로 맞추고, 커서를 올리면 한 단계 진해지게 한다.
 const SaveButton = styled.button`
   width: 100%;
   height: 54px;
-  margin-top: 28px;
   border-radius: 14px;
-  background: #DBE4A1;
-  color: #fff;
-  font-size: 16px;
-  font-weight: 600;
+  border: 1.5px solid rgba(74, 58, 47, 0.55);
+  background: #dbe4a1;
+  color: #4a3a2f;
+  font-family: Jua;
+  font-size: 20px;
+  cursor: pointer;
+  transition: background 0.15s ease, transform 0.1s ease;
+
+  &:hover:not(:disabled) {
+    background: #cbd879;
+  }
+
+  &:active:not(:disabled) {
+    background: #c2d16b;
+    transform: translateY(1px);
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: default;
+  }
 `;
 
 const DeleteButton = styled.button`
   width: 100%;
   height: 50px;
-  margin-top: 12px;
+  margin-top: 28px;
   border-radius: 12px;
   border: 1.3px solid rgba(74,58,47,.4);
   color: #cc4d4d;
@@ -210,6 +201,8 @@ function MedicineEdit() {
   const [saveBlocked, setSaveBlocked] = useState(false);
   // 입력값이 잘못됐을 때 알려주는 문구 (시간 형식, 이름 중복 등)
   const [missing, setMissing] = useState(null);
+  // 이미 골라둔 시각을 또 넣으려 할 때 알려줄 시각
+  const [duplicateTime, setDuplicateTime] = useState(null);
   const [period, setPeriod] = useState('오전');
   const [hour, setHour] = useState('');
   const [minute, setMinute] = useState('');
@@ -228,28 +221,26 @@ function MedicineEdit() {
 
   if (loading) {
     return (
-      <Page>
-        <Content>
+      <PageFrame>
+        <PageContent>
           <Label>불러오는 중이에요...</Label>
-        </Content>
-      </Page>
+        </PageContent>
+      </PageFrame>
     );
   }
 
   if (!medication) {
     return (
-      <Page>
-        <Content>
-          <Header>
-            <BackButton type="button" onClick={() => navigate('/home/medicine')}>
-              ‹
-            </BackButton>
-            <Title>약 정보 수정</Title>
-            <HeaderSpacer />
-          </Header>
+      <PageFrame>
+        <PageContent>
+          <PageBack onClick={() => navigate('/home/medicine')} />
+          <PageHeader>
+            <PageTitle>약 정보 수정</PageTitle>
+          </PageHeader>
+          <PageDivider />
           <Label>이미 삭제된 약이에요.</Label>
-        </Content>
-      </Page>
+        </PageContent>
+      </PageFrame>
     );
   }
 
@@ -265,8 +256,17 @@ function MedicineEdit() {
       return;
     }
 
-    const label = `${period} ${hour.padStart(2, '0')}:${minute.padStart(2, '0')}`;
-    if (!times.includes(label)) setTimes((prev) => sortTimeLabels([...prev, label]));
+    // 표기를 목록과 같은 규칙으로 굳힌다. 예전에는 '오전 08:00'처럼 시에 0을 붙여
+    // 만들어서, 미리 준비된 '오전 8:00'과 다른 것으로 잡혔다. 그래서 같은 시각이
+    // 두 번 들어가고, 저장하면 목록에 '오전 8:00'이 두 개씩 보였다.
+    const label = toTimeLabel(period, hour, minute);
+
+    if (includesTime(times, label)) {
+      setDuplicateTime(label);
+      return;
+    }
+
+    setTimes((prev) => sortTimeLabels([...prev, label]));
     setHour('');
     setMinute('');
   };
@@ -311,88 +311,91 @@ function MedicineEdit() {
   };
 
   return (
-    <Page>
-      <Content>
-        <Header>
-          <BackButton type="button" aria-label="뒤로가기" onClick={() => navigate('/home/medicine')}>
-            ‹
-          </BackButton>
-          <Title>약 정보 수정</Title>
-          <HeaderSpacer />
-        </Header>
+    <PageFrame>
+      <PageContent>
+        <PageBack onClick={() => navigate('/home/medicine')} />
+        <PageHeader>
+          <PageTitle>약 정보 수정</PageTitle>
+        </PageHeader>
+        <PageDivider />
 
-        <Label>약 이름</Label>
-        <Input value={name} onChange={(e) => setName(e.target.value)} />
+        <PageScrollArea>
+          <Label>약 이름</Label>
+          <Input value={name} onChange={(e) => setName(e.target.value)} />
 
-        <Label>복용 시간을 골라주세요 (여러 개 가능)</Label>
-        <ChipRow>
-          {[...new Set([...PRESET_TIMES, ...times])].map((time) => (
-            <Chip key={time} type="button" $active={times.includes(time)} onClick={() => toggleTime(time)}>
-              {time}
-            </Chip>
-          ))}
-        </ChipRow>
-
-        <Label>직접 시간 정하기</Label>
-        <CustomTimeRow>
-          <Select value={period} onChange={(e) => setPeriod(e.target.value)}>
-            <option value="오전">오전</option>
-            <option value="오후">오후</option>
-          </Select>
-          <Select value={hour} onChange={(e) => setHour(e.target.value)}>
-            <option value="">시</option>
-            {Array.from({ length: 12 }, (_, i) => i + 1).map((h) => (
-              <option key={h} value={h}>
-                {h}
-              </option>
+          <Label>복용 시간을 골라주세요 (여러 개 가능)</Label>
+          <ChipRow>
+            {[...new Set([...PRESET_TIMES, ...times])].map((time) => (
+              <Chip key={time} type="button" $active={times.includes(time)} onClick={() => toggleTime(time)}>
+                {time}
+              </Chip>
             ))}
-          </Select>
-          <Select value={minute} onChange={(e) => setMinute(e.target.value)}>
-            <option value="">분</option>
-            {['00', '10', '20', '30', '40', '50'].map((m) => (
-              <option key={m} value={m}>
-                {m}
-              </option>
+          </ChipRow>
+
+          <Label>직접 시간 정하기</Label>
+          <CustomTimeRow>
+            <Select value={period} onChange={(e) => setPeriod(e.target.value)}>
+              <option value="오전">오전</option>
+              <option value="오후">오후</option>
+            </Select>
+            <Select value={hour} onChange={(e) => setHour(e.target.value)}>
+              <option value="">시</option>
+              {Array.from({ length: 12 }, (_, i) => i + 1).map((h) => (
+                <option key={h} value={h}>
+                  {h}
+                </option>
+              ))}
+            </Select>
+            <Select value={minute} onChange={(e) => setMinute(e.target.value)}>
+              <option value="">분</option>
+              {['00', '10', '20', '30', '40', '50'].map((m) => (
+                <option key={m} value={m}>
+                  {m}
+                </option>
+              ))}
+            </Select>
+            <AddTimeButton type="button" onClick={handleAddManualTime}>
+              +
+            </AddTimeButton>
+          </CustomTimeRow>
+
+          <Label>무슨 요일에 드시나요?</Label>
+          <DailyToggle
+            type="button"
+            $on={isEveryDay(days)}
+            onClick={() => setDays(isEveryDay(days) ? [] : ALL_DAY_VALUES)}
+          >
+            매일 먹어요
+          </DailyToggle>
+          <DayRow>
+            {DAY_OPTIONS.map((day) => (
+              <DayChip
+                key={day.value}
+                type="button"
+                $on={days.includes(day.value)}
+                onClick={() => toggleDay(day.value)}
+              >
+                {day.label}
+              </DayChip>
             ))}
-          </Select>
-          <AddTimeButton type="button" onClick={handleAddManualTime}>
-            +
-          </AddTimeButton>
-        </CustomTimeRow>
+          </DayRow>
+          {days.length === 0 && <HelpText>드시는 요일을 하나 이상 골라주세요.</HelpText>}
 
-        <Label>무슨 요일에 드시나요?</Label>
-        <DailyToggle
-          type="button"
-          $on={isEveryDay(days)}
-          onClick={() => setDays(isEveryDay(days) ? [] : ALL_DAY_VALUES)}
-        >
-          매일 먹어요
-        </DailyToggle>
-        <DayRow>
-          {DAY_OPTIONS.map((day) => (
-            <DayChip
-              key={day.value}
-              type="button"
-              $on={days.includes(day.value)}
-              onClick={() => toggleDay(day.value)}
-            >
-              {day.label}
-            </DayChip>
-          ))}
-        </DayRow>
-        {days.length === 0 && <HelpText>드시는 요일을 하나 이상 골라주세요.</HelpText>}
+          <DeleteButton type="button" onClick={handleDelete}>
+            삭제하기
+          </DeleteButton>
+        </PageScrollArea>
 
-        <SaveButton
-          type="button"
-          onClick={handleSave}
-          disabled={!name.trim() || times.length === 0 || days.length === 0}
-        >
-          저장하기
-        </SaveButton>
-        <DeleteButton type="button" onClick={handleDelete}>
-          삭제하기
-        </DeleteButton>
-      </Content>
+        <PageFooter>
+          <SaveButton
+            type="button"
+            onClick={handleSave}
+            disabled={!name.trim() || times.length === 0 || days.length === 0}
+          >
+            저장하기
+          </SaveButton>
+        </PageFooter>
+      </PageContent>
 
       {missing && (
         <PopupBackdrop onClick={() => setMissing(null)}>
@@ -403,6 +406,25 @@ function MedicineEdit() {
             </PopupTitle>
             <BlockedText>{missing}</BlockedText>
             <PopupPrimaryButton type="button" onClick={() => setMissing(null)}>
+              알겠어요
+            </PopupPrimaryButton>
+          </PopupCard>
+        </PopupBackdrop>
+      )}
+
+      {duplicateTime && (
+        <PopupBackdrop onClick={() => setDuplicateTime(null)}>
+          <PopupCard $center $gap={16} $padTop={36} onClick={(event) => event.stopPropagation()}>
+            <PopupInnerBorder />
+            <PopupTitle $center $size={22}>
+              이미 넣은 시간이에요
+            </PopupTitle>
+            <BlockedText>
+              {duplicateTime}
+              <br />
+              같은 시간을 두 번 넣을 수는 없어요.
+            </BlockedText>
+            <PopupPrimaryButton type="button" onClick={() => setDuplicateTime(null)}>
               알겠어요
             </PopupPrimaryButton>
           </PopupCard>
@@ -427,7 +449,7 @@ function MedicineEdit() {
           </PopupCard>
         </PopupBackdrop>
       )}
-    </Page>
+    </PageFrame>
   );
 }
 

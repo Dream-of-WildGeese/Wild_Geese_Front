@@ -55,11 +55,12 @@ export const PopupInnerBorder = styled.div`
   pointer-events: none;
 `;
 
-// 어르신도 바로 찾을 수 있게 크고 빨갛게 둔다.
+// 닫기는 어느 팝업에서든 같은 자리(오른쪽 위)에 같은 회색으로 둔다.
+// 예전에는 빨간 ✕가 왼쪽 위에 있어서, 오른쪽 위에 두는 다른 화면들과 어긋났다.
 export const PopupClose = styled.button`
-  align-self: flex-start;
-  color: #d1493a;
-  font-size: 30px;
+  align-self: flex-end;
+  color: #8c8780;
+  font-size: 22px;
   font-weight: 700;
   line-height: 1;
 `;

@@ -1,5 +1,5 @@
 import styled from 'styled-components';
-import journalDateIcon from '../../assets/journal-date-icon.png';
+import journalDateIcon from '../../assets/onboarding/pinkflower.png';
 import mascotImg from '../../assets/mascot.png';
 
 const PLANK_LINES = [55, 114, 173];
@@ -44,7 +44,7 @@ const Card = styled.div`
   overflow: hidden;
   border-radius: 15px;
   background: #c1a067;
-  border: 4px solid rgba(120, 89, 58, 0.3);
+  border: 3px solid rgba(120, 89, 58, 0.3);
 `;
 
 const PlankLine = styled.div`
@@ -73,20 +73,20 @@ const DateRow = styled.div`
   z-index: 1;
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 6px;
 `;
 
 const DateIcon = styled.img`
-  width: 20px;
-  height: 20px;
-  object-fit: cover;
+  width: 14px;
+  height: 14px;
+  object-fit: contain;
 `;
 
 const DateLabel = styled.p`
   margin: 0;
   font-family: 'Noto Sans KR', sans-serif;
   font-weight: 900;
-  font-size: 15px;
+  font-size: 17px;
   color: #f6ebc7;
   text-shadow: 0 4px 4px rgba(0, 0, 0, 0.25);
 `;
@@ -97,7 +97,7 @@ const QuestionText = styled.p`
   margin: 0;
   font-family: 'Noto Sans KR', sans-serif;
   font-weight: 900;
-  font-size: 22px;
+  font-size: 20px;
   line-height: 1.35;
   color: #f6ebc7;
   text-shadow: 0 4px 4px rgba(0, 0, 0, 0.25);
@@ -130,21 +130,25 @@ const AvatarImage = styled.img`
   object-fit: cover;
 `;
 
+// 누가 남긴 답인지 색으로 구분한다. 예전에는 둘 다 같은 크림색이라
+// 아바타를 보지 않으면 내 답인지 가족 답인지 알기 어려웠다.
 const Bubble = styled.div`
   flex: 1;
   min-width: 0;
   padding: 12px 14px;
   border-radius: 10px;
-  background: rgba(252, 248, 234, 0.8);
-  border: 1px solid #4a3a2f;
+  background: ${({ $mine }) => ($mine ? '#fbeae5' : '#fbf0d2')};
+  border: 1.5px solid
+    ${({ $mine }) => ($mine ? 'rgba(230, 167, 148, 0.9)' : 'rgba(232, 205, 115, 0.9)')};
 `;
 
 const BubbleText = styled.p`
   margin: 0;
   font-family: 'Noto Sans KR', sans-serif;
-  font-weight: 700;
-  font-size: 15px;
+  font-weight: 500;
+  font-size: 18px;
   color: #4a3a2f;
+  word-break: keep-all;
 `;
 
 // 나도 가족도 답하지 않은 날. 빈 카드만 두면 불러오다 만 것처럼 보여서
@@ -217,7 +221,7 @@ function MorningJournalCard({ date, question, answers }) {
             <Avatar>
               <AvatarImage src={answer.avatar} alt={answer.name} />
             </Avatar>
-            <Bubble>
+            <Bubble $mine={answer.id === 'me'}>
               <BubbleText>{answer.text}</BubbleText>
             </Bubble>
           </AnswerRow>

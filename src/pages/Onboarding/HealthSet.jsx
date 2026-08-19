@@ -10,6 +10,7 @@ import { useApi, useApiAction } from '../../hooks/useApi';
 import BirthDatePickerModal from '../../components/BirthDatePickerModal';
 import heart from '../../assets/onboarding/heart.svg';
 import MissingFieldsPopup from '../../components/MissingFieldsPopup';
+import { DISEASE_LIST } from '../../utils/health';
 
 // "1856-03-02" -> "1856년 3월 2일"
 const formatBirthLabel = (value) => {
@@ -36,17 +37,6 @@ const INTEREST_LABELS = Object.fromEntries(
 );
 
 const GENDER_LABELS = { MALE: 'male', FEMALE: 'female' };
-
-const DISEASE_LIST = [
-  '고혈압',
-  '당뇨',
-  '고지혈증',
-  '심장질환',
-  '관절·허리 통증',
-  '골다공증',
-  '기타',
-  '없음',
-];
 
 // 만 나이 기준 가입 가능 연령. 개인정보보호법상 만 14세 미만은 법정대리인 동의가
 // 필요해서, 그 절차가 없는 지금은 14세를 하한으로 둔다.

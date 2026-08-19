@@ -1,7 +1,6 @@
 import styled from 'styled-components';
 import envelopeBox from '../../../assets/letterbox/envelope-box.svg';
 import avatarChild from '../../../assets/letterbox/avatar-child.png';
-import pencilBtn from '../../../assets/letterbox/pencil-btn.svg';
 import {
   PopupCard,
   PopupInnerBorder,
@@ -141,7 +140,7 @@ const Preview = styled.p`
   -webkit-box-orient: vertical;
 `;
 
-function LetterboxList({ letters, onSelectLetter, onWrite, onClose }) {
+function LetterboxList({ letters, senderLabel, onSelectLetter, onWrite, onClose }) {
   return (
     <PopupCard $center $gap={16} $padTop={32} onClick={(event) => event.stopPropagation()}>
       <PopupInnerBorder />
@@ -163,7 +162,8 @@ function LetterboxList({ letters, onSelectLetter, onWrite, onClose }) {
             </Avatar>
             <TextCol>
               <HeadRow>
-                <SenderName>{letter.sender}</SenderName>
+                {/* 가족 정보가 아직 안 왔을 때만 편지에 적힌 이름을 대신 쓴다 */}
+                <SenderName>{senderLabel || letter.sender}</SenderName>
                 {!letter.read && <UnreadDot />}
                 <DateText>{letter.date}</DateText>
               </HeadRow>
@@ -174,7 +174,6 @@ function LetterboxList({ letters, onSelectLetter, onWrite, onClose }) {
       </MessageList>
 
       <PopupPrimaryButton type="button" onClick={onWrite}>
-        <PopupIcon $size={30} src={pencilBtn} alt="" />
         편지쓰기
       </PopupPrimaryButton>
     </PopupCard>

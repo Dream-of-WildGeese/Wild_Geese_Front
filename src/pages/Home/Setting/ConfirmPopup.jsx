@@ -1,8 +1,6 @@
 import styled from 'styled-components';
 import logoutDaughter from '../../../assets/character/logout-daughter.png';
-import logoutSon from '../../../assets/character/logout-son.svg';
-import withdrawDaughter from '../../../assets/character/withdraw-daughter.png';
-import withdrawSon from '../../../assets/character/withdraw-son.png';
+import logoutSon from '../../../assets/character/logout-son.png';
 import {
   PopupBackdrop,
   PopupCard,
@@ -12,12 +10,9 @@ import {
   PopupSecondaryButton,
 } from '../../../components/PopupShell';
 
-// Figma 29 / 30: 로그아웃·탈퇴 확인. 각각 딸/아들 캐릭터 버전이 따로 있어서
+// Figma 29: 로그아웃 확인. 딸/아들 캐릭터 버전이 따로 있어서
 // 건강 프로필의 성별로 그림을 고른다(성별 미설정이면 딸 그림을 기본으로 쓴다).
-const CHARACTERS = {
-  logout: { FEMALE: logoutDaughter, MALE: logoutSon },
-  withdraw: { FEMALE: withdrawDaughter, MALE: withdrawSon },
-};
+const CHARACTERS = { FEMALE: logoutDaughter, MALE: logoutSon };
 
 const Character = styled.img`
   width: auto;
@@ -36,16 +31,15 @@ const Description = styled.p`
   line-height: 1.5;
 `;
 
-// 되돌릴 수 없는 동작이라 확인 버튼만 경고색으로 채운다.
+// 확인 버튼만 눈에 띄는 색으로 채워서 취소와 구분한다.
 const DangerButton = styled(PopupSecondaryButton)`
-  background: ${({ $tone }) => ($tone === 'withdraw' ? '#c1553c' : '#d97d65')};
+  background: #d97d65;
   border-color: rgba(74, 58, 47, 0.55);
   color: #fff;
 `;
 
-function ConfirmPopup({ type, gender, onCancel, onConfirm }) {
-  const isWithdraw = type === 'withdraw';
-  const character = CHARACTERS[type][gender === 'MALE' ? 'MALE' : 'FEMALE'];
+function ConfirmPopup({ gender, onCancel, onConfirm }) {
+  const character = CHARACTERS[gender === 'MALE' ? 'MALE' : 'FEMALE'];
 
   return (
     <PopupBackdrop onClick={onCancel}>
@@ -53,29 +47,19 @@ function ConfirmPopup({ type, gender, onCancel, onConfirm }) {
         <PopupInnerBorder />
 
         <PopupTitle $center $size={24}>
-          {isWithdraw ? '정말 탈퇴하시겠어요?' : '로그아웃 하시겠어요?'}
+          로그아웃 하시겠어요?
         </PopupTitle>
 
         <Character src={character} alt="" />
 
-        <Description>
-          {isWithdraw ? (
-            <>
-              탈퇴하면 그동안 쌓은 기록과
-              <br />
-              가족 연결이 모두 사라져요
-            </>
-          ) : (
-            '다시 로그인하면 기록은 그대로 남아있어요'
-          )}
-        </Description>
+        <Description>다시 로그인하면 기록은 그대로 남아있어요</Description>
 
         <PopupButtonRow style={{ marginTop: 18 }}>
           <PopupSecondaryButton type="button" onClick={onCancel}>
             취소
           </PopupSecondaryButton>
-          <DangerButton type="button" $tone={type} onClick={onConfirm}>
-            {isWithdraw ? '탈퇴하기' : '로그아웃'}
+          <DangerButton type="button" onClick={onConfirm}>
+            로그아웃
           </DangerButton>
         </PopupButtonRow>
       </PopupCard>

@@ -92,7 +92,8 @@ const BackButton = styled.button`
 
 const CloseButton = styled.button`
   color: #8c8780;
-  font-size: 18px;
+  font-size: 22px;
+  font-weight: 700;
   line-height: 1;
 `;
 
