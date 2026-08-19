@@ -113,6 +113,7 @@ const ThisWeekCard = styled.div`
 
   padding: 16px;
   border-radius: 18px;
+  border: 3px solid rgba(143, 174, 74, 0.5);
   background: #edf2d4;
 `;
 
@@ -211,27 +212,33 @@ const Badge = styled.span`
   white-space: nowrap;
 `;
 
+// 폭을 고정하고 왼쪽 정렬해야, 한 줄평 길이가 주마다 달라도 연필 아이콘이
+// 항상 같은 자리에 온다(Figma는 오른쪽 정렬이라 짧은 한 줄평일수록 연필이
+// 오락가락해서, 아이콘 기준으로 어긋나 보였다).
 const EditLabel = styled.div`
   display: flex;
   align-items: center;
+  justify-content: flex-start;
   gap: 6px;
-  min-width: 0;
+  width: 167px;
+  flex-shrink: 0;
 `;
 
 const PencilIcon = styled.img`
-  width: 26px;
-  height: 26px;
+  width: 22px;
+  height: 22px;
   flex-shrink: 0;
   object-fit: contain;
 `;
 
-// 한 줄평이 길면 줄이 밀려서 주차 이름을 덮는다. 넘치면 말줄임으로 자른다.
+// 한 줄평이 길면 넘치는 만큼 말줄임으로 자른다.
 const EditText = styled.span`
+  min-width: 0;
   font-family: 'Noto Sans KR';
   font-size: 16px;
   font-weight: 700;
   color: #3f5a1b;
-  text-align: right;
+  text-align: left;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;

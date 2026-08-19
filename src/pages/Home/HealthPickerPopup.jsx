@@ -1,6 +1,6 @@
 import styled from 'styled-components';
 import crossIcon from '../../assets/home/popup-cross.png';
-import sproutIcon from '../../assets/home/popup-sprout.png';
+import capsuleIcon from '../../assets/home/popup-capsule.png';
 import calendarIcon from '../../assets/home/popup-calendar.png';
 import {
   PopupBackdrop,
@@ -12,7 +12,7 @@ import {
 
 // Figma 1472:808 — 홈 상단 초록 십자가를 누르면 뜨는 선택 팝업.
 const OPTIONS = [
-  { type: 'medicine', icon: sproutIcon, size: 24, label: '오늘의 건강일지' },
+  { type: 'medicine', icon: capsuleIcon, size: 28, label: '복용약' },
   { type: 'checkup', icon: calendarIcon, size: 30, label: '건강검진' },
 ];
 
