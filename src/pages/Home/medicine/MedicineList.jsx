@@ -111,19 +111,20 @@ const VineStem = styled.div`
 `;
 
 const FlowerRow = styled.div`
-  position: relative;
-  height: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 18px;
-  flex-wrap: wrap;
+  position: absolute;
+  inset: 0;
 `;
 
+// 라인(줄기) 바로 위에서 피어나도록, 줄기 상단에 밑동을 맞춰 절대 배치한다.
+// flex-wrap을 쓰면 꽃 개수가 많을 때 다음 줄이 라인과 동떨어진 위치로
+// 밀려나서, 전체 너비 기준 비율 위치로 하나씩 고정한다.
 const FlowerImg = styled.img`
-  width: 58px;
-  height: 40px;
+  position: absolute;
+  bottom: 34px;
+  width: 36px;
+  height: 25px;
   object-fit: contain;
+  transform: translateX(-50%);
 `;
 
 const MedList = styled.div`
@@ -294,7 +295,12 @@ function MedicineList() {
               <VineStem />
               <FlowerRow>
                 {Array.from({ length: takenToday }).map((_, index) => (
-                  <FlowerImg key={index} src={vineFlowerIcon} alt="" />
+                  <FlowerImg
+                    key={index}
+                    src={vineFlowerIcon}
+                    alt=""
+                    style={{ left: `${((index + 1) / (totalToday + 1)) * 100}%` }}
+                  />
                 ))}
               </FlowerRow>
             </VineWrap>
