@@ -1,4 +1,4 @@
-import weeklyReportIcon from '../../../../assets/popup/weekly-report.png';
+import weeklyReportIcon from '../../../../assets/popup/weekly-report.svg';
 import {
   PopupBackdrop,
   PopupCard,

@@ -1,5 +1,5 @@
 import styled from 'styled-components';
-import crossIcon from '../../assets/home/popup-cross.png';
+import crossIcon from '../../assets/home/popup-cross.svg';
 import capsuleIcon from '../../assets/home/popup-capsule.png';
 import calendarIcon from '../../assets/home/popup-calendar.png';
 import {
