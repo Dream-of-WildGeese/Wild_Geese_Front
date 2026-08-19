@@ -4,6 +4,7 @@ import { getMorningHistory, getTodayQuestion } from '../../../api/morning';
 import { getMyFamily } from '../../../api/family';
 import { getUserId } from '../../../api/client';
 import { toDateString, timeToLabel, activeSchedules } from '../../../utils/medication';
+import { getRelationLabel, withCompanionJosa } from '../../../utils/family';
 import { getRelationLabel } from '../../../utils/family';
 import { findMyLatestAnswer } from '../../../utils/morningAnswer';
 import { getWeekStart } from '../WeeklyReport/weeklyReportData';
@@ -119,6 +120,7 @@ const buildTimeline = ({ dailyLog, question, morningAnswer, medicationLog, medic
       type: 'question',
       time: formatTimeLabel('아침', dailyLog?.morningAnswer?.answeredAt),
       question: question?.content ?? '오늘의 질문',
+      // 음성으로 다시 답한 내용은 /daily의 morningAnswer에 반영되지 않는다.
       // /daily의 morningAnswer는 그 날 '맨 처음' 답이라, 고쳐 쓴 답이 반영되지 않는다.
       // 오늘 것은 아침 질문 응답에서 마지막 답을 골라 쓴다.
       answer: morningAnswer ?? dailyLog?.morningAnswer?.textValue ?? '',
@@ -226,8 +228,8 @@ export async function loadTodayReport(person, dateString = null) {
     isMe
       ? getDailyLog(previousRecordDate).catch(() => null)
       : getFamilyDailyLog(partner.userId, previousRecordDate).catch(() => null),
-    // 오늘 내 일지일 때만, 마지막으로 고쳐 쓴 아침 답변을 확인한다.
-    isMe && isToday ? getTodayQuestion().catch(() => null) : null,
+      // 오늘 내 일지일 때만, 마지막으로 남긴 아침 답변을 확인한다.
+      isMe && isToday ? getTodayQuestion().catch(() => null) : null,
     ]);
 
   const personLabel = isMe ? '나' : getRelationLabel(partner);
@@ -244,9 +246,17 @@ export async function loadTodayReport(person, dateString = null) {
     summary: buildSummary(dailyLog, medicationLog),
     steps: {
       count: stepCount,
-      message: buildStepsMessage(stepCount, previousStepCount, isToday),
+      message: buildStepsMessage(
+        stepCount,
+        previousStepCount,
+        isToday,
+      ),
     },
     aiComment: dailyLog?.summaryText ?? '',
+    // 온담 한마디가 아직 없을 때 뭐라고 안내할지 정하려면, 저녁 체크를 마쳤는지 알아야 한다.
+    eveningDone:
+      (dailyLog?.eveningTotalCount ?? 0) > 0 &&
+      (dailyLog?.eveningCompletedCount ?? 0) >= dailyLog.eveningTotalCount,
     // 타임라인 아래에 한 번 더 붙는 저녁 코멘트. 서버가 별도 필드를 주면 그때 채운다.
     eveningComment: '',
     timeline: buildTimeline({
@@ -260,7 +270,7 @@ export async function loadTodayReport(person, dateString = null) {
       ? null
       : {
           // '가족'이라고만 하면 누구인지 모호해서, 관계 호칭을 그대로 넣는다.
-          title: `이제 ${personLabel}와 안부를 나눠볼까요?`,
+          title: `이제 ${withCompanionJosa(personLabel)} 안부를 나눠볼까요?`,
           suggestedMessage: dailyLog?.summaryText
             ? `"${dailyLog.summaryText}"`
             : '"오늘 하루는 어떠셨어요?"',

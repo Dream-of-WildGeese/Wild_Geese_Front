@@ -515,7 +515,10 @@ function TodayReport() {
                 <InfoTextCol>
                   <InfoLabel>온담 한마디</InfoLabel>
                   <InfoText>
-                    {report.aiComment || '저녁 건강 체크를 마치면 온담이 한마디 남겨드려요.'}
+                    {report.aiComment ||
+                      (report.eveningDone
+                        ? '오늘 기록을 살펴보고 있어요.'
+                        : '저녁 건강 체크를 마치면 온담이 한마디 남겨드려요.')}
                   </InfoText>
                 </InfoTextCol>
               </InfoCard>

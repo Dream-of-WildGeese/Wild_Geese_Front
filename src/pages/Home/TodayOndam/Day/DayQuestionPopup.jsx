@@ -231,6 +231,9 @@ function DayQuestionPopup({ onClose }) {
   const questionText = question?.content ?? lastQuestionRef.current;
 
   const myUserId = getUserId();
+  // 음성으로 다시 답하면 서버가 답변을 새로 저장은 하는데, myAnswer에는 그 답을 반영해
+  // 주지 않는다(텍스트로 답할 때만 갱신된다). 그래서 familyAnswers에서 내가 마지막에
+  // 남긴 답을 직접 골라 쓴다.
   // 서버가 답변을 덮어쓰지 않고 계속 쌓아서, myAnswer에는 '맨 처음 답'이 담겨 온다.
   // 음성으로 답을 고쳐도 화면이 그대로였던 이유다. 내가 마지막에 남긴 답을 직접 고른다.
   const myLatest = findMyLatestAnswer(question?.familyAnswers, myUserId);
@@ -247,12 +250,7 @@ function DayQuestionPopup({ onClose }) {
 
   const [submitError, setSubmitError] = useState(null);
 
-  // 서버는 이미 답한 질문에 다시 제출하면 400을 돌려준다(덮어쓰기를 아직 못 받는다).
-  // 그대로 두면 '일시적인 오류가 발생했어요'라고 떠서, 잠시 후 다시 하면 될 것처럼 보인다.
-  const submitErrorMessage =
-    submitError?.code === 'HTTP_400' && myAnswer
-      ? '오늘 답변은 이미 저장돼 있어요. 지금은 고칠 수 없어요.'
-      : submitError?.message;
+  const submitErrorMessage = submitError?.message;
 
   // 반응은 가족이 남긴 답변에 단다. 서버가 성공으로 답한 뒤에야 '보냈어요' 화면을 띄운다.
   const handleReaction = async (reaction) => {

@@ -15,6 +15,7 @@ import PhoneNumberPopup from '../../../components/PhoneNumberPopup';
 import { callPhone, getFamilyPhone } from '../../../utils/call';
 import JournalCta from '../TodayReport/JournalCta';
 import { toDateString } from '../../../utils/medication';
+import { withCompanionJosa } from '../../../utils/family';
 import {
   PopupBackdrop,
   PopupCard,
@@ -504,7 +505,7 @@ function WeeklyReportDetail() {
                   <DayCol key={item.day}>
                     {/* 아직 답하지 않은 날은 빈 원으로 둔다. 표정을 채우면 기록한 것처럼 보인다 */}
                     {item.score ? (
-                      <ConditionDot $size={40} $color={scoreColor(item.score)} />
+                      <ConditionDot $size={34} $color={scoreColor(item.score)} />
                     ) : (
                       <IconWrap>
                         <EmptyCircle src={emptyCircleIcon} alt="" />
@@ -657,7 +658,7 @@ function WeeklyReportDetail() {
             <>
               <SectionDivider />
               <JournalCta
-                title={`이제 ${partnerLabel}와 안부를 나눠볼까요?`}
+                title={`이제 ${withCompanionJosa(partnerLabel)} 안부를 나눠볼까요?`}
                 message={detail.contactMessage}
                 onCall={handleCall}
                 onSendLetter={() => navigate('/home', { state: { openLetterbox: 'compose' } })}
