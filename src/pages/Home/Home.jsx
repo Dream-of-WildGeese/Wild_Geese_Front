@@ -64,7 +64,7 @@ function Home() {
     loading: notificationsLoading,
     error: notificationsError,
     refetch: refetchNotifications,
-  } = useApi(getNotifications, { args: [{ page: 0, size: 30 }] });
+  } = useApi(getNotifications, { args: [{ size: 30 }] });
   const { execute: markNotificationRead } = useApiAction(readNotification);
   const [readingAllNotifications, setReadingAllNotifications] = useState(false);
 
