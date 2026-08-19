@@ -16,9 +16,8 @@ import { useApi, useApiAction } from '../../../hooks/useApi';
 import { formatAlarmTime, ROLE_LABEL } from './settingsUtils';
 import TimePickerModal from '../../../components/TimePickerModal';
 import ConfirmPopup from './ConfirmPopup';
-import NotificationListPopup from './NotificationListPopup';
 import { useWebPush } from '../../../hooks/useWebPush';
-import { getShowMailbox, setShowMailbox } from '../../../utils/localSettings';
+import { getLetterAlarm, setLetterAlarm } from '../../../utils/localSettings';
 import {
   PopupBackdrop,
   PopupCard,
@@ -121,18 +120,13 @@ const ToggleThumb = styled.span`
 const AccountButton = styled.button`
   width: 100%;
   height: 36px;
-  margin-bottom: 12px;
   border-radius: 18px;
   border: 1.3px solid rgba(74, 58, 47, 0.4);
   background: transparent;
 
-  color: ${({ $tone }) => ($tone === 'withdraw' ? '#c1594a' : '#d97d65')};
+  color: #d97d65;
   font-family: Jua;
   font-size: 14px;
-
-  &:last-child {
-    margin-bottom: 0;
-  }
 `;
 
 const PushErrorText = styled.p`
@@ -169,17 +163,18 @@ const NOTIFICATION_ROWS = [
 function SettingsMain() {
   const navigate = useNavigate();
   // 이름/역할은 서버에 조회 API가 없어서 온보딩 때 저장한 로컬 값을 그대로 쓴다.
-  const { data, resetAppData } = useAppData();
-  const [popup, setPopup] = useState(null);
+  const { data } = useAppData();
+  // 로그아웃 확인 팝업을 띄울지
+  const [confirmingLogout, setConfirmingLogout] = useState(false);
   // 어떤 알림 시각을 편집 중인지 ('morningTime' | 'eveningTime' | null)
   const [timeEditor, setTimeEditor] = useState(null);
-  // 홈에 우체통을 띄울지. 서버 설정에 편지 항목이 없어서 이 기기에만 저장한다.
-  const [showMailbox, setShowMailboxState] = useState(getShowMailbox);
+  // 편지가 오면 알릴지. 서버 알림 설정에 편지 항목이 없어서 이 기기에만 저장한다.
+  const [letterAlarm, setLetterAlarmState] = useState(getLetterAlarm);
 
-  const toggleMailbox = () => {
-    const next = !showMailbox;
-    setShowMailboxState(next);
-    setShowMailbox(next);
+  const toggleLetterAlarm = () => {
+    const next = !letterAlarm;
+    setLetterAlarmState(next);
+    setLetterAlarm(next);
   };
 
   // 알림 설정을 한 번도 저장한 적 없는 계정은 조회가 실패한다.
@@ -264,7 +259,7 @@ function SettingsMain() {
   };
 
   // 유저 식별 헤더가 빠지기 전에(clearUserId 이전에) 구독 삭제 요청을 보내야 한다.
-  // 실패해도 로그아웃/탈퇴 자체는 막지 않는다.
+  // 실패해도 로그아웃 자체는 막지 않는다.
   // 서버 구독만 지우면 이 기기에는 구독이 남아서 알림이 계속 온다.
   // 브라우저 쪽까지 함께 지운다.
   const clearPushEverywhere = async () => {
@@ -279,15 +274,7 @@ function SettingsMain() {
   const handleLogout = async () => {
     await clearPushEverywhere();
     clearUserId();
-    setPopup(null);
-    navigate('/');
-  };
-
-  const handleWithdraw = async () => {
-    await clearPushEverywhere();
-    clearUserId();
-    resetAppData();
-    setPopup(null);
+    setConfirmingLogout(false);
     navigate('/');
   };
 
@@ -363,22 +350,16 @@ function SettingsMain() {
             <RowDivider />
             {/* 서버 알림 설정에 편지 항목이 없어서 이 토글만 기기에 저장된다 */}
             <ToggleRow>
-              <RowLabel>우편 보기</RowLabel>
+              <RowLabel>우편 알림</RowLabel>
               <ToggleTrack
                 type="button"
-                $on={showMailbox}
-                onClick={toggleMailbox}
-                aria-pressed={showMailbox}
+                $on={letterAlarm}
+                onClick={toggleLetterAlarm}
+                aria-pressed={letterAlarm}
               >
-                <ToggleThumb $on={showMailbox} />
+                <ToggleThumb $on={letterAlarm} />
               </ToggleTrack>
             </ToggleRow>
-
-            <RowDivider />
-            <ClickableRow type="button" onClick={() => setPopup('notifications')}>
-              <RowLabel>받은 알림 보기</RowLabel>
-              <Chevron>›</Chevron>
-            </ClickableRow>
           </Card>
 
           <SectionLabel>가족 연결</SectionLabel>
@@ -391,22 +372,17 @@ function SettingsMain() {
           </Card>
 
           <SectionLabel>계정</SectionLabel>
-          <AccountButton type="button" onClick={() => setPopup('logout')}>
+          <AccountButton type="button" onClick={() => setConfirmingLogout(true)}>
             로그아웃
-          </AccountButton>
-          <AccountButton type="button" $tone="withdraw" onClick={() => setPopup('withdraw')}>
-            탈퇴하기
           </AccountButton>
         </PageScrollArea>
       </PageContent>
 
-      {popup === 'notifications' && <NotificationListPopup onClose={() => setPopup(null)} />}
-      {(popup === 'logout' || popup === 'withdraw') && (
+      {confirmingLogout && (
         <ConfirmPopup
-          type={popup}
           gender={data.profile.gender}
-          onCancel={() => setPopup(null)}
-          onConfirm={popup === 'logout' ? handleLogout : handleWithdraw}
+          onCancel={() => setConfirmingLogout(false)}
+          onConfirm={handleLogout}
         />
       )}
       {timeEditor && (

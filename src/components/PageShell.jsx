@@ -110,6 +110,12 @@ export const PageScrollArea = styled.div`
 
   scrollbar-width: none;
 
+  /* 넘치는 만큼은 스크롤로 보여주면 되지, 안에 든 것을 눌러 줄이면 안 된다.
+     이걸 빼면 높이를 정해둔 버튼·카드가 목록이 길어질수록 납작해진다. */
+  > * {
+    flex-shrink: 0;
+  }
+
   &::-webkit-scrollbar {
     display: none;
   }

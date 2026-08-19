@@ -233,7 +233,7 @@ const Badge = styled.span`
   line-height: 1;
 `;
 
-function HomeCharacterStage({ onMailboxClick, unreadLetterCount = 0, showMailbox = true }) {
+function HomeCharacterStage({ onMailboxClick, unreadLetterCount = 0 }) {
   const hasUnread = unreadLetterCount > 0;
   const currentUserId = getUserId();
   const { data: familyData } = useApi(getMyFamily);
@@ -280,23 +280,18 @@ function HomeCharacterStage({ onMailboxClick, unreadLetterCount = 0, showMailbox
       <MascotButton type="button" aria-label="온담이에게 말 걸기" onClick={handleMascotClick}>
         <Mascot src={mascotImage} alt="" />
       </MascotButton>
-      {/* 설정의 '우편 보기'를 끄면 우체통과 종이비행기를 함께 감춘다 */}
-      {showMailbox && (
-        <>
-          <MailboxButton
-            type="button"
-            aria-label={hasUnread ? `안 읽은 편지 ${unreadLetterCount}통 보기` : '우체통 열기'}
-            onClick={onMailboxClick}
-          >
-            <MailboxImage src={mailboxImg} alt="" $pulse={hasUnread} />
-            {hasUnread && <Badge>{unreadLetterCount > 99 ? '99+' : unreadLetterCount}</Badge>}
-          </MailboxButton>
+      <MailboxButton
+        type="button"
+        aria-label={hasUnread ? `안 읽은 편지 ${unreadLetterCount}통 보기` : '우체통 열기'}
+        onClick={onMailboxClick}
+      >
+        <MailboxImage src={mailboxImg} alt="" $pulse={hasUnread} />
+        {hasUnread && <Badge>{unreadLetterCount > 99 ? '99+' : unreadLetterCount}</Badge>}
+      </MailboxButton>
 
-          <PaperPlaneButton type="button" aria-label="우체통 열기" onClick={onMailboxClick}>
-            <PaperPlaneImage src={paperplaneImg} alt="" />
-          </PaperPlaneButton>
-        </>
-      )}
+      <PaperPlaneButton type="button" aria-label="우체통 열기" onClick={onMailboxClick}>
+        <PaperPlaneImage src={paperplaneImg} alt="" />
+      </PaperPlaneButton>
     </StageLayer>
   );
 }

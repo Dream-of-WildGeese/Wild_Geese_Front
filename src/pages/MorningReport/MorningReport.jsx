@@ -138,6 +138,11 @@ const ScrollArea = styled.div`
 
   scrollbar-width: none;
 
+  /* 넘치는 만큼은 스크롤로 보여준다. 안에 든 카드를 눌러 줄이지 않는다. */
+  > * {
+    flex-shrink: 0;
+  }
+
   &::-webkit-scrollbar {
     display: none;
   }

@@ -5,6 +5,12 @@ import { useAppData } from '../../../store/AppDataContext';
 import { getMe, getHealthProfile, updateHealthProfile } from '../../../api/user';
 import { useApi, useApiAction } from '../../../hooks/useApi';
 import {
+  DISEASE_LIST,
+  splitDiseases,
+  mergeDiseases,
+  toggleDisease,
+} from '../../../utils/health';
+import {
   PageFrame,
   PageContent,
   PageBack,
@@ -87,15 +93,93 @@ const Chip = styled.button`
   font-size: 15px;
 `;
 
+// 지병 칩은 온보딩 2단계(건강 프로필)와 같은 생김새를 쓴다.
+// 두 화면에서 같은 항목을 고르는데 모양이 다르면 다른 기능처럼 보인다.
+const DiseaseChip = styled.button`
+  padding: 8px 14px;
+  border-radius: 999px;
+  border: ${({ $active }) => ($active ? '1.5px solid #B89A54' : '1.5px dashed #D8D0C7')};
+  background: ${({ $active }) => ($active ? '#F6EBC7' : 'rgba(255, 255, 255, 0.6)')};
+  color: #4a3a2f;
+  font-size: 14px;
+  font-weight: 600;
+`;
+
+// input은 기본 너비가 있어서 flex 안에서 옆 버튼을 밀어낸다. 남는 만큼만 쓰게 둔다.
+const DiseaseInput = styled(Input)`
+  flex: 1;
+  min-width: 0;
+`;
+
+const AddDiseaseRow = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 12px;
+`;
+
+const AddChip = styled.button`
+  flex-shrink: 0;
+  padding: 8px 14px;
+  border-radius: 999px;
+  border: 1.5px solid #d8d0c7;
+  background: rgba(255, 255, 255, 0.6);
+  color: #8c8780;
+  font-size: 14px;
+  font-weight: 600;
+`;
+
+// 직접 적어 넣은 병명 칩. 누르는 곳이 아니라서 span으로 두고 옆의 ×만 누른다.
+const OtherChip = styled.span`
+  display: inline-flex;
+  align-items: center;
+  padding: 8px 14px;
+  border-radius: 999px;
+  border: 1.5px solid #b89a54;
+  background: #f6ebc7;
+  color: #4a3a2f;
+  font-size: 14px;
+  font-weight: 600;
+`;
+
+const RemoveIcon = styled.button`
+  margin-left: 8px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: #4a3a2f;
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1;
+`;
+
 // 스크롤과 상관없이 화면 아래에 붙는다(PageFooter 안).
 const SaveButton = styled.button`
   width: 100%;
   height: 54px;
   border-radius: 14px;
-  background: #DBE4A1;
-  color: #fff;
-  font-size: 16px;
-  font-weight: 600;
+  border: 1.5px solid rgba(74, 58, 47, 0.55);
+  background: #dbe4a1;
+  color: #4a3a2f;
+  font-family: Jua;
+  font-size: 20px;
+  cursor: pointer;
+  transition: background 0.15s ease, transform 0.1s ease;
+
+  /* 눌러야 하는 버튼이라는 게 드러나도록, 올리면 한 단계 진해진다 */
+  &:hover:not(:disabled) {
+    background: #cbd879;
+  }
+
+  &:active:not(:disabled) {
+    background: #c2d16b;
+    transform: translateY(1px);
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: default;
+  }
 `;
 
 const INTEREST_LIST = ['수면', '활동량', '식사', '복약', '기분'];
@@ -114,7 +198,7 @@ const ENUM_TO_INTEREST = Object.fromEntries(
 
 function ProfileEdit() {
   const navigate = useNavigate();
-  const { setProfile, setInterests } = useAppData();
+  const { setProfile, setInterests, setConditions } = useAppData();
 
   // 이름은 users/me, 나머지는 건강 프로필에서 가져온다.
   const { data: me, loading: meLoading } = useApi(getMe);
@@ -125,7 +209,9 @@ function ProfileEdit() {
   const [birth, setBirth] = useState('');
   const [gender, setGender] = useState('');
   const [interests, setLocalInterests] = useState([]);
-  const [diseases, setDiseases] = useState([]);
+  // 목록에서 고른 항목('기타' 표시 포함)과, 직접 적어 넣은 병명을 나눠서 들고 있다.
+  const [diseases, setDiseases] = useState({ selected: [], others: [] });
+  const [otherInput, setOtherInput] = useState('');
 
   // 서버 값이 도착하면 입력 상태를 한 번 채운다.
   const loadedRef = useRef(false);
@@ -136,12 +222,30 @@ function ProfileEdit() {
     setName(me?.name ?? '');
     setBirth(profile?.birthDate ?? '');
     setGender(profile?.gender ?? '');
-    // 과거 온보딩 저장 버그로 서버에 같은 병명이 중복 저장돼 있을 수 있어 중복 제거한다.
-    setDiseases([...new Set(profile?.diseases ?? [])]);
+    setDiseases(splitDiseases(profile?.diseases));
     setLocalInterests(
       (profile?.wellnessInterests ?? []).map((value) => ENUM_TO_INTEREST[value]).filter(Boolean),
     );
   }, [me, profile, meLoading, profileLoading]);
+
+  const handleToggleDisease = (item) => {
+    setDiseases((prev) => toggleDisease(prev, item));
+    // '기타'를 끄면 직접 적던 입력값도 같이 비운다.
+    if (item === '기타' || item === '없음') setOtherInput('');
+  };
+
+  const addOtherDisease = () => {
+    const value = otherInput.trim();
+    if (!value) return;
+    setDiseases((prev) =>
+      prev.others.includes(value) ? prev : { ...prev, others: [...prev.others, value] },
+    );
+    setOtherInput('');
+  };
+
+  const removeOtherDisease = (target) => {
+    setDiseases((prev) => ({ ...prev, others: prev.others.filter((item) => item !== target) }));
+  };
 
   const toggleInterest = (item) => {
     setLocalInterests((prev) =>
@@ -150,12 +254,20 @@ function ProfileEdit() {
   };
 
   const handleSave = async () => {
+    // '기타' 입력칸에 적어두고 '+'를 안 누른 값도 저장한 것으로 본다.
+    // (온보딩 건강 프로필과 같은 규칙)
+    const pending = otherInput.trim();
+    const others =
+      pending && !diseases.others.includes(pending)
+        ? [...diseases.others, pending]
+        : diseases.others;
+    const savedDiseases = mergeDiseases(diseases.selected, others);
+
     const { ok, error } = await saveProfile({
       name: name.trim(),
       birthDate: birth,
       gender,
-      // 질병은 이 화면에서 수정하지 않으므로 서버 값을 그대로 돌려보낸다.
-      diseases,
+      diseases: savedDiseases,
       wellnessInterests: interests.map((item) => INTEREST_TO_ENUM[item]).filter(Boolean),
     });
     if (!ok) {
@@ -163,9 +275,11 @@ function ProfileEdit() {
       return;
     }
 
-    // 설정 화면이 아직 로컬 값을 쓰는 부분이 있어 함께 갱신해둔다.
+    // 온보딩 건강 프로필 화면은 서버가 아니라 앱에 들고 있는 값을 먼저 보여준다.
+    // 여기서 함께 갱신하지 않으면 방금 고친 지병이 그 화면에서는 옛날 값으로 남는다.
     setProfile({ name: name.trim(), birth, gender });
     setInterests(interests);
+    setConditions([...diseases.selected, ...others]);
     navigate('/home/settings');
   };
 
@@ -198,6 +312,55 @@ function ProfileEdit() {
                 여성
               </GenderButton>
             </GenderRow>
+          </Card>
+
+          <Card>
+            <CardTitle>현재 꾸준히 관리하고 있는 건강 문제</CardTitle>
+            <CardDesc>해당하는 항목을 모두 골라주세요</CardDesc>
+            <ChipRow>
+              {DISEASE_LIST.map((item) => (
+                <DiseaseChip
+                  key={item}
+                  type="button"
+                  $active={diseases.selected.includes(item)}
+                  onClick={() => handleToggleDisease(item)}
+                >
+                  {item}
+                </DiseaseChip>
+              ))}
+            </ChipRow>
+
+            {diseases.selected.includes('기타') && (
+              <>
+                <AddDiseaseRow>
+                  <DiseaseInput
+                    value={otherInput}
+                    onChange={(e) => setOtherInput(e.target.value)}
+                    placeholder="예: 갑상선 질환"
+                  />
+                  <AddChip type="button" onClick={addOtherDisease}>
+                    +
+                  </AddChip>
+                </AddDiseaseRow>
+
+                {diseases.others.length > 0 && (
+                  <ChipRow style={{ marginTop: 12 }}>
+                    {diseases.others.map((item) => (
+                      <OtherChip key={item}>
+                        {item}
+                        <RemoveIcon
+                          type="button"
+                          aria-label={`${item} 지우기`}
+                          onClick={() => removeOtherDisease(item)}
+                        >
+                          ×
+                        </RemoveIcon>
+                      </OtherChip>
+                    ))}
+                  </ChipRow>
+                )}
+              </>
+            )}
           </Card>
 
           <Card>

@@ -13,8 +13,9 @@ import NightCompletePopup from './TodayOndam/Night/NightCompletePopup';
 import Letterbox from './Letterbox/Letterbox';
 import TodayOndamPicker from './TodayOndam/TodayOndamPicker';
 import HealthPickerPopup from './HealthPickerPopup';
-import { getShowMailbox } from '../../utils/localSettings';
+import NotificationListPopup from './NotificationListPopup';
 import { getReceivedLetters, markLetterAsRead } from '../../api/letter';
+import { getNotifications, readNotification } from '../../api/notification';
 import { useApi, useApiAction } from '../../hooks/useApi';
 import { toLetterView } from '../../utils/letter';
 
@@ -24,6 +25,15 @@ const Stage = styled.div`
   height: 100%;
   overflow: hidden;
 `;
+
+// 알림을 누르면 그 알림이 가리키는 화면으로 옮겨간다.
+// 주간 리포트만 별도 페이지라 아래에서 따로 다룬다.
+const POPUP_BY_NOTIFICATION = {
+  MORNING_QUESTION: 'morning',
+  EVENING_CHECK: 'eveningCheck',
+  MEDICATION: 'medication_check',
+  LETTER: 'mailbox',
+};
 
 const Background = styled.img`
   position: absolute;
@@ -48,12 +58,28 @@ function Home() {
   } = useApi(getReceivedLetters);
   const { execute: markRead } = useApiAction(markLetterAsRead);
 
+  // 상단 종 배지와 알림 목록이 같은 값을 보도록 여기서 한 번만 불러온다.
+  const {
+    data: notificationPage,
+    loading: notificationsLoading,
+    error: notificationsError,
+    refetch: refetchNotifications,
+  } = useApi(getNotifications, { args: [{ page: 0, size: 30 }] });
+  const { execute: markNotificationRead } = useApiAction(readNotification);
+  const [readingAllNotifications, setReadingAllNotifications] = useState(false);
+
   // 받은 편지함은 페이지네이션 응답이라 content 배열만 꺼내 쓴다.
   // 서버가 보내주는 순서가 정해져 있지 않아서, 최신 편지가 위로 오도록 직접 정렬한다.
   const letters = [...(receivedLetters?.content ?? [])]
     .sort((a, b) => String(b.createdAt ?? '').localeCompare(String(a.createdAt ?? '')))
     .map(toLetterView);
   const unreadLetterCount = letters.filter((letter) => !letter.read).length;
+
+  // 알림도 서버가 순서를 정해주지 않아서 최신이 위로 오도록 직접 정렬한다.
+  const notifications = [...(notificationPage?.content ?? [])].sort(
+    (a, b) => new Date(b.scheduledAt) - new Date(a.scheduledAt),
+  );
+  const unreadNotificationCount = notifications.filter((item) => !item.read).length;
 
   const closePopup = () => {
     setActivePopup(null);
@@ -65,6 +91,32 @@ function Home() {
     if (ok) {
       refetchLetters();
     }
+  };
+
+  const readNotificationById = async (id) => {
+    const { ok } = await markNotificationRead(id);
+    if (ok) refetchNotifications();
+  };
+
+  // 서버에 한 번에 읽음 처리하는 API가 없어서 안 읽은 것마다 따로 보낸다.
+  const readAllNotifications = async () => {
+    const unread = notifications.filter((item) => !item.read);
+    if (unread.length === 0) return;
+
+    setReadingAllNotifications(true);
+    await Promise.all(unread.map((item) => markNotificationRead(item.notificationId)));
+    setReadingAllNotifications(false);
+    refetchNotifications();
+  };
+
+  const openNotificationTarget = (notification) => {
+    if (notification.type === 'WEEKLY_REPORT') {
+      navigate('/home/weekly-report');
+      return;
+    }
+    // 어떤 화면으로 가야 할지 모르는 종류면 목록에 그대로 머문다.
+    const popup = POPUP_BY_NOTIFICATION[notification.type];
+    if (popup) setActivePopup(popup);
   };
 
   // 저녁 건강체크 완료, 또는 리포트 화면의 '편지 보내기'에서 돌아오면 해당 팝업을 띄운다.
@@ -101,13 +153,14 @@ function Home() {
       <Background src={homeBackground} alt="" />
       <HomeTopBar
         onMedicationClick={() => setActivePopup('health')}
+        onNotificationsClick={() => setActivePopup('notifications')}
         onSettingsClick={() => navigate('/home/settings')}
+        unreadNotificationCount={unreadNotificationCount}
       />
       <HomeCtaBanner onClick={handleCtaClick} />
       <HomeCharacterStage
         onMailboxClick={() => setActivePopup('mailbox')}
         unreadLetterCount={unreadLetterCount}
-        showMailbox={getShowMailbox()}
       />
       <HomeBottomNav
         onQuestionBoxClick={() => navigate('/morning-report')}
@@ -123,6 +176,18 @@ function Home() {
           onSent={refetchLetters}
           onClose={closePopup}
           initialStep={letterboxInitialStep}
+        />
+      )}
+      {activePopup === 'notifications' && (
+        <NotificationListPopup
+          notifications={notifications}
+          loading={notificationsLoading}
+          error={notificationsError}
+          onRead={readNotificationById}
+          onReadAll={readAllNotifications}
+          readingAll={readingAllNotifications}
+          onSelect={openNotificationTarget}
+          onClose={closePopup}
         />
       )}
       {activePopup === 'picker' && (
