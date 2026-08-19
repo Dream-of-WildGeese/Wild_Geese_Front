@@ -1,8 +1,14 @@
 import { useEffect, useRef, useState } from 'react';
 import styled, { keyframes } from 'styled-components';
-import mascotImg from '../../assets/mascot.png';
+import dadMascot from '../../assets/mascot.png'; // 기본 마스코트 (아빠)
+import momMascot from '../../assets/character/mom_mascot.png';
+import daughterMascot from '../../assets/character/daughter_mascot.png';
+import sonMascot from '../../assets/character/son_mascot.png';
 import mailboxImg from '../../assets/home/mailbox.png';
 import paperplaneImg from '../../assets/paperplane.png';
+import { getMyFamily } from '../../api/family';
+import { getUserId } from '../../api/client';
+import { useApi } from '../../hooks/useApi';
 
 // 오리를 누르면 하나씩 뜨는 인삿말. 기능은 없고 말만 거는 자리다.
 const GREETINGS = [
@@ -44,10 +50,11 @@ const MascotButton = styled.button`
   pointer-events: auto;
 `;
 
+// 캐릭터마다 원본 비율이 달라서 cover면 그림마다 잘리는 정도가 달라진다.
 const Mascot = styled.img`
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  object-fit: contain;
   pointer-events: none;
   animation: ${sway} 3.2s ease-in-out infinite alternate;
 
@@ -132,7 +139,7 @@ const MailboxImage = styled.img`
   animation: ${({ $pulse }) => ($pulse ? heartbeat : 'none')} 1.1s ease-in-out infinite;
 `;
 
-// 우체통(left:272 top:393 size:119) 위쪽에서 좌우로 오간다.
+// 우체통(left:8 top:386 size:130) 위쪽에서 좌우로 오간다.
 // 손으로 각도를 골라 넣으면 구간마다 가감속이 겹쳐 보여서(ease-in-out을 여러 구간에
 // 나눠 걸면 매 구간 경계마다 다시 가속/감속함), 대신 진자가 좌우로 흔들리는 물리
 // 공식(각도 θ(t)=θmax·cos(2πt/T), 위치 x=L·sinθ, y=L·(cosθ-cosθmax))으로 좌표를
@@ -228,6 +235,8 @@ const Badge = styled.span`
 
 function HomeCharacterStage({ onMailboxClick, unreadLetterCount = 0, showMailbox = true }) {
   const hasUnread = unreadLetterCount > 0;
+  const currentUserId = getUserId();
+  const { data: familyData } = useApi(getMyFamily);
 
   const [greeting, setGreeting] = useState(null);
   const hideTimerRef = useRef(null);
@@ -235,6 +244,23 @@ function HomeCharacterStage({ onMailboxClick, unreadLetterCount = 0, showMailbox
 
   // 화면을 벗어날 때 타이머가 남아 있으면 사라진 요소를 건드린다.
   useEffect(() => () => clearTimeout(hideTimerRef.current), []);
+
+  // 가족 API에서 내 정보를 찾아 역할·성별에 맞는 캐릭터를 고른다.
+  const me = (familyData?.members || []).find(
+    (member) => String(member.userId) === String(currentUserId),
+  );
+
+  const mascotImage = (() => {
+    if (!me) return dadMascot; // 로딩 전 기본값 (아빠)
+
+    if (me.role === 'CHILD') {
+      return me.gender === 'FEMALE' ? daughterMascot : sonMascot;
+    }
+    if (me.role === 'PARENT') {
+      return me.gender === 'FEMALE' ? momMascot : dadMascot;
+    }
+    return dadMascot;
+  })();
 
   const handleMascotClick = () => {
     // 같은 말이 연달아 나오면 안 바뀐 것처럼 보여서 직전 것은 뺀다.
@@ -252,7 +278,7 @@ function HomeCharacterStage({ onMailboxClick, unreadLetterCount = 0, showMailbox
       {greeting && <GreetingBubble key={greeting}>{greeting}</GreetingBubble>}
 
       <MascotButton type="button" aria-label="온담이에게 말 걸기" onClick={handleMascotClick}>
-        <Mascot src={mascotImg} alt="" />
+        <Mascot src={mascotImage} alt="" />
       </MascotButton>
       {/* 설정의 '우편 보기'를 끄면 우체통과 종이비행기를 함께 감춘다 */}
       {showMailbox && (
