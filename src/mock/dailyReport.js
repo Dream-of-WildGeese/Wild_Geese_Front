@@ -101,7 +101,6 @@ export function getMockDailyReport({ role, weeksAgo, date, personLabel, isMine }
     },
     aiComment: '',
     eveningComment: '',
-    stepMessage: '',
     timeline: [
       {
         type: 'question',

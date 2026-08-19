@@ -157,7 +157,6 @@ const weeksAgoOf = (date) => {
 };
 
 // person이 'me'면 내 일지를, 아니면 가족 구성원의 일지를 불러온다.
-// 걸음수는 헬스케어 연동이 없어서 서버가 내려주지 않으므로 stepMessage는 비워둔다.
 // dateString은 '2026-08-04' 또는 null(오늘). useApi가 인자를 JSON으로 주고받아서
 // Date 객체를 그대로 넘길 수 없다.
 export async function loadTodayReport(person, dateString = null) {
@@ -208,7 +207,6 @@ export async function loadTodayReport(person, dateString = null) {
     aiComment: dailyLog?.summaryText ?? '',
     // 타임라인 아래에 한 번 더 붙는 저녁 코멘트. 서버가 별도 필드를 주면 그때 채운다.
     eveningComment: '',
-    stepMessage: '',
     timeline: buildTimeline({
       dailyLog,
       question: (history ?? [])[0],
