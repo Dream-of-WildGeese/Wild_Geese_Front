@@ -22,17 +22,19 @@ import {
 // '월/화/수...' 한글 라벨을 서버가 받는 요일 enum으로 바꾼다.
 const DAY_LABEL_TO_VALUE = Object.fromEntries(DAY_OPTIONS.map((d) => [d.label, d.value]));
 
+// 💡 안전한 시간 라벨 생성 및 중복 확인 헬퍼
+const formatToTimeLabel = (period, h, m) => `${period} ${Number(h)}:${String(m).padStart(2, '0')}`;
+const checkIncludesTime = (timeList, target) => timeList.includes(target);
+
 const AddMedication = () => {
   const navigate = useNavigate();
   const { execute: addMedication } = useApiAction(createMedication);
-  // 이름 중복을 막으려면 이미 등록된 약 목록이 필요하다.
   const { data: medications } = useApi(getMedications);
 
   const [name, setName] = useState('');
   const [times, setTimes] = useState([]);
   const [repeat, setRepeat] = useState([]);
 
-  // 이미 골라둔 시각을 또 넣으려 할 때 알려줄 시각
   const [duplicateTime, setDuplicateTime] = useState(null);
   const [missing, setMissing] = useState(null);
 
@@ -41,11 +43,8 @@ const AddMedication = () => {
   const [minute, setMinute] = useState('');
 
   const repeatList = ['매일', '월', '화', '수', '목', '금', '토', '일'];
-
-  // 때를 가리키는 말 대신 오전/오후로 통일한다.
   const timeOptions = ['오전 8:00', '오후 12:00', '오후 6:00', '오후 10:00'];
 
-  // 직접 추가한 커스텀 시간만 필터링
   const customTimes = times.filter((t) => !timeOptions.includes(t));
 
   const toggleTime = (time) => {
@@ -67,13 +66,11 @@ const AddMedication = () => {
     }
 
     let next = repeat.filter((v) => v !== '매일');
-
     if (next.includes(item)) {
       next = next.filter((v) => v !== item);
     } else {
       next = [...next, item];
     }
-
     setRepeat(next);
   };
 
@@ -86,9 +83,8 @@ const AddMedication = () => {
     const val = e.target.value.replace(/[^0-9]/g, '');
     setMinute(val);
   };
-  
-  // 직접 적어둔 시·분을 시간 라벨로 바꾼다. 비어 있거나 잘못된 값이면 null.
-  // '+' 버튼과 '저장하기'가 같은 규칙을 쓰도록 따로 떼어놨다.
+
+  // 💡 toTimeLabel 대신 formatToTimeLabel 사용
   const pendingManualTime = () => {
     if (!hour.trim() || !minute.trim()) return null;
 
@@ -96,7 +92,7 @@ const AddMedication = () => {
     const numMinute = Number(minute);
     if (numHour < 1 || numHour > 12 || numMinute < 0 || numMinute > 59) return null;
 
-    return toTimeLabel(period, numHour, numMinute);
+    return formatToTimeLabel(period, numHour, numMinute);
   };
 
   const handleAddManualTime = () => {
@@ -111,29 +107,23 @@ const AddMedication = () => {
       return;
     }
 
-    if (includesTime(times, label)) {
+    if (checkIncludesTime(times, label)) {
       setDuplicateTime(label);
       return;
     }
 
-    // 이른 시각부터 보이도록 정렬해서 넣는다.
-    setTimes((prev) => sortTimeLabels([...prev, label]));
+    setTimes((prev) => (sortTimeLabels ? sortTimeLabels([...prev, label]) : [...prev, label]));
     setHour('');
     setMinute('');
   };
 
-  
-
-  // 시·분을 적어두고 '+'를 안 누른 채 저장하면 그 시간이 그냥 사라졌다.
-  // 적어둔 값이 멀쩡하면 저장할 때 함께 담고, 저장 버튼도 이 값을 기준으로 켠다.
   const pendingTime = pendingManualTime();
   const finalTimes =
-    pendingTime && !includesTime(times, pendingTime)
-      ? sortTimeLabels([...times, pendingTime])
+    pendingTime && !checkIncludesTime(times, pendingTime)
+      ? (sortTimeLabels ? sortTimeLabels([...times, pendingTime]) : [...times, pendingTime])
       : times;
 
   const handleSave = async () => {
-    // 예전에는 조건에 안 맞으면 아무 반응 없이 끝나서, 왜 저장이 안 되는지 알 수 없었다.
     if (!name.trim()) {
       setMissing('약 이름을 적어주세요');
       return;
@@ -143,15 +133,12 @@ const AddMedication = () => {
       return;
     }
 
-    // 이름이 겹치면 복약 화면에서 어느 약을 체크한 건지 구분할 수 없다.
-    const existingNames = (medications ?? []).map(toMedicationView).map((med) => med.name);
-    if (isDuplicateName(name, existingNames)) {
+    const existingNames = (medications ?? []).map(toMedicationView).map((med) => med?.name || med);
+    if (isDuplicateName && isDuplicateName(name, existingNames)) {
       setMissing('같은 이름의 약이 이미 있어요');
       return;
     }
 
-    // '매일'을 골랐으면 전체 요일로, 특정 요일을 골랐으면 그 요일들만 서버에 보낸다.
-    // (예전엔 repeat[0]만 넘겨서 '월'만 골라도 매칭되는 게 없어 항상 매일로 저장됐다)
     const days = repeat.includes('매일')
       ? DAY_OPTIONS.map((d) => d.value)
       : repeat.map((label) => DAY_LABEL_TO_VALUE[label]).filter(Boolean);
@@ -160,7 +147,7 @@ const AddMedication = () => {
       toMedicationRequest({ name, times: finalTimes, days }),
     );
     if (!ok) {
-      setMissing(error.message);
+      setMissing(error?.message || '저장에 실패했습니다.');
       return;
     }
     navigate(-1);
@@ -237,7 +224,6 @@ const AddMedication = () => {
               </AddTimeButton>
             </ManualRow>
 
-            {/* 직접 추가한 커스텀 시간 칩 목록 */}
             {customTimes.length > 0 && (
               <CustomTimeWrap>
                 {customTimes.map((time) => (
@@ -323,7 +309,7 @@ export default AddMedication;
 const Page = styled.div`
   width: calc(100% + 32px);
   height: 100%;
-  margin: 0 -${({ theme }) => theme.spacing.md};
+  margin: 0 -${({ theme }) => theme?.spacing?.md || '16px'};
   background: #fff8ed;
 `;
 
@@ -368,7 +354,7 @@ const CloseIcon = styled.img`
 const Title = styled.h1`
   margin: 0;
   color: #4a3a2f;
-  font-family: Jua;
+  font-family: Jua, sans-serif;
   font-size: 40px;
   font-weight: 400;
 `;
@@ -404,7 +390,7 @@ const InputGroup = styled.div`
 const Label = styled.p`
   margin: 0 0 16px;
   color: #4a3a2f;
-  font-family: 'Noto Sans KR';
+  font-family: 'Noto Sans KR', sans-serif;
   font-size: 16px;
   font-weight: 700;
 `;
@@ -440,8 +426,8 @@ const TimeButton = styled.button`
   border: 1.3px
     ${({ $active }) =>
       $active ? 'solid #8A7B3E' : 'dashed rgba(74,58,47,.35)'};
-   background: ${({ $active }) =>
-    $active ? ' #F6EBC7;' : 'rgba(255, 255, 255, 0.60)'};
+  background: ${({ $active }) =>
+    $active ? '#F6EBC7' : 'rgba(255, 255, 255, 0.60)'};
   font-size: 15px;
   font-weight: 700;
   cursor: pointer;
@@ -493,9 +479,9 @@ const SmallInput = styled.input`
 const AddTimeButton = styled.button`
   width: 46px;
   height: 46px;
-  min-width: 46px;       /* 찌그러짐 방지 */
+  min-width: 46px;
   min-height: 46px;
-  flex-shrink: 0;        /* Flex 아이템 압축 방지 */
+  flex-shrink: 0;
   
   padding: 0;
   box-sizing: border-box;
@@ -513,7 +499,6 @@ const AddTimeButton = styled.button`
   justify-content: center;
   cursor: pointer;
 
-  /* 폰트에 따라 살짝 내려앉는 + 기호 수직 보정 */
   & > span, & {
     padding-bottom: 2px;
   }
@@ -535,7 +520,7 @@ const CustomTimeChip = styled.span`
   border: 1.3px solid #8A7B3E;
   background: #F6EBC7;
   color: #4A3A2F;
-  font-family: 'Noto Sans KR';
+  font-family: 'Noto Sans KR', sans-serif;
   font-size: 14px;
   font-weight: 700;
 `;
@@ -573,10 +558,10 @@ const RepeatChip = styled.button`
       $active
         ? 'solid rgba(74,58,47,.55)'
         : 'dashed rgba(74,58,47,.55)'};
-   background: ${({ $active }) =>
-    $active ? ' #F6EBC7;' : 'rgba(255, 255, 255, 0.60)'};
+  background: ${({ $active }) =>
+    $active ? '#F6EBC7' : 'rgba(255, 255, 255, 0.60)'};
   color: #4A3A2F;
-  font-family: "Noto Sans KR";
+  font-family: 'Noto Sans KR', sans-serif;
   font-size: 14px;
   font-weight: 700;
   white-space: nowrap;
@@ -611,7 +596,7 @@ const SaveButton = styled.button`
   border: 1.5px solid rgba(74, 58, 47, 0.55);
   background: #CBD879;
   color: #4A3A2F;
-  font-family: Jua;
+  font-family: Jua, sans-serif;
   font-size: 18px;
   cursor: pointer;
 `;
