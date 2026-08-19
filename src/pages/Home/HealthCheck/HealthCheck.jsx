@@ -5,10 +5,11 @@ import back from '../../../assets/onboarding/back.svg';
 import AddHealthCheck from './AddHealthCheck';
 import { useFamilyRelation } from '../../../hooks/useFamilyRelation';
 import { useApi, useApiAction } from '../../../hooks/useApi';
-import { getCheckups, deleteCheckup } from '../../../api/checkup';
+import { getCheckups, getAllCheckups, deleteCheckup } from '../../../api/checkup';
 import { getMyFamily } from '../../../api/family';
 import { getUserId } from '../../../api/client';
 import { useAppData } from '../../../store/AppDataContext';
+import { toDateString } from '../../../utils/medication';
 import aiIcon from '../../../assets/journal/ai.png';
 import trashBin from '../../../assets/trash_bin.svg';
 import yellowFlower from '../../../assets/yellow_flower.svg';
@@ -29,6 +30,22 @@ const formatMonthDay = (dateString) => {
   if (!dateString) return '';
   const [, month, day] = dateString.split('-').map(Number);
   return `${month}월 ${day}일`;
+};
+
+// /checkups/all은 D-day·상대 시간을 계산해서 주지 않아서 프론트에서 직접 구한다.
+const daysBetween = (dateString) => {
+  const target = new Date(`${dateString}T00:00:00`);
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  return Math.round((target - today) / 86400000);
+};
+
+const formatRelativeTime = (dateString) => {
+  const diff = -daysBetween(dateString);
+  if (diff <= 0) return '오늘';
+  if (diff < 7) return `${diff}일 전`;
+  if (diff < 30) return `${Math.floor(diff / 7)}주 전`;
+  return `${Math.floor(diff / 30)}개월 전`;
 };
 
 const getSubjectWithJosa = (name) => {
@@ -74,7 +91,14 @@ const HealthCheck = () => {
 
   const targetId = person === 'family' ? partnerUserId : undefined;
 
+  // doctorQuestions(AI 인사이트)는 아직 /all에 없어서 기존 엔드포인트를 그대로 쓰고,
+  // 검진 목록(다가오는/지난/달력)은 전체를 다 내려주는 /checkups/all로 만든다.
+  // 기존 /checkups는 "가장 가까운 미래 검진" 1개만 줘서, 미래 검진이 2개 이상이면
+  // 나머지가 응답에서 통째로 빠지는 문제가 있었다.
   const { data: checkupData, refetch } = useApi(getCheckups, {
+    args: targetId ? [targetId] : [],
+  });
+  const { data: allCheckups, refetch: refetchAll } = useApi(getAllCheckups, {
     args: targetId ? [targetId] : [],
   });
 
@@ -93,6 +117,11 @@ const HealthCheck = () => {
   const [editTarget, setEditTarget] = useState(null);
   const [deleteError, setDeleteError] = useState(null);
 
+  const refetchAllLists = () => {
+    refetch();
+    refetchAll();
+  };
+
   const handleDelete = async () => {
     const { ok, error } = await removeCheckup(deleteTarget);
     setDeleteTarget(null);
@@ -100,13 +129,25 @@ const HealthCheck = () => {
       setDeleteError(error);
       return;
     }
-    refetch();
+    refetchAllLists();
   };
 
   const displayName = person === 'me' ? '나' : partnerLabel || '엄마';
 
-  const upcoming = checkupData?.upcomingCheckup;
-  const pastList = checkupData?.pastCheckups || [];
+  const todayStr = toDateString(new Date());
+  const sortedCheckups = [...(allCheckups ?? [])].sort((a, b) =>
+    a.checkupDate.localeCompare(b.checkupDate),
+  );
+  // 오늘 이후(오늘 포함) 전부를 "다가오는 검진"으로 본다. dDay는 화면에서 직접 구한다.
+  const upcomingList = sortedCheckups
+    .filter((item) => item.checkupDate >= todayStr)
+    .map((item) => ({ ...item, dDay: daysBetween(item.checkupDate) }));
+  // 지난 검진은 최근 것이 위로 오게 내림차순으로 본다.
+  const pastList = sortedCheckups
+    .filter((item) => item.checkupDate < todayStr)
+    .reverse()
+    .map((item) => ({ ...item, relativeTime: formatRelativeTime(item.checkupDate) }));
+  const upcoming = upcomingList[0] ?? null;
   const doctorQuestions = checkupData?.doctorQuestions || [];
 
   const [currentDate, setCurrentDate] = useState(() => {
@@ -134,23 +175,17 @@ const HealthCheck = () => {
 
   const checkupDaysInView = useMemo(() => {
     const daySet = new Set();
-    const allCheckups = [];
-    if (checkupData?.upcomingCheckup?.checkupDate) {
-      allCheckups.push(checkupData.upcomingCheckup.checkupDate);
-    }
-    (checkupData?.pastCheckups ?? []).forEach((p) => {
-      if (p.checkupDate) allCheckups.push(p.checkupDate);
-    });
 
-    allCheckups.forEach((dateStr) => {
-      const [y, m, d] = dateStr.split('-').map(Number);
+    (allCheckups ?? []).forEach(({ checkupDate }) => {
+      if (!checkupDate) return;
+      const [y, m, d] = checkupDate.split('-').map(Number);
       if (y === currentYear && m === currentMonth + 1) {
         daySet.add(d);
       }
     });
 
     return daySet;
-  }, [checkupData, currentYear, currentMonth]);
+  }, [allCheckups, currentYear, currentMonth]);
 
   return (
     <Page>
@@ -279,40 +314,43 @@ const HealthCheck = () => {
             )}
           </CheckupList>
 
-          {/* 다가오는 검진 섹션 */}
+          {/* 다가오는 검진 섹션 — 가장 가까운 것 하나가 아니라 미래 검진 전부를 보여준다 */}
           <SectionTitle>다가오는 검진</SectionTitle>
-            {upcoming ? (
+            {upcomingList.length > 0 ? (
               <CheckupList>
-                <ClickableCheckupCard
-                  onClick={() => setEditTarget(upcoming)}
-                >
-                  <CheckupLeftGroup>
-                    <FlowerIcon src={yellowFlower} alt="" />
-                    <CheckupDateText>{formatMonthDay(upcoming.checkupDate)}</CheckupDateText>
-                    <Badge>
-                      {upcoming.dDay === 0
-                        ? '오늘'
-                        : upcoming.dDay < 0
-                        ? `D+${Math.abs(upcoming.dDay)}`
-                        : `D-${upcoming.dDay}`}
-                    </Badge>
-                    <CheckupTypeText>{upcoming.checkupType}</CheckupTypeText>
-                  </CheckupLeftGroup>
-                  <CardRightGroup>
-                    <EditTextBadge>수정</EditTextBadge>
-                    <DeleteIconButton
-                      type="button"
-                      aria-label="삭제"
-                      disabled={deleting}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setDeleteTarget(upcoming.checkupId);
-                      }}
-                    >
-                      <TrashIcon src={trashBin} alt="삭제" />
-                    </DeleteIconButton>
-                  </CardRightGroup>
-                </ClickableCheckupCard>
+                {upcomingList.map((item) => (
+                  <ClickableCheckupCard
+                    key={item.checkupId}
+                    onClick={() => setEditTarget(item)}
+                  >
+                    <CheckupLeftGroup>
+                      <FlowerIcon src={yellowFlower} alt="" />
+                      <CheckupDateText>{formatMonthDay(item.checkupDate)}</CheckupDateText>
+                      <Badge>
+                        {item.dDay === 0
+                          ? '오늘'
+                          : item.dDay < 0
+                          ? `D+${Math.abs(item.dDay)}`
+                          : `D-${item.dDay}`}
+                      </Badge>
+                      <CheckupTypeText>{item.checkupType}</CheckupTypeText>
+                    </CheckupLeftGroup>
+                    <CardRightGroup>
+                      <EditTextBadge>수정</EditTextBadge>
+                      <DeleteIconButton
+                        type="button"
+                        aria-label="삭제"
+                        disabled={deleting}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setDeleteTarget(item.checkupId);
+                        }}
+                      >
+                        <TrashIcon src={trashBin} alt="삭제" />
+                      </DeleteIconButton>
+                    </CardRightGroup>
+                  </ClickableCheckupCard>
+                ))}
               </CheckupList>
             ) : (
               <EmptyCardText>다가오는 검진 일정이 없어요</EmptyCardText>
@@ -374,7 +412,7 @@ const HealthCheck = () => {
             onSuccess={() => {
               setShowAddModal(false);
               setEditTarget(null);
-              refetch();
+              refetchAllLists();
             }}
           />
         )}
