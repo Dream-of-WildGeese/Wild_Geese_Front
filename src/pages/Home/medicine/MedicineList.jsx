@@ -3,13 +3,22 @@ import { useNavigate } from 'react-router-dom';
 import { getMedications, deleteMedication } from '../../../api/medication';
 import { useApi, useApiAction } from '../../../hooks/useApi';
 import { toMedicationView } from '../../../utils/medication';
+import { loadTodayMedications, flattenAll } from '../TodayOndam/Medicine/medicationData';
+import backIcon from '../../../assets/settings/back-icon.png';
+import pillIcon from '../../../assets/medicine/pill.png';
+import trashIcon from '../../../assets/medicine/trash.png';
+import vineFlowerIcon from '../../../assets/medicine/vine-flower.png';
+
+// Figma 25_ver02: '내 복용약'. 오늘 몇 개를 챙겼는지 덩굴+꽃으로 보여주고,
+// 카드 안의 '수정' 글자 버튼은 없애고 카드 전체를 눌러 수정 화면으로 들어가게 했다.
+const SLOT_ORDER = ['아침', '점심', '저녁'];
 
 const Page = styled.div`
   position: relative;
   width: 100%;
   height: 100%;
   overflow-y: auto;
-  background: #FFF8ED;
+  background: #fff8ed;
 
   &::-webkit-scrollbar {
     display: none;
@@ -17,195 +26,237 @@ const Page = styled.div`
 `;
 
 const Content = styled.div`
-  padding: 16px 20px 30px;
+  padding: 20px 20px 30px;
 `;
 
 const Header = styled.div`
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  padding-bottom: 12px;
-  border-bottom: 1.3px solid rgba(74,58,47,.25);
 `;
 
 const BackButton = styled.button`
-  width: 20px;
-  font-size: 22px;
-  color: #000;
-  line-height: 1;
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+  }
 `;
 
 const Title = styled.p`
+  flex: 1;
   margin: 0;
-  font-size: 18px;
-  font-weight: 500;
-  color: #000;
+  text-align: center;
+  color: #4a3a2f;
+  font-family: Jua;
+  font-size: 32px;
 `;
 
 const HeaderSpacer = styled.div`
-  width: 20px;
+  width: 40px;
 `;
 
-const Summary = styled.div`
-  margin-top: 16px;
-  padding: 16px;
-  border-radius: 18px;
-  background: rgba(255,255,255,.55);
-  border: 1.3px solid rgba(74,58,47,.4);
+const TitleDivider = styled.div`
+  margin: 16px 0 20px;
+  border-top: 2px dashed rgba(74, 58, 47, 0.3);
 `;
 
-const SummaryTitle = styled.p`
-  margin: 0 0 6px;
-  font-size: 16px;
-  font-weight: 500;
-  color: #4A3A2F;
+const ProgressBlock = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
 `;
 
-const SummarySub = styled.p`
+const ProgressText = styled.p`
   margin: 0;
-  font-size: 13px;
-  color: #6b6661;
+  color: #4a3a2f;
+  font-family: 'Noto Sans KR';
+  font-size: 20px;
+  font-weight: 700;
+`;
+
+const ProgressHighlight = styled.span`
+  color: #7c934a;
+  font-size: 24px;
+`;
+
+const ProgressSub = styled.p`
+  margin: 0;
+  color: #a79c8e;
+  font-family: 'Noto Sans KR';
+  font-size: 16px;
+`;
+
+// 오늘 챙긴 개수만큼 꽃이 덩굴 위에 핀다.
+const VineWrap = styled.div`
+  position: relative;
+  height: 60px;
+  margin-top: 12px;
+`;
+
+const VineStem = styled.div`
+  position: absolute;
+  top: 50%;
+  left: 0;
+  right: 0;
+  height: 8px;
+  transform: translateY(-50%);
+  border-radius: 4px;
+  background: #cbd879;
+  border: 1px solid rgba(74, 58, 47, 0.25);
+`;
+
+const FlowerRow = styled.div`
+  position: relative;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+  flex-wrap: wrap;
+`;
+
+const FlowerImg = styled.img`
+  width: 58px;
+  height: 40px;
+  object-fit: contain;
 `;
 
 const MedList = styled.div`
-  margin-top: 20px;
+  margin-top: 26px;
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 14px;
 `;
 
-// 카드 안에 수정·삭제 버튼이 들어가서 카드 자체는 button이 될 수 없다.
-// (button 안의 button은 브라우저가 무시한다)
-const MedCard = styled.div`
+// 카드 전체가 눌리는 버튼이라, 안의 삭제 버튼은 stopPropagation으로 따로 막는다.
+const MedCard = styled.button`
+  position: relative;
   width: 100%;
-  padding: 16px;
+  padding: 12px 16px;
   border-radius: 18px;
-  border: 1px solid #e5e0d9;
-  background: #FFF8ED;
+  border: 1.3px solid rgba(74, 58, 47, 0.4);
+  background: rgba(255, 255, 255, 0.55);
   text-align: left;
+`;
+
+const DeleteButton = styled.button`
+  position: absolute;
+  top: 10px;
+  right: 12px;
+  width: 30px;
+  height: 30px;
+
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+  }
 `;
 
 const MedRow = styled.div`
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
+  padding-right: 34px;
+`;
+
+const PillIcon = styled.img`
+  width: 22px;
+  height: 22px;
+  flex-shrink: 0;
+  object-fit: contain;
 `;
 
 const MedName = styled.p`
   margin: 0;
   flex: 1;
   min-width: 0;
-  font-size: 17px;
-  font-weight: 500;
-  color: #000;
+  font-family: 'Noto Sans KR';
+  font-size: 20px;
+  font-weight: 700;
+  color: #4a3a2f;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 `;
 
-// 오늘의 건강일지의 수정 버튼과 같은 모양으로 맞춘다.
-const EditButton = styled.button`
-  flex-shrink: 0;
-  padding: 4px 10px;
-
-  border-radius: 8px;
-  border: 1px solid rgba(74, 58, 47, 0.35);
-  background: rgba(255, 255, 255, 0.7);
-
-  color: #8c8172;
-  font-family: 'Noto Sans KR';
-  font-size: 13px;
-  font-weight: 700;
-`;
-
-const DeleteButton = styled.button`
-  flex-shrink: 0;
-  width: 30px;
-  height: 30px;
-
+const ChipRow = styled.div`
+  margin-top: 10px;
   display: flex;
-  align-items: center;
-  justify-content: center;
-
-  border-radius: 8px;
-  color: #a79c8e;
-
-  &:hover {
-    color: #c15b4a;
-  }
+  gap: 8px;
+  flex-wrap: wrap;
 `;
 
 // 반복 주기. 매일이면 초록, 특정 요일이면 노란 계열로 구분한다.
 const RepeatChip = styled.span`
-  padding: 5px 12px;
-  border-radius: 8px;
+  padding: 6px 14px;
+  border-radius: 15px;
 
-  background: ${({ $daily }) => ($daily ? '#edf2d4' : '#f8eed2')};
+  background: ${({ $daily }) => ($daily ? '#edf2d4' : '#f6ebc7')};
   border: 1.2px solid
-    ${({ $daily }) => ($daily ? 'rgba(143, 174, 74, 0.6)' : 'rgba(232, 205, 115, 0.8)')};
-  color: ${({ $daily }) => ($daily ? '#5b7a2e' : '#a8761c')};
+    ${({ $daily }) => ($daily ? 'rgba(143, 174, 74, 0.6)' : 'rgba(74, 58, 47, 0.35)')};
+  color: ${({ $daily }) => ($daily ? '#5b7a2e' : '#4a3a2f')};
 
+  font-family: 'Noto Sans KR';
   font-size: 14px;
   font-weight: 700;
-`;
-
-const ChipRow = styled.div`
-  margin-top: 10px;
-  display: flex;
-  gap: 6px;
-  flex-wrap: wrap;
+  white-space: nowrap;
 `;
 
 const TimeChip = styled.span`
-  padding: 5px 12px;
-  border-radius: 8px;
-  background: #F8F5EE;
-  border: 1.2px solid rgba(74,58,47,.35);
+  padding: 6px 14px;
+  border-radius: 15px;
+  background: #fcf8ea;
+  border: 1.2px solid rgba(74, 58, 47, 0.35);
+
+  font-family: 'Noto Sans KR';
   font-size: 14px;
-  color: #000;
+  font-weight: 700;
+  color: #4a3a2f;
+  white-space: nowrap;
 `;
 
 const EmptyState = styled.p`
   margin: 40px 0 0;
   text-align: center;
-  font-size: 14px;
   color: #8c8780;
+  font-family: 'Noto Sans KR';
+  font-size: 14px;
 `;
 
 const AddButton = styled.button`
   width: 100%;
-  height: 54px;
-  margin-top: 12px;
+  height: 56px;
+  margin-top: 22px;
   border-radius: 16px;
-  border: 2px solid #e8734a;
-  background: #FFF8ED;
-  color: #e8734a;
-  font-size: 16px;
-  font-weight: 500;
-`;
+  border: 1.5px solid rgba(74, 58, 47, 0.55);
+  background: #dbe4a1;
 
-// 이모지(🗑)는 기기마다 그림이 달라서 선으로 그린 아이콘으로 바꿨다.
-function TrashIcon() {
-  return (
-    <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
-      <path
-        d="M3.5 5.5h13M8 5.5V4a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v1.5M5.5 5.5l.7 10a1.5 1.5 0 0 0 1.5 1.4h4.6a1.5 1.5 0 0 0 1.5-1.4l.7-10M8.5 9v4.5M11.5 9v4.5"
-        stroke="currentColor"
-        strokeWidth="1.5"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
-}
+  color: #4a3a2f;
+  font-family: Jua;
+  font-size: 22px;
+`;
 
 function MedicineList() {
   const navigate = useNavigate();
   const { data, loading, error, refetch } = useApi(getMedications);
   const { execute: removeMedication } = useApiAction(deleteMedication);
+  const { data: todayData } = useApi(loadTodayMedications);
 
   const medications = (data ?? []).map(toMedicationView);
-  const totalDoses = medications.reduce((sum, med) => sum + med.times.length, 0);
+
+  const todayItems = flattenAll(todayData?.items ?? []);
+  const takenToday = todayItems.filter((item) => item.taken).length;
+  const totalToday = todayItems.length;
+  const remainingSlots = new Set(
+    todayItems.filter((item) => !item.taken).map((item) => item.slot),
+  );
+  const nextSlot = SLOT_ORDER.find((slot) => remainingSlots.has(slot));
 
   // 삭제 후 목록을 다시 불러와서 서버 상태와 어긋나지 않게 한다.
   const handleDelete = async (event, id) => {
@@ -221,17 +272,33 @@ function MedicineList() {
       <Content>
         <Header>
           <BackButton type="button" aria-label="뒤로가기" onClick={() => navigate('/home')}>
-            ‹
+            <img src={backIcon} alt="" />
           </BackButton>
           <Title>내 복용약</Title>
           <HeaderSpacer />
         </Header>
+        <TitleDivider />
 
-        {medications.length > 0 && (
-          <Summary>
-            <SummaryTitle>등록된 약 {medications.length}개</SummaryTitle>
-            <SummarySub>하루 총 {totalDoses}번 복약 알림이 울려요</SummarySub>
-          </Summary>
+        {totalToday > 0 && (
+          <>
+            <ProgressBlock>
+              <ProgressText>
+                오늘 <ProgressHighlight>{takenToday}/{totalToday}</ProgressHighlight> 챙기셨어요
+              </ProgressText>
+              <ProgressSub>
+                {takenToday >= totalToday ? '오늘 약을 모두 챙기셨어요!' : `아직 ${nextSlot}약이 남았어요!`}
+              </ProgressSub>
+            </ProgressBlock>
+
+            <VineWrap>
+              <VineStem />
+              <FlowerRow>
+                {Array.from({ length: takenToday }).map((_, index) => (
+                  <FlowerImg key={index} src={vineFlowerIcon} alt="" />
+                ))}
+              </FlowerRow>
+            </VineWrap>
+          </>
         )}
 
         {loading ? (
@@ -243,19 +310,22 @@ function MedicineList() {
         ) : (
           <MedList>
             {medications.map((med) => (
-              <MedCard key={med.id}>
+              <MedCard
+                key={med.id}
+                type="button"
+                onClick={() => navigate(`/home/medicine/${med.id}`)}
+              >
+                <DeleteButton
+                  type="button"
+                  aria-label={`${med.name} 삭제`}
+                  onClick={(event) => handleDelete(event, med.id)}
+                >
+                  <img src={trashIcon} alt="" />
+                </DeleteButton>
+
                 <MedRow>
+                  <PillIcon src={pillIcon} alt="" />
                   <MedName>{med.name}</MedName>
-                  <EditButton type="button" onClick={() => navigate(`/home/medicine/${med.id}`)}>
-                    수정
-                  </EditButton>
-                  <DeleteButton
-                    type="button"
-                    aria-label={`${med.name} 삭제`}
-                    onClick={(event) => handleDelete(event, med.id)}
-                  >
-                    <TrashIcon />
-                  </DeleteButton>
                 </MedRow>
                 <ChipRow>
                   {/* 설정한 반복 주기를 먼저 보여주고, 그 뒤에 복용 시간을 늘어놓는다 */}

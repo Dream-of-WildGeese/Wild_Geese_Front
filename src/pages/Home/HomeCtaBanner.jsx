@@ -23,6 +23,7 @@ const BubbleText = styled.p`
   right: 12px;
   top: 58px;
   margin: 0;
+  font-family: Jua;
   font-size: 16px;
   white-space: nowrap;
   text-align: center;

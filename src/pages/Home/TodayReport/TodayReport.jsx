@@ -15,6 +15,9 @@ import mSleep from '../../../assets/journal/m-sleep.png';
 import mMeal from '../../../assets/journal/m-meal.png';
 import mActivity from '../../../assets/journal/m-activity.png';
 import mBody from '../../../assets/journal/m-body.png';
+import faceGood from '../../../assets/weekly/face-good.png';
+import faceNormal from '../../../assets/weekly/face-normal.png';
+import faceBad from '../../../assets/weekly/face-bad.png';
 import { loadTodayReport } from './todayReportData';
 import { useApi } from '../../../hooks/useApi';
 import { useFamilyRelation } from '../../../hooks/useFamilyRelation';
@@ -39,6 +42,9 @@ const METRIC_ICONS = {
 };
 const ENTRY_ICONS = { question: sunIcon, medication: pillIcon, healthcheck: moonIcon };
 const ENTRY_TITLES = { question: '오늘의 질문', medication: '복약 체크', healthcheck: '건강 체크' };
+
+// 상단 요약 칩의 컨디션은 글자 대신 점수(3=좋음~1=아쉬움)에 맞는 표정 이모지를 띄운다.
+const CONDITION_FACE = { 3: faceGood, 2: faceNormal, 1: faceBad };
 
 const Page = styled.div`
   position: relative;
@@ -161,6 +167,13 @@ const ChipValue = styled.span`
   font-family: 'Noto Sans KR';
   font-size: 20px;
   font-weight: 700;
+`;
+
+// 컨디션 칩만 글자 대신 이모지(표정 아이콘)를 띄운다.
+const ChipFace = styled.img`
+  width: 40px;
+  height: 40px;
+  object-fit: contain;
 `;
 
 const InfoCard = styled.div`
@@ -522,7 +535,15 @@ function TodayReport() {
             </SummaryChip>
             <SummaryChip>
               <ChipLabel>컨디션</ChipLabel>
-              <ChipValue>{report.summary.condition}</ChipValue>
+              {/* 저녁 체크 전이라 점수가 없으면 이모지 대신 '-'를 보여준다 */}
+              {report.summary.conditionScore ? (
+                <ChipFace
+                  src={CONDITION_FACE[Math.round(report.summary.conditionScore)] ?? faceNormal}
+                  alt={report.summary.condition}
+                />
+              ) : (
+                <ChipValue>-</ChipValue>
+              )}
             </SummaryChip>
           </SummaryChips>
 

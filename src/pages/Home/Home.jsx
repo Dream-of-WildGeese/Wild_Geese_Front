@@ -141,16 +141,14 @@ function Home() {
         <MedicineCheckPopup onClose={closePopup} />
       )}
       {/* 안내 팝업을 한 번 거치던 걸 없애고 컨디션 질문으로 바로 들어간다.
-          '시작하기'만 누르는 화면이라 단계만 늘렸다. */}
+          '시작하기'만 누르는 화면이라 단계만 늘렸다.
+          여기는 사용자가 메뉴에서 '저녁 건강 기록'을 직접 골라 들어온 경우라,
+          오늘 이미 마쳤어도 건강일지로 슬쩍 넘기지 않고 팝업 자체(답 다시 보기)를 보여준다. */}
       {activePopup === 'eveningCheck' && (
         <EveningCheckPopup
+          forceEdit
           onClose={closePopup}
           onCompleted={() => setActivePopup('healthCheckDone')}
-          // 오늘 이미 마친 상태면 축하 팝업 없이 바로 건강일지로 이동한다.
-          onAlreadyDone={() => {
-            closePopup();
-            navigate('/home/today-report');
-          }}
         />
       )}
       {activePopup === 'healthCheckDone' && (
