@@ -10,7 +10,7 @@ export { ApiError } from './ApiError';
 // '저장하지 못했어요'를 띄우는 일이 있었다. 넉넉하게 30초를 준다.
 export const client = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL,
-  timeout: 15000,
+  timeout: 30000,
   headers: { 'Content-Type': 'application/json' },
 });
 
