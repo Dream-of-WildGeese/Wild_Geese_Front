@@ -1,7 +1,7 @@
 import styled from 'styled-components';
 
 import logoutSon from '../../../assets/character/logout-son.svg';
-import withdrawDaughter from '../../../assets/character/logout-daughter.png';
+import logoutDaughter from '../../../assets/character/logout-daughter.png';
 
 
 import {
@@ -16,10 +16,10 @@ import {
 // Figma 29: 로그아웃 확인. 딸/아들 캐릭터 버전이 따로 있어서
 // 건강 프로필의 성별로 그림을 고른다(성별 미설정이면 딸 그림을 기본으로 쓴다).
 
-const CHARACTERS = {
-  logout: { FEMALE: withdrawDaughter, MALE: logoutSon },
-  withdraw: { FEMALE: withdrawDaughter, MALE: logoutSon },
-};
+// 탈퇴 기능을 없애서 로그아웃 한 벌만 남았다. 예전에는 { logout: {...}, withdraw: {...} }
+// 처럼 한 겹 더 감싸져 있었는데, 아래에서 성별로 바로 꺼내 쓰면서 값이 undefined가 되어
+// 캐릭터가 아예 안 보였다.
+const CHARACTERS = { FEMALE: logoutDaughter, MALE: logoutSon };
 
 
 const Character = styled.img`

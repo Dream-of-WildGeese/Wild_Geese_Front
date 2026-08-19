@@ -48,12 +48,21 @@ const MascotButton = styled.button`
 `;
 
 // 캐릭터마다 원본 비율이 달라서 cover면 그림마다 잘리는 정도가 달라진다.
+// 누구인지 알기 전에는 그리지 않는다. 기본값(아빠)을 먼저 띄우면 가족 정보가
+// 도착하는 순간 다른 얼굴로 바뀌어서, 잘못 들어온 것처럼 보인다.
+const fadeIn = keyframes`
+  from { opacity: 0; }
+  to   { opacity: 1; }
+`;
+
 const Mascot = styled.img`
   width: 100%;
   height: 100%;
   object-fit: contain;
   pointer-events: none;
-  animation: ${sway} 3.2s ease-in-out infinite alternate;
+  animation:
+    ${fadeIn} 0.25s ease-out,
+    ${sway} 3.2s ease-in-out infinite alternate;
 
   @media (prefers-reduced-motion: reduce) {
     animation: none;
@@ -238,7 +247,7 @@ const Badge = styled.span`
 function HomeCharacterStage({ onMailboxClick, unreadLetterCount = 0 }) {
   const hasUnread = unreadLetterCount > 0;
   const currentUserId = getUserId();
-  const { data: familyData } = useApi(getMyFamily);
+  const { data: familyData, loading: familyLoading } = useApi(getMyFamily);
 
   const [greeting, setGreeting] = useState(null);
   const hideTimerRef = useRef(null);
@@ -270,7 +279,7 @@ function HomeCharacterStage({ onMailboxClick, unreadLetterCount = 0 }) {
       {greeting && <GreetingBubble key={greeting}>{greeting}</GreetingBubble>}
 
       <MascotButton type="button" aria-label="온담이에게 말 걸기" onClick={handleMascotClick}>
-        <Mascot src={mascotImage} alt="" />
+        {!familyLoading && <Mascot src={mascotImage} alt="" />}
       </MascotButton>
       <MailboxButton
         type="button"
