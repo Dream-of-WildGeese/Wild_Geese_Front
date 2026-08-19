@@ -237,21 +237,8 @@ const DayLabel = styled.span`
   font-size: 11px;
 `;
 
-// 표정 아이콘을 감싸는 색 링. 점수에 따라 테두리 색이 바뀐다.
-const RingWrap = styled.div`
-  width: ${({ $size }) => $size}px;
-  height: ${({ $size }) => $size}px;
-  box-sizing: border-box;
-  flex-shrink: 0;
-
-  display: flex;
-  align-items: center;
-  justify-content: center;
-
-  border-radius: 50%;
-  border: 2px solid ${({ $color }) => $color};
-`;
-
+// 표정 아이콘 자체에 이미 점수별 색 링이 그려져 있어서 따로 감싸지 않고
+// 칸 크기만큼 꽉 채운다.
 const FaceIcon = styled.img`
   width: ${({ $size }) => $size}px;
   height: ${({ $size }) => $size}px;
@@ -267,8 +254,8 @@ const IconWrap = styled.div`
 `;
 
 const MealIcon = styled.img`
-  width: 36px;
-  height: 28px;
+  width: 40px;
+  height: 40px;
   object-fit: contain;
 `;
 
@@ -529,9 +516,7 @@ function WeeklyReportDetail() {
               <DayCol key={item.day}>
                 {/* 아직 답하지 않은 날은 빈 원으로 둔다. 표정을 채우면 기록한 것처럼 보인다 */}
                 {item.score ? (
-                  <RingWrap $size={40} $color={scoreColor(item.score)}>
-                    <FaceIcon $size={32} src={scoreFace(item.score)} alt="" />
-                  </RingWrap>
+                  <FaceIcon $size={40} src={scoreFace(item.score)} alt="" />
                 ) : (
                   <IconWrap>
                     <EmptyCircle src={emptyCircleIcon} alt="" />
@@ -544,9 +529,7 @@ function WeeklyReportDetail() {
           <Legend>
             {CONDITION_LEGEND.map((item) => (
               <LegendItem key={item.score}>
-                <RingWrap $size={22} $color={scoreColor(item.score)}>
-                  <FaceIcon $size={16} src={scoreFace(item.score)} alt="" />
-                </RingWrap>
+                <FaceIcon $size={22} src={scoreFace(item.score)} alt="" />
                 <LegendLabel>{item.label}</LegendLabel>
               </LegendItem>
             ))}
