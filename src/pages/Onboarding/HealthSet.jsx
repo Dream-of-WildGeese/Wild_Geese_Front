@@ -19,21 +19,27 @@ const GENDER_VALUES = { male: 'MALE', female: 'FEMALE' };
 const GENDER_LABELS = { MALE: 'male', FEMALE: 'female' };
 
 
-// 서버가 실제로 받는 enum은 이 5개뿐이다(SLEEP/ACTIVITY/MEAL/MEDICINE/MOOD).
-// '건강 관리'·'없음' 같은 값을 보내면 전체 요청이 400으로 거절된다.
+
+// 서버가 실제로 받는 enum은 SLEEP/ACTIVITY/MEAL/MEDICINE/MOOD뿐이고 NONE은 없다.
+// '없음'은 여기 안 넣어서, 고르면 wellnessInterests가 자연스럽게 빈 배열로 나가게 한다.
 const INTEREST_VALUES = {
-  수면: 'SLEEP',
-  활동량: 'ACTIVITY',
-  식사: 'MEAL',
-  복약: 'MEDICINE',
-  기분: 'MOOD',
+  '체력 관리': 'ACTIVITY',
+  '스트레스 관리': 'MOOD',
+  '수면 개선': 'SLEEP',
+  '식습관 개선': 'MEAL',
 };
 
 const INTEREST_LABELS = Object.fromEntries(
   Object.entries(INTEREST_VALUES).map(([label, value]) => [value, label]),
 );
 
-const INTEREST_LIST = ['수면', '활동량', '식사', '복약', '기분'];
+const INTEREST_LIST = [
+  '체력 관리',
+  '스트레스 관리',
+  '수면 개선',
+  '식습관 개선',
+  '없음',
+];
 
 const DISEASE_LIST = [
   '고혈압',
@@ -141,9 +147,15 @@ const HealthSet = () => {
   };
 
   const toggleInterest = (item) => {
-    const next = interests.includes(item)
-      ? interests.filter((v) => v !== item)
-      : [...interests, item];
+    let next;
+    if (item === '없음') {
+      next = interests.includes('없음') ? [] : ['없음'];
+    } else {
+      const filtered = interests.filter((v) => v !== '없음');
+      next = filtered.includes(item)
+        ? filtered.filter((v) => v !== item)
+        : [...filtered, item];
+    }
     setInterests(next);
     saveInterests(next);
   };
