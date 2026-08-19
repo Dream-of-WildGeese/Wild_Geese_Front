@@ -168,7 +168,8 @@ function ProfileEdit() {
     setName(me?.name ?? '');
     setBirth(profile?.birthDate ?? '');
     setGender(profile?.gender ?? '');
-    setDiseases(profile?.diseases ?? []);
+    // 과거 온보딩 저장 버그로 서버에 같은 병명이 중복 저장돼 있을 수 있어 중복 제거한다.
+    setDiseases([...new Set(profile?.diseases ?? [])]);
     setLocalInterests(
       (profile?.wellnessInterests ?? []).map((value) => ENUM_TO_INTEREST[value]).filter(Boolean),
     );
