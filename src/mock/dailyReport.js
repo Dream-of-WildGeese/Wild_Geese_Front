@@ -14,6 +14,20 @@ const SLEEP_TEXT = { 3: '7시간 이상 잤어요', 2: '5~7시간 잤어요', 1:
 const MEAL_TEXT = { 3: '세 끼 모두 챙겼어요', 2: '두 끼 챙겼어요', 1: '한 끼만 먹었어요' };
 const ACTIVITY_TEXT = { 3: '많이 걸었어요', 2: '조금 걸었어요', 1: '거의 안 걸었어요' };
 
+// 온담 한마디 / 저녁 코멘트 카드용. 실제 서버는 AI가 요약해주지만,
+// 시연 데이터는 그 날의 컨디션·활동량 점수로 비슷한 느낌만 흉내낸다.
+const AI_COMMENT_BY_CONDITION = {
+  3: '오늘은 컨디션이 아주 좋으셨네요. 이런 흐름 쭉 이어가봐요!',
+  2: '오늘 하루도 큰 굴곡 없이 무탈하게 보내셨어요.',
+  1: '오늘은 컨디션이 조금 아쉬우셨나 봐요. 푹 쉬시면 좋겠어요.',
+};
+
+const EVENING_COMMENT_BY_ACTIVITY = {
+  3: '많이 움직이신 덕분에 컨디션도 함께 좋아지신 것 같아요.',
+  2: '적당히 몸을 움직이신 하루였어요.',
+  1: '오늘은 좀 쉬셨네요. 내일은 가볍게 산책 어떠세요?',
+};
+
 // 아침 질문과 답변. 요일마다 달라야 하루하루가 다르게 보인다.
 const MORNING_BY_ROLE = {
   parent: [
@@ -99,8 +113,8 @@ export function getMockDailyReport({ role, weeksAgo, date, personLabel, isMine }
       condition: CONDITION_TEXT[condition] ?? '-',
       conditionScore: condition ?? null,
     },
-    aiComment: '',
-    eveningComment: '',
+    aiComment: AI_COMMENT_BY_CONDITION[condition] ?? '',
+    eveningComment: EVENING_COMMENT_BY_ACTIVITY[activity] ?? '',
     timeline: [
       {
         type: 'question',
