@@ -1,12 +1,12 @@
+import { useState } from 'react';
 import styled from 'styled-components';
 import { useNavigate } from 'react-router-dom';
 import { getMedications, deleteMedication } from '../../../api/medication';
 import { useApi, useApiAction } from '../../../hooks/useApi';
 import { toMedicationView } from '../../../utils/medication';
-import { loadTodayMedications, flattenAll } from '../TodayOndam/Medicine/medicationData';
 import pillIcon from '../../../assets/medicine/pill.png';
+import pencilIcon from '../../../assets/weekly/pencil.png';
 import trashIcon from '../../../assets/medicine/trash.png';
-import vineFlowerIcon from '../../../assets/medicine/vine-flower.png';
 import {
   PageFrame,
   PageContent,
@@ -17,111 +17,71 @@ import {
   PageScrollArea,
   PageFooter,
 } from '../../../components/PageShell';
+import {
+  PopupBackdrop,
+  PopupCard,
+  PopupInnerBorder,
+  PopupTitle,
+  PopupPrimaryButton,
+  PopupSecondaryButton,
+  PopupButtonRow,
+} from '../../../components/PopupShell';
 
-// Figma 25_ver02: '내 복용약'. 오늘 몇 개를 챙겼는지 덩굴+꽃으로 보여주고,
-// 카드 안의 '수정' 글자 버튼은 없애고 카드 전체를 눌러 수정 화면으로 들어가게 했다.
-const SLOT_ORDER = ['아침', '점심', '저녁'];
-
-const ProgressBlock = styled.div`
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 4px;
-`;
-
-const ProgressText = styled.p`
-  margin: 0;
-  color: #4a3a2f;
-  font-family: 'Noto Sans KR';
-  font-size: 20px;
-  font-weight: 700;
-`;
-
-const ProgressHighlight = styled.span`
-  color: #7c934a;
-  font-size: 24px;
-`;
-
-const ProgressSub = styled.p`
-  margin: 0;
-  color: #a79c8e;
-  font-family: 'Noto Sans KR';
-  font-size: 16px;
-`;
-
-// 오늘 챙긴 개수만큼 꽃이 덩굴 위에 핀다.
-const VineWrap = styled.div`
-  position: relative;
-  height: 60px;
-  margin-top: 12px;
-`;
-
-const VineStem = styled.div`
-  position: absolute;
-  top: 50%;
-  left: 0;
-  right: 0;
-  height: 8px;
-  transform: translateY(-50%);
-  border-radius: 4px;
-  background: #cbd879;
-  border: 1px solid rgba(74, 58, 47, 0.25);
-`;
-
-const FlowerRow = styled.div`
-  position: absolute;
-  inset: 0;
-`;
-
-// 라인(줄기) 바로 위에서 피어나도록, 줄기 상단에 밑동을 맞춰 절대 배치한다.
-// flex-wrap을 쓰면 꽃 개수가 많을 때 다음 줄이 라인과 동떨어진 위치로
-// 밀려나서, 전체 너비 기준 비율 위치로 하나씩 고정한다.
-const FlowerImg = styled.img`
-  position: absolute;
-  bottom: 34px;
-  width: 36px;
-  height: 25px;
-  object-fit: contain;
-  transform: translateX(-50%);
-`;
-
+// Figma 25_ver02: '내 복용약'. 등록해둔 약을 보고 고치고 지우는 화면이다.
+// 오늘 몇 개를 챙겼는지 보여주던 문구와 덩굴 진행바는 뺐다 — 여기는 약을
+// 체크하는 곳이 아니라서, 체크 화면(약 체크 팝업)과 헷갈렸다.
 const MedList = styled.div`
-  margin-top: 26px;
   display: flex;
   flex-direction: column;
   gap: 14px;
 `;
 
-// 카드 전체가 눌리는 버튼이라, 안의 삭제 버튼은 stopPropagation으로 따로 막는다.
-const MedCard = styled.button`
+const MedCard = styled.div`
   position: relative;
   width: 100%;
   padding: 12px 16px;
   border-radius: 18px;
   border: 1.3px solid rgba(74, 58, 47, 0.4);
   background: rgba(255, 255, 255, 0.55);
-  text-align: left;
+  box-sizing: border-box;
 `;
 
-const DeleteButton = styled.button`
+// 수정(연필)과 삭제(쓰레기통)를 카드 오른쪽 위에 나란히 둔다.
+const CardActions = styled.div`
   position: absolute;
   top: 10px;
   right: 12px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+`;
+
+const ActionButton = styled.button`
   width: 30px;
   height: 30px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  cursor: pointer;
 
   img {
     width: 100%;
     height: 100%;
     object-fit: contain;
   }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: default;
+  }
 `;
 
+// 오른쪽 위 버튼 두 개와 겹치지 않도록 이름 줄의 오른쪽을 비워둔다.
 const MedRow = styled.div`
   display: flex;
   align-items: center;
   gap: 6px;
-  padding-right: 34px;
+  padding-right: 74px;
 `;
 
 const PillIcon = styled.img`
@@ -201,29 +161,35 @@ const AddButton = styled.button`
   font-size: 22px;
 `;
 
+const PopupMessage = styled.p`
+  margin: 0;
+  width: 100%;
+  text-align: center;
+  color: #6b6661;
+  font-family: 'Noto Sans KR', sans-serif;
+  font-size: 16px;
+  line-height: 1.5;
+  word-break: keep-all;
+`;
+
 function MedicineList() {
   const navigate = useNavigate();
   const { data, loading, error, refetch } = useApi(getMedications);
-  const { execute: removeMedication } = useApiAction(deleteMedication);
-  const { data: todayData } = useApi(loadTodayMedications);
+  const { execute: removeMedication, loading: deleting } = useApiAction(deleteMedication);
+  // 지우기 전에 한 번 물어본다. 되돌릴 수 없어서 바로 지우면 위험하다.
+  const [deleteTarget, setDeleteTarget] = useState(null);
 
   const medications = (data ?? []).map(toMedicationView);
 
-  const todayItems = flattenAll(todayData?.items ?? []);
-  const takenToday = todayItems.filter((item) => item.taken).length;
-  const totalToday = todayItems.length;
-  const remainingSlots = new Set(
-    todayItems.filter((item) => !item.taken).map((item) => item.slot),
-  );
-  const nextSlot = SLOT_ORDER.find((slot) => remainingSlots.has(slot));
-
   // 삭제 후 목록을 다시 불러와서 서버 상태와 어긋나지 않게 한다.
-  const handleDelete = async (event, id) => {
-    event.stopPropagation();
-    const { ok } = await removeMedication(id);
-    if (ok) {
-      refetch();
+  const handleDelete = async () => {
+    const { ok, error: deleteError } = await removeMedication(deleteTarget.id);
+    setDeleteTarget(null);
+    if (!ok) {
+      alert(deleteError.message);
+      return;
     }
+    refetch();
   };
 
   return (
@@ -236,33 +202,6 @@ function MedicineList() {
         <PageDivider />
 
         <PageScrollArea>
-          {totalToday > 0 && (
-            <>
-              <ProgressBlock>
-                <ProgressText>
-                  오늘 <ProgressHighlight>{takenToday}/{totalToday}</ProgressHighlight> 챙기셨어요
-                </ProgressText>
-                <ProgressSub>
-                  {takenToday >= totalToday ? '오늘 약을 모두 챙기셨어요!' : `아직 ${nextSlot}약이 남았어요!`}
-                </ProgressSub>
-              </ProgressBlock>
-
-              <VineWrap>
-                <VineStem />
-                <FlowerRow>
-                  {Array.from({ length: takenToday }).map((_, index) => (
-                    <FlowerImg
-                      key={index}
-                      src={vineFlowerIcon}
-                      alt=""
-                      style={{ left: `${((index + 1) / (totalToday + 1)) * 100}%` }}
-                    />
-                  ))}
-                </FlowerRow>
-              </VineWrap>
-            </>
-          )}
-
           {loading ? (
             <EmptyState>불러오는 중이에요...</EmptyState>
           ) : error ? (
@@ -272,18 +211,24 @@ function MedicineList() {
           ) : (
             <MedList>
               {medications.map((med) => (
-                <MedCard
-                  key={med.id}
-                  type="button"
-                  onClick={() => navigate(`/home/medicine/${med.id}`)}
-                >
-                  <DeleteButton
-                    type="button"
-                    aria-label={`${med.name} 삭제`}
-                    onClick={(event) => handleDelete(event, med.id)}
-                  >
-                    <img src={trashIcon} alt="" />
-                  </DeleteButton>
+                <MedCard key={med.id}>
+                  <CardActions>
+                    <ActionButton
+                      type="button"
+                      aria-label={`${med.name} 수정`}
+                      onClick={() => navigate(`/home/medicine/${med.id}`)}
+                    >
+                      <img src={pencilIcon} alt="" />
+                    </ActionButton>
+                    <ActionButton
+                      type="button"
+                      aria-label={`${med.name} 삭제`}
+                      disabled={deleting}
+                      onClick={() => setDeleteTarget(med)}
+                    >
+                      <img src={trashIcon} alt="" />
+                    </ActionButton>
+                  </CardActions>
 
                   <MedRow>
                     <PillIcon src={pillIcon} alt="" />
@@ -300,7 +245,6 @@ function MedicineList() {
               ))}
             </MedList>
           )}
-
         </PageScrollArea>
 
         <PageFooter>
@@ -309,6 +253,36 @@ function MedicineList() {
           </AddButton>
         </PageFooter>
       </PageContent>
+
+      {deleteTarget && (
+        <PopupBackdrop onClick={() => setDeleteTarget(null)}>
+          <PopupCard
+            $center
+            $gap={16}
+            $padTop={36}
+            onClick={(event) => event.stopPropagation()}
+          >
+            <PopupInnerBorder />
+            <PopupTitle $center $size={22}>
+              이 약을 지울까요?
+            </PopupTitle>
+            {/* 이름에 조사를 붙이면 받침에 따라 어색해져서, 이름은 따로 한 줄로 보여준다 */}
+            <PopupMessage>
+              {deleteTarget.name}
+              <br />
+              지우면 다시 되돌릴 수 없어요.
+            </PopupMessage>
+            <PopupButtonRow>
+              <PopupSecondaryButton type="button" onClick={() => setDeleteTarget(null)}>
+                그대로 둘래요
+              </PopupSecondaryButton>
+              <PopupPrimaryButton type="button" disabled={deleting} onClick={handleDelete}>
+                {deleting ? '지우는 중...' : '지울래요'}
+              </PopupPrimaryButton>
+            </PopupButtonRow>
+          </PopupCard>
+        </PopupBackdrop>
+      )}
     </PageFrame>
   );
 }

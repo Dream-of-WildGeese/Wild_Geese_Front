@@ -11,6 +11,8 @@ import {
   isValidTime,
   isDuplicateName,
   sortTimeLabels,
+  toTimeLabel,
+  includesTime,
 } from '../../../utils/medication';
 import {
   PopupBackdrop,
@@ -138,14 +140,34 @@ const BlockedText = styled.p`
 
 // 저장하기만 화면 아래에 고정한다. 삭제는 되돌릴 수 없어서 목록 끝까지
 // 내려야 닿도록 스크롤 영역 안에 남겨둔다.
+//
+// 연두 배경에 흰 글자라 글씨가 배경에 묻혀 있었다. 다른 화면의 주요 버튼과 같은
+// 진한 글자·테두리로 맞추고, 커서를 올리면 한 단계 진해지게 한다.
 const SaveButton = styled.button`
   width: 100%;
   height: 54px;
   border-radius: 14px;
-  background: #DBE4A1;
-  color: #fff;
-  font-size: 16px;
-  font-weight: 600;
+  border: 1.5px solid rgba(74, 58, 47, 0.55);
+  background: #dbe4a1;
+  color: #4a3a2f;
+  font-family: Jua;
+  font-size: 20px;
+  cursor: pointer;
+  transition: background 0.15s ease, transform 0.1s ease;
+
+  &:hover:not(:disabled) {
+    background: #cbd879;
+  }
+
+  &:active:not(:disabled) {
+    background: #c2d16b;
+    transform: translateY(1px);
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: default;
+  }
 `;
 
 const DeleteButton = styled.button`
@@ -179,6 +201,8 @@ function MedicineEdit() {
   const [saveBlocked, setSaveBlocked] = useState(false);
   // 입력값이 잘못됐을 때 알려주는 문구 (시간 형식, 이름 중복 등)
   const [missing, setMissing] = useState(null);
+  // 이미 골라둔 시각을 또 넣으려 할 때 알려줄 시각
+  const [duplicateTime, setDuplicateTime] = useState(null);
   const [period, setPeriod] = useState('오전');
   const [hour, setHour] = useState('');
   const [minute, setMinute] = useState('');
@@ -232,8 +256,17 @@ function MedicineEdit() {
       return;
     }
 
-    const label = `${period} ${hour.padStart(2, '0')}:${minute.padStart(2, '0')}`;
-    if (!times.includes(label)) setTimes((prev) => sortTimeLabels([...prev, label]));
+    // 표기를 목록과 같은 규칙으로 굳힌다. 예전에는 '오전 08:00'처럼 시에 0을 붙여
+    // 만들어서, 미리 준비된 '오전 8:00'과 다른 것으로 잡혔다. 그래서 같은 시각이
+    // 두 번 들어가고, 저장하면 목록에 '오전 8:00'이 두 개씩 보였다.
+    const label = toTimeLabel(period, hour, minute);
+
+    if (includesTime(times, label)) {
+      setDuplicateTime(label);
+      return;
+    }
+
+    setTimes((prev) => sortTimeLabels([...prev, label]));
     setHour('');
     setMinute('');
   };
@@ -373,6 +406,25 @@ function MedicineEdit() {
             </PopupTitle>
             <BlockedText>{missing}</BlockedText>
             <PopupPrimaryButton type="button" onClick={() => setMissing(null)}>
+              알겠어요
+            </PopupPrimaryButton>
+          </PopupCard>
+        </PopupBackdrop>
+      )}
+
+      {duplicateTime && (
+        <PopupBackdrop onClick={() => setDuplicateTime(null)}>
+          <PopupCard $center $gap={16} $padTop={36} onClick={(event) => event.stopPropagation()}>
+            <PopupInnerBorder />
+            <PopupTitle $center $size={22}>
+              이미 넣은 시간이에요
+            </PopupTitle>
+            <BlockedText>
+              {duplicateTime}
+              <br />
+              같은 시간을 두 번 넣을 수는 없어요.
+            </BlockedText>
+            <PopupPrimaryButton type="button" onClick={() => setDuplicateTime(null)}>
               알겠어요
             </PopupPrimaryButton>
           </PopupCard>

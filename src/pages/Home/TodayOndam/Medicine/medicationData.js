@@ -1,5 +1,10 @@
 import { getMedications, getMedicationLogs, updateMedicationLogs } from '../../../../api/medication';
-import { toDateString, timeToLabel, parseTime } from '../../../../utils/medication';
+import {
+  toDateString,
+  timeToLabel,
+  parseTime,
+  activeSchedules,
+} from '../../../../utils/medication';
 
 // 약 체크 팝업과 복약 기록 수정 팝업이 같은 데이터를 보도록 로더를 하나로 둔다.
 // 각자 목록을 만들면 어느 시간대를 체크한 건지 어긋나서 저장이 안 된 것처럼 보인다.
@@ -39,7 +44,8 @@ export async function loadTodayMedications() {
     .map((medication) => ({
       medicationId: medication.medicationId,
       name: medication.name,
-      schedules: (medication.schedules ?? [])
+      // 꺼진(예전) 스케줄이 섞여 오면 오늘 안 먹는 약까지 체크 목록에 올라온다.
+      schedules: activeSchedules(medication.schedules)
         .filter((schedule) => (schedule.daysOfWeek ?? []).includes(today))
         .map((schedule) => ({
           scheduleId: schedule.scheduleId,
