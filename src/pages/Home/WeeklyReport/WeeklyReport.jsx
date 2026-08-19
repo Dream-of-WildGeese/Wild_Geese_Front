@@ -5,6 +5,8 @@ import cloudIcon from '../../../assets/weekly/cloud.png';
 import checkIcon from '../../../assets/weekly/check.png';
 import { loadWeeklyList } from './weeklyReportData';
 import { useApi } from '../../../hooks/useApi';
+import { useLazyList } from '../../../hooks/useLazyList';
+import { LoadingLine } from '../../../components/Loading';
 import { useFamilyRelation } from '../../../hooks/useFamilyRelation';
 import {
   PageFrame,
@@ -164,6 +166,11 @@ const WeekList = styled.div`
   gap: 12px;
 `;
 
+const MoreSentinel = styled.div`
+  width: 100%;
+  height: 1px;
+`;
+
 const StatusText = styled.p`
   margin: 0;
   width: 100%;
@@ -186,6 +193,13 @@ function WeeklyReport() {
     () => [...(data?.past ?? [])].sort((a, b) => b.id.localeCompare(a.id)),
     [data],
   );
+
+  // 지난 주가 쌓일수록 목록이 길어진다. 보이는 만큼만 그리고 바닥에서 이어 붙인다.
+  const {
+    visible: visibleWeeks,
+    hasMore,
+    sentinelRef,
+  } = useLazyList(pastWeeks, { step: 8, resetKey: person });
 
   const openWeek = (weekId) =>
     navigate(`/home/weekly-report/${weekId}`, { state: { person } });
@@ -214,7 +228,7 @@ function WeeklyReport() {
             </ToggleTab>
           </PersonToggle>
 
-          {loading && <StatusText>리포트를 불러오는 중이에요...</StatusText>}
+          {loading && <LoadingLine>리포트를 불러오는 중이에요...</LoadingLine>}
           {error && <StatusText>{error.message}</StatusText>}
 
           {currentWeek && (
@@ -254,7 +268,7 @@ function WeeklyReport() {
             <>
               <SectionDivider />
               <WeekList>
-                {pastWeeks.map((week) => (
+                {visibleWeeks.map((week) => (
                   <WeekRow key={week.id} type="button" onClick={() => openWeek(week.id)}>
                     <ContentCol>
                       <TitleLine>
@@ -270,6 +284,11 @@ function WeeklyReport() {
                     )}
                   </WeekRow>
                 ))}
+                {/* 바닥에 닿으면 다음 묶음을 잇는다 */}
+                {hasMore && <MoreSentinel ref={sentinelRef} />}
+                {hasMore && (
+                  <LoadingLine $compact $size={16}>더 불러오는 중이에요...</LoadingLine>
+                )}
               </WeekList>
             </>
           )}

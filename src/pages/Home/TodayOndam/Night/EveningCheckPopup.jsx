@@ -20,6 +20,7 @@ import {
   PopupPrimaryButton,
   CHOICE_ICON_SIZE,
 } from '../../../../components/PopupShell';
+import { Spinner } from '../../../../components/Loading';
 
 // Figma 22~22e: 저녁 건강체크가 별도 페이지에서 5단계 팝업으로 바뀌었다.
 // 선택지 아이콘은 좋음/보통/나쁨 세 장을 모든 질문이 공유한다(디자인에서도 같은 에셋).
@@ -203,6 +204,14 @@ const pulse = keyframes`
   0% { transform: scale(1); }
   50% { transform: scale(1.08); }
   100% { transform: scale(1); }
+`;
+
+// 버튼 안에서 도는 표시와 글자를 가운데로 모은다.
+const SubmitRow = styled.span`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
 `;
 
 const VoiceButton = styled.button`
@@ -462,9 +471,18 @@ function EveningCheckPopup({ onClose, onCompleted, onAlreadyDone, forceEdit = fa
             ))
           )}
 
+          {/* 저장하는 동안 서버가 온담 한마디까지 만들어서 몇 초 걸린다.
+              글자만 바뀌면 눌린 건지 알 수 없어 도는 표시를 함께 둔다. */}
           {isLastStep ? (
             <PrimaryButton type="button" onClick={handleFinish} disabled={submitting}>
-              {submitting ? '저장 중...' : '오늘 기록 완료'}
+              {submitting ? (
+                <SubmitRow>
+                  <Spinner $size={16} aria-hidden="true" />
+                  온담이 한마디 적는 중...
+                </SubmitRow>
+              ) : (
+                '오늘 기록 완료'
+              )}
             </PrimaryButton>
           ) : (
             <PrimaryButton

@@ -13,6 +13,8 @@ import {
   PopupSubtitle,
   PopupPrimaryButton,
 } from '../../components/PopupShell';
+import { LoadingLine } from '../../components/Loading';
+import { useLazyList } from '../../hooks/useLazyList';
 
 // 서버가 보낸 알림 목록. 종류별로 앱에서 쓰던 아이콘을 그대로 붙인다.
 const TYPE_ICONS = {
@@ -150,6 +152,11 @@ const ReadAllButton = styled.button`
   }
 `;
 
+const MoreSentinel = styled.div`
+  width: 100%;
+  height: 1px;
+`;
+
 const StatusText = styled.p`
   margin: 24px 0;
   width: 100%;
@@ -172,6 +179,13 @@ function NotificationListPopup({
   readingAll = false,
 }) {
   const unreadCount = notifications.filter((item) => !item.read).length;
+
+  // 알림은 계속 쌓이기만 한다. 보이는 만큼만 그리고 바닥에서 이어 붙인다.
+  const {
+    visible: visibleNotifications,
+    hasMore,
+    sentinelRef,
+  } = useLazyList(notifications, { step: 15 });
 
   // 누르면 읽음으로 바꾸고, 그 알림이 가리키는 화면으로 옮겨간다.
   const handleSelect = (notification) => {
@@ -201,14 +215,14 @@ function NotificationListPopup({
           )}
         </SubtitleRow>
 
-        {loading && <StatusText>불러오는 중이에요...</StatusText>}
+        {loading && <LoadingLine $compact>불러오는 중이에요...</LoadingLine>}
         {error && <StatusText>{error.message}</StatusText>}
         {!loading && !error && notifications.length === 0 && (
           <StatusText>아직 도착한 알림이 없어요.</StatusText>
         )}
 
         <List>
-          {notifications.map((item) => (
+          {visibleNotifications.map((item) => (
             <Item
               key={item.notificationId}
               type="button"
@@ -226,6 +240,9 @@ function NotificationListPopup({
               {!item.read && <UnreadDot />}
             </Item>
           ))}
+          {/* 바닥에 닿으면 다음 묶음을 잇는다 */}
+          {hasMore && <MoreSentinel ref={sentinelRef} />}
+          {hasMore && <LoadingLine $compact $size={16}>더 불러오는 중이에요...</LoadingLine>}
         </List>
 
         <PopupPrimaryButton type="button" onClick={onClose}>
