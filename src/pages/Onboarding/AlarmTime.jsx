@@ -3,7 +3,6 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import styled from 'styled-components';
 import alarmSun from '../../assets/onboarding/alarm-sun.svg';
 import alarmMoon from '../../assets/onboarding/alarm-moon.svg';
-import back from '../../assets/onboarding/back.svg';
 import heart from '../../assets/onboarding/heart.svg';
 import clock from '../../assets/onboarding/clock.svg';
 import { useAppData } from '../../store/AppDataContext';
@@ -57,10 +56,6 @@ const AlarmTime = () => {
   return (
     <Page>
       <Content>
-        <BackButton onClick={() => navigate('/onboarding/complete/2', { state: { role } })}>
-          <BackIcon src={back} alt="뒤로가기" />
-        </BackButton>
-
         <Header>
           <Title>알림 시간 설정</Title>
         </Header>
@@ -115,9 +110,8 @@ const AlarmTime = () => {
               </CardHeader>
 
               <CardDescBox>
-                오늘 컨디션, 잠은 잘 잤는지, 밥은 잘 먹었는지
-                <br />
-                음성으로 물어봐요. 지병이 있다면 맞춤 질문도 나가요.
+                오늘의 컨디션, 수면, 식사까지,
+                간단한 질문에 답하며 하루의 건강을 기록해요.
               </CardDescBox>
 
               <TimeButton type="button" onClick={() => setTimeEditor('evening')}>
@@ -168,6 +162,7 @@ const AlarmTime = () => {
         <TimePickerModal
           title={timeEditor === 'morning' ? '아침 연결 질문 시간' : '저녁 건강 체크 시간'}
           value={timeEditor === 'morning' ? morningTime : eveningTime}
+          fixedPeriod={timeEditor === 'morning' ? '오전' : '오후'}
           onConfirm={(next) => {
             if (timeEditor === 'morning') setMorningTime(next);
             else setEveningTime(next);
@@ -200,27 +195,6 @@ const Content = styled.div`
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
-`;
-
-const BackButton = styled.button`
-  position: absolute;
-  top: 35px;
-  left: 24px;
-  z-index: 10;
-  width: 40px;
-  height: 40px;
-  border: none;
-  padding: 0;
-  background: transparent;
-  cursor: pointer;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-`;
-
-const BackIcon = styled.img`
-  width: 40px;
-  height: 40px;
 `;
 
 const Header = styled.div`

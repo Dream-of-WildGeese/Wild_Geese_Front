@@ -16,6 +16,17 @@ const formatDateLabel = (value) => {
   return `${year}년 ${month}월 ${day}일`;
 };
 
+// 💡 선택한 날짜가 과거인지 확인하는 헬퍼 함수
+const checkIsPastDate = (dateStr) => {
+  if (!dateStr) return false;
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const [y, m, d] = dateStr.split('-').map(Number);
+  const targetDate = new Date(y, m - 1, d);
+  return targetDate < today;
+};
+
 const HEALTH_CHECK_TYPES = [
   '일반검진',
   '암검진',
@@ -45,7 +56,6 @@ const AddHealthCheck = ({ onClose, onSuccess, editing = null }) => {
   const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
   const [hospital, setHospital] = useState(editing?.hospitalName ?? '');
 
-  // 💡 서버에서 내려준 reminderDaysBefore 값(기본값 3)으로 초기화
   const [reminderDays, setReminderDays] = useState(
     editing && editing.reminderDaysBefore !== undefined && editing.reminderDaysBefore !== null
       ? editing.reminderDaysBefore
@@ -54,6 +64,8 @@ const AddHealthCheck = ({ onClose, onSuccess, editing = null }) => {
 
   const { execute: addCheckup, loading: creating } = useApiAction(createCheckup);
   const { execute: editCheckup, loading: updating } = useApiAction(updateCheckup);
+
+  const isPast = checkIsPastDate(date);
 
   const handleTypeChange = (type) => {
     setCheckType(type);
@@ -87,12 +99,12 @@ const AddHealthCheck = ({ onClose, onSuccess, editing = null }) => {
     if (!date) return setMissing('날짜를 골라주세요');
     if (!hospital.trim()) return setMissing('병원 이름을 적어주세요');
 
-    // 💡 reminderDaysBefore 포함
+    // 💡 과거 날짜인 경우 알림을 0으로 안전하게 기본 세팅하여 전달
     const body = {
       checkupDate: date,
       checkupType: finalType,
       hospitalName: hospital.trim(),
-      reminderDaysBefore: Number(reminderDays),
+      reminderDaysBefore: isPast ? 0 : Number(reminderDays),
     };
 
     const { ok, error } = editing
@@ -211,23 +223,25 @@ const AddHealthCheck = ({ onClose, onSuccess, editing = null }) => {
             />
           </FormSection>
 
-          {/* 4. 알림 주기 선택 */}
-          <FormSection>
-            <Label>언제 알려드릴까요?</Label>
+          {/* 4. 알림 주기 선택 ( 과거 날짜가 아닐 때만 노출) */}
+          {!isPast && (
+            <FormSection>
+              <Label>언제 알려드릴까요?</Label>
 
-            <AlertWrap>
-              {ALERT_OPTIONS.map((option) => (
-                <AlertChip
-                  key={option.value}
-                  type="button"
-                  $active={reminderDays === option.value}
-                  onClick={() => setReminderDays(option.value)}
-                >
-                  {option.label}
-                </AlertChip>
-              ))}
-            </AlertWrap>
-          </FormSection>
+              <AlertWrap>
+                {ALERT_OPTIONS.map((option) => (
+                  <AlertChip
+                    key={option.value}
+                    type="button"
+                    $active={reminderDays === option.value}
+                    onClick={() => setReminderDays(option.value)}
+                  >
+                    {option.label}
+                  </AlertChip>
+                ))}
+              </AlertWrap>
+            </FormSection>
+          )}
 
           {/* 하단 저장 버튼 */}
           <SaveButton

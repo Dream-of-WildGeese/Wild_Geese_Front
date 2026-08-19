@@ -9,10 +9,7 @@ import {
   toMedicationView,
   sortTimeLabels,
   isDuplicateName,
-  dayLabelsToValues,
-  toTimeLabel,
-  includesTime,
-  ALL_DAY_VALUES,
+  DAY_OPTIONS,
 } from '../../utils/medication';
 import {
   PopupBackdrop,
@@ -21,6 +18,9 @@ import {
   PopupTitle,
   PopupPrimaryButton,
 } from '../../components/PopupShell';
+
+// '월/화/수...' 한글 라벨을 서버가 받는 요일 enum으로 바꾼다.
+const DAY_LABEL_TO_VALUE = Object.fromEntries(DAY_OPTIONS.map((d) => [d.label, d.value]));
 
 const AddMedication = () => {
   const navigate = useNavigate();
@@ -126,13 +126,11 @@ const AddMedication = () => {
       return;
     }
 
-    // '매일'을 골랐거나 아무 요일도 안 골랐으면 7일 모두로 본다.
-    // 예전에는 고른 요일('월' 같은 한 글자)을 그대로 넘겼는데, 요청을 만드는 쪽이
-    // 그 말을 못 알아들어서 무엇을 고르든 매일로 저장됐다.
-    const days =
-      repeat.includes('매일') || repeat.length === 0
-        ? ALL_DAY_VALUES
-        : dayLabelsToValues(repeat);
+    // '매일'을 골랐으면 전체 요일로, 특정 요일을 골랐으면 그 요일들만 서버에 보낸다.
+    // (예전엔 repeat[0]만 넘겨서 '월'만 골라도 매칭되는 게 없어 항상 매일로 저장됐다)
+    const days = repeat.includes('매일')
+      ? DAY_OPTIONS.map((d) => d.value)
+      : repeat.map((label) => DAY_LABEL_TO_VALUE[label]).filter(Boolean);
 
     const { ok, error } = await addMedication(
       toMedicationRequest({ name, times: sortTimeLabels(times), days }),

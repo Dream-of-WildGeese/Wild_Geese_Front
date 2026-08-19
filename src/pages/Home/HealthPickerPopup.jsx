@@ -1,7 +1,7 @@
 import styled from 'styled-components';
 import crossIcon from '../../assets/home/popup-cross.svg';
-import capsuleIcon from '../../assets/home/popup-capsule.png';
-import calendarIcon from '../../assets/home/popup-calendar.png';
+import capsuleIcon from '../../assets/home/popup-capsule.svg';
+import calendarIcon from '../../assets/home/popup-calendar.svg';
 import {
   PopupBackdrop,
   PopupCard,
@@ -18,22 +18,8 @@ import {
 //       내보낸 그림 파일에 투명 여백이 넉넉히 들어 있어서, object-fit으로 맞추면
 //       그 여백까지 계산돼 디자인보다 작게 보인다.
 const OPTIONS = [
-  {
-    type: 'medicine',
-    icon: capsuleIcon,
-    label: '복용약',
-    rowHeight: 105,
-    box: { width: 50, height: 55 },
-    crop: { left: 10.98, top: 11.1, width: 83.73, height: 73.72 },
-  },
-  {
-    type: 'checkup',
-    icon: calendarIcon,
-    label: '건강검진',
-    rowHeight: 93,
-    box: { width: 50, height: 48 },
-    crop: { left: -8.88, top: -6.15, width: 116.79, height: 120.53 },
-  },
+  { type: 'medicine', icon: capsuleIcon, size: 60, label: '복용약' },
+  { type: 'checkup', icon: calendarIcon, size: 60, label: '건강검진' },
 ];
 
 const CrossIcon = styled.img`
@@ -51,17 +37,29 @@ const OptionList = styled.div`
 
 const Option = styled.button`
   width: 100%;
-  height: ${({ $height }) => $height}px;
-  padding: 12px 14px;
+  min-height: 96px;
+  padding: 16px 14px 14px;
   box-sizing: border-box;
 
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
+  gap: 8px;
 
-  border-radius: 12px;
-  border: 1px solid #d8cbb8;
+  border-radius: 14px;
+  border: 1.2px solid #d8cbb8;
   background: #fffbf1;
+  cursor: pointer;
+  transition: transform 0.1s ease, background 0.15s ease;
+
+  &:hover {
+    background: #F9DFD8;
+  }
+
+  &:active {
+    transform: scale(0.98);
+  }
 `;
 
 const OptionInner = styled.span`
