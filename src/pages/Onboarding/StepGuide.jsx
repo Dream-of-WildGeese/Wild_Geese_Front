@@ -19,9 +19,8 @@ const StepGuide = () => {
         <Title>온담에 오신 걸 <br />진심으로 환영해요</Title>
 
         <Description>
-          가족과 함께, 매일의 건강을 다정하게 나눠보세요
-          <br />
-          아래 3가지만 하나씩 하면 준비 끝이에요
+          가족의 건강과 일상을 편하게 나눌 수 있도록<br/>
+          지금부터 온담을 함께 준비해볼까요?
         </Description>
 
         <StepList>
@@ -30,7 +29,7 @@ const StepGuide = () => {
                 <HeartIcon src={heart} alt="" />
                 <StepText>
                     <StepTitle>1단계. 가족 연결</StepTitle>
-                    <StepDescription>가족을 초대해서 연결해보세요</StepDescription>
+                    <StepDescription>가족을 초대하고 연결해보세요</StepDescription>
                 </StepText>
                 </Step>
                 <ArrowIcon src={arrow} alt="" />
@@ -41,7 +40,7 @@ const StepGuide = () => {
                 <HeartIcon src={heart} alt="" />
                 <StepText>
                     <StepTitle>2단계. 건강 프로필</StepTitle>
-                    <StepDescription>정보를 바탕으로 건강체크를 도와드려요</StepDescription>
+                    <StepDescription>입력한 정보를 바탕으로 건강을 챙겨드려요</StepDescription>
                 </StepText>
                 </Step>
                 <ArrowIcon src={arrow} alt="" />

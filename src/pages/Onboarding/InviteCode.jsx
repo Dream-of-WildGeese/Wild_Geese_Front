@@ -458,9 +458,9 @@ const CodeInput = styled.input`
   text-align: center;
 
   color: #4A3A2F;
-  font-family: "Noto Sans KR";
-  font-size: 18px;
-  font-weight: 400;
+  font-family: Jua;
+  font-size: 22px;
+  font-weight: 500;
 
   &::placeholder{
     color:#A79C8E;

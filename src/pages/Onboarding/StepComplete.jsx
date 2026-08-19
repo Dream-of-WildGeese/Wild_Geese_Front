@@ -34,19 +34,19 @@ const StepComplete = () => {
   },
   2: {
     badge: '2단계 완료 2/3',
-    title: '건강 프로필 설정 완료',
-    description: '알림 시간만 정하면 끝나요',
+    title: '건강 프로필 설정이 끝났어요',
+    description: '이제 알림 시간만 정하면 모든 준비가 끝나요',
     icon: completeFlower,
-    buttonText: '알림 시간 정하기',
+    buttonText: '알림 시간 설정하러 가기',
     next: '/onboarding/alarm',
     back: '/onboarding/health-set',
   },
   3: {
     badge: '3단계 완료 3/3',
     title: '준비가 끝났어요',
-    description: '이제 시작해요',
+    description: '온담과 함께 건강을 챙겨볼까요?',
     icon: completeFlower2,
-    buttonText: `온담 시작하기`,
+    buttonText: `시작하기`,
     next: '/home',
     back: '/onboarding/alarm',
   },
@@ -166,6 +166,9 @@ const StepBadge = styled.div`
   font-family: Jua;
   font-size: 20px;
   font-weight: 400;
+  line-height: 1;
+  padding-top: 2px;
+  
 `;
 
 const CompleteContent = styled.div`

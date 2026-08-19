@@ -38,35 +38,29 @@ const Intro = () => {
 
 
             <TextBox>
-              <FeatureTitle>아침엔 가벼운 질문으로 연결돼요</FeatureTitle>
+              <FeatureTitle>아침엔 가족과 가벼운 안부를 나눠요</FeatureTitle>
               <FeatureDescription>
-                같은 질문으로 가족이 하루를 시작해요
+                가족이 같은 질문에 답하며 하루를 시작해요
               </FeatureDescription>
             </TextBox>
           </Feature>
 
           <Feature>
-
-              <Icon src={moonIcon} alt="" $size={48} />
-
-
-            <TextBox>
-              <FeatureTitle>저녁엔 음성으로 건강을 체크해요</FeatureTitle>
-              <FeatureDescription>
-                컨디션, 수면, 식사를 짧게 물어봐요
-              </FeatureDescription>
-            </TextBox>
-          </Feature>
-
-          <Feature>
-
               <Icon src={medIcon} alt="" $size={48} />
-
-
             <TextBox>
-              <FeatureTitle>복용약 시간도 잊지 않게 챙겨요</FeatureTitle>
+              <FeatureTitle>약 먹을 시간도 잊지 않고 챙겨요</FeatureTitle>
               <FeatureDescription>
-                등록해두면 시간 맞춰 알림을 보내드려요
+                등록한 시간에 맞춰 알림을 보내드려요
+              </FeatureDescription>
+            </TextBox>
+          </Feature>
+          
+           <Feature>
+              <Icon src={moonIcon} alt="" $size={58} />
+            <TextBox>
+              <FeatureTitle>저녁엔 오늘의 건강을 돌아봐요</FeatureTitle>
+              <FeatureDescription>
+                컨디션, 수면, 식사 등을 간단히 기록해요
               </FeatureDescription>
             </TextBox>
           </Feature>

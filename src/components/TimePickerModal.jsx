@@ -123,9 +123,11 @@ const toValue = (period, hour12, minute) => {
   return `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
 };
 
-function TimePickerModal({ title = '시간 선택', value, onConfirm, onClose }) {
+// fixedPeriod를 주면(예: 아침 질문은 '오전', 저녁 체크는 '오후') 오전/오후 선택 자체를
+// 없애서 엉뚱한 시간대로 저장하는 걸 막는다.
+function TimePickerModal({ title = '시간 선택', value, fixedPeriod, onConfirm, onClose }) {
   const initial = parse(value);
-  const [period, setPeriod] = useState(initial.period);
+  const [period, setPeriod] = useState(fixedPeriod ?? initial.period);
   const [hour12, setHour12] = useState(initial.hour12);
   const [minute, setMinute] = useState(initial.minute);
 
@@ -145,19 +147,21 @@ function TimePickerModal({ title = '시간 선택', value, onConfirm, onClose })
             {period} {hour12}:{String(minute).padStart(2, '0')}
           </Preview>
 
-          <PeriodRow>
-            {['오전', '오후'].map((option) => (
-              <OptionButton
-                key={option}
-                type="button"
-                $tall
-                $active={period === option}
-                onClick={() => setPeriod(option)}
-              >
-                {option}
-              </OptionButton>
-            ))}
-          </PeriodRow>
+          {!fixedPeriod && (
+            <PeriodRow>
+              {['오전', '오후'].map((option) => (
+                <OptionButton
+                  key={option}
+                  type="button"
+                  $tall
+                  $active={period === option}
+                  onClick={() => setPeriod(option)}
+                >
+                  {option}
+                </OptionButton>
+              ))}
+            </PeriodRow>
+          )}
 
           <SectionLabel>시</SectionLabel>
           <OptionGrid>

@@ -115,9 +115,8 @@ const AlarmTime = () => {
               </CardHeader>
 
               <CardDescBox>
-                오늘 컨디션, 잠은 잘 잤는지, 밥은 잘 먹었는지
-                <br />
-                음성으로 물어봐요. 지병이 있다면 맞춤 질문도 나가요.
+                오늘의 컨디션, 수면, 식사까지,
+                간단한 질문에 답하며 하루의 건강을 기록해요.
               </CardDescBox>
 
               <TimeButton type="button" onClick={() => setTimeEditor('evening')}>
@@ -168,6 +167,7 @@ const AlarmTime = () => {
         <TimePickerModal
           title={timeEditor === 'morning' ? '아침 연결 질문 시간' : '저녁 건강 체크 시간'}
           value={timeEditor === 'morning' ? morningTime : eveningTime}
+          fixedPeriod={timeEditor === 'morning' ? '오전' : '오후'}
           onConfirm={(next) => {
             if (timeEditor === 'morning') setMorningTime(next);
             else setEveningTime(next);

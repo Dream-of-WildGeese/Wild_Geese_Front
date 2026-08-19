@@ -30,7 +30,7 @@ const UserType = () => {
         <Header>
           <Title>당신은 누구신가요?</Title>
           <Description>
-            부모님과 자녀 중 하나를 선택해주세요
+            부모와 자녀 중 하나를 선택해주세요
           </Description>
         </Header>
 

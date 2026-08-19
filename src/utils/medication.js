@@ -68,12 +68,24 @@ export const repeatToDays = (repeat) => {
   return ALL_DAYS;
 };
 
-export const daysToRepeat = (days) => {
-  const count = days?.length ?? 0;
-  if (count >= 7) return '매일';
-  if (count === 4) return '이틀에 한 번';
-  if (count === 3) return '주 3회';
-  return '필요할 때만';
+// 목록 화면에 보여줄 요일 표시. '주 3회' 같은 뭉뚱그린 문구 대신
+// 실제로 고른 요일을 그대로 보여준다(월,수,금 -> "월·수·금").
+const DAY_SHORT_LABEL = {
+  MONDAY: '월',
+  TUESDAY: '화',
+  WEDNESDAY: '수',
+  THURSDAY: '목',
+  FRIDAY: '금',
+  SATURDAY: '토',
+  SUNDAY: '일',
+};
+
+export const formatDays = (days) => {
+  if (!days?.length) return '요일 미정';
+  if (days.length >= 7) return '매일';
+  return ALL_DAYS.filter((day) => days.includes(day))
+    .map((day) => DAY_SHORT_LABEL[day])
+    .join('·');
 };
 
 // 서버의 MedicationResponse를 화면이 쓰는 { id, name, times, repeat } 형태로 바꾼다.
@@ -87,7 +99,7 @@ export const toMedicationView = (medication) => {
       .map((schedule) => schedule.scheduledTime)
       .sort((a, b) => String(a).localeCompare(String(b)))
       .map(timeToLabel),
-    repeat: daysToRepeat(schedules[0]?.daysOfWeek),
+    repeat: formatDays(schedules[0]?.daysOfWeek),
     days: schedules[0]?.daysOfWeek ?? [],
     schedules,
   };

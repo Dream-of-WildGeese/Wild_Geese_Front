@@ -1,7 +1,7 @@
 import styled from 'styled-components';
 import crossIcon from '../../assets/home/popup-cross.svg';
-import capsuleIcon from '../../assets/home/popup-capsule.png';
-import calendarIcon from '../../assets/home/popup-calendar.png';
+import capsuleIcon from '../../assets/home/popup-capsule.svg';
+import calendarIcon from '../../assets/home/popup-calendar.svg';
 import {
   PopupBackdrop,
   PopupCard,
@@ -12,8 +12,8 @@ import {
 
 // Figma 1472:808 — 홈 상단 초록 십자가를 누르면 뜨는 선택 팝업.
 const OPTIONS = [
-  { type: 'medicine', icon: capsuleIcon, size: 28, label: '복용약' },
-  { type: 'checkup', icon: calendarIcon, size: 30, label: '건강검진' },
+  { type: 'medicine', icon: capsuleIcon, size: 60, label: '복용약' },
+  { type: 'checkup', icon: calendarIcon, size: 60, label: '건강검진' },
 ];
 
 const CrossIcon = styled.img`
@@ -31,18 +31,29 @@ const OptionList = styled.div`
 
 const Option = styled.button`
   width: 100%;
-  height: 80px;
-  padding: 12px 14px;
+  min-height: 96px;
+  padding: 16px 14px 14px;
   box-sizing: border-box;
 
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 6px;
+  gap: 8px;
 
-  border-radius: 12px;
-  border: 1px solid #d8cbb8;
+  border-radius: 14px;
+  border: 1.2px solid #d8cbb8;
   background: #fffbf1;
+  cursor: pointer;
+  transition: transform 0.1s ease, background 0.15s ease;
+
+  &:hover {
+    background: #F9DFD8;
+  }
+
+  &:active {
+    transform: scale(0.98);
+  }
 `;
 
 const OptionIcon = styled.img`
@@ -55,7 +66,7 @@ const OptionIcon = styled.img`
 const OptionLabel = styled.span`
   color: #4a3a2f;
   font-family: 'Noto Sans KR';
-  font-size: 24px;
+  font-size: 18px;
   font-weight: 700;
   white-space: nowrap;
 `;
