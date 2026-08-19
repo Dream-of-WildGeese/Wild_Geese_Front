@@ -3,7 +3,6 @@ import { useNavigate, useLocation, useParams } from 'react-router-dom';
 import styled from 'styled-components';
 import closeIcon from '../../../assets/journal/close.png';
 import aiIcon from '../../../assets/journal/ai.png';
-import stepsIcon from '../../../assets/journal/steps.png';
 import sunIcon from '../../../assets/journal/sun.png';
 import pillIcon from '../../../assets/journal/pill.png';
 import exclaimIcon from '../../../assets/journal/exclaim.png';
@@ -13,12 +12,9 @@ import flowerB from '../../../assets/journal/flower-b.png';
 import medEmpty from '../../../assets/journal/med-empty.png';
 import mCondition from '../../../assets/journal/m-condition.png';
 import mSleep from '../../../assets/journal/m-sleep.png';
-import mMeal from '../../../assets/journal/m-meal.svg';
+import mMeal from '../../../assets/journal/m-meal.png';
 import mActivity from '../../../assets/journal/m-activity.png';
 import mBody from '../../../assets/journal/m-body.png';
-import faceGood from '../../../assets/evening/face-good.svg';
-import faceNormal from '../../../assets/evening/face-normal.svg';
-import faceBad from '../../../assets/evening/face-bad.svg';
 import { loadTodayReport } from './todayReportData';
 import { useApi } from '../../../hooks/useApi';
 import { useFamilyRelation } from '../../../hooks/useFamilyRelation';
@@ -43,9 +39,6 @@ const METRIC_ICONS = {
 };
 const ENTRY_ICONS = { question: sunIcon, medication: pillIcon, healthcheck: moonIcon };
 const ENTRY_TITLES = { question: '오늘의 질문', medication: '복약 체크', healthcheck: '건강 체크' };
-
-// 저녁 체크 1번(컨디션) 선택지는 3=좋았어요 … 1=힘들었어요 순으로 값이 클수록 좋다.
-const CONDITION_FACE = { 3: faceGood, 2: faceNormal, 1: faceBad };
 
 const Page = styled.div`
   position: relative;
@@ -170,23 +163,15 @@ const ChipValue = styled.span`
   font-weight: 700;
 `;
 
-// 컨디션 칩은 글자 대신 저녁 체크에서 고른 표정을 띄운다.
-const ChipFace = styled.img`
-  width: 38px;
-  height: 38px;
-  object-fit: contain;
-`;
-
 const InfoCard = styled.div`
   display: flex;
   align-items: center;
   gap: 12px;
   padding: 16px;
-  border-radius: ${({ $tone }) => ($tone === 'step' ? 14 : 18)}px;
+  border-radius: 18px;
 
-  border: 1.5px solid
-    ${({ $tone }) => ($tone === 'step' ? 'rgba(124, 154, 58, 0.7)' : 'rgba(143, 174, 74, 0.5)')};
-  background: ${({ $tone }) => ($tone === 'step' ? '#cbd879' : '#edf2d4')};
+  border: 1.5px solid rgba(143, 174, 74, 0.5);
+  background: #edf2d4;
 `;
 
 const InfoIcon = styled.img`
@@ -206,7 +191,7 @@ const InfoTextCol = styled.div`
 
 const InfoLabel = styled.p`
   margin: 0;
-  color: ${({ $tone }) => ($tone === 'step' ? '#3f5a1b' : '#5b7a2e')};
+  color: #5b7a2e;
   font-family: 'Noto Sans KR';
   font-size: 16px;
   font-weight: 700;
@@ -214,7 +199,7 @@ const InfoLabel = styled.p`
 
 const InfoText = styled.p`
   margin: 0;
-  color: ${({ $tone }) => ($tone === 'step' ? '#3f3320' : '#4a3a2f')};
+  color: #4a3a2f;
   font-family: 'Noto Sans KR';
   font-size: ${({ $small }) => ($small ? 13 : 16)}px;
   font-weight: 500;
@@ -395,20 +380,6 @@ const MiniBadgeIcon = styled.img`
   object-fit: contain;
 `;
 
-// 컨디션은 저녁 체크에서 고른 표정 하나만 크게 보여준다. 배지+문장을 같이 두면
-// 다른 지표들과 구분 없이 늘어서서 컨디션이 눈에 잘 안 들어왔다.
-const ConditionFaceRow = styled.div`
-  width: 100%;
-  display: flex;
-  justify-content: center;
-`;
-
-const ConditionFace = styled.img`
-  width: 56px;
-  height: 56px;
-  object-fit: contain;
-`;
-
 const SentenceText = styled.p`
   margin: 0;
   flex: 1;
@@ -499,26 +470,14 @@ function TodayReport() {
       );
     }
 
-    return entry.lines.map((line, index) => {
-      // 컨디션은 저녁 체크에서 고른 표정 하나만 크게 보여준다.
-      if (line.metricType === 'CONDITION') {
-        const face = CONDITION_FACE[Math.round(Number(line.choiceValue))] ?? faceNormal;
-        return (
-          <ConditionFaceRow key={`${line.metricType}-${index}`}>
-            <ConditionFace src={face} alt={line.text} />
-          </ConditionFaceRow>
-        );
-      }
-
-      return (
-        <SentenceLine key={`${line.metricType}-${index}`}>
-          <MiniBadge>
-            <MiniBadgeIcon src={METRIC_ICONS[line.metricType] ?? mBody} alt="" />
-          </MiniBadge>
-          <SentenceText>{line.text}</SentenceText>
-        </SentenceLine>
-      );
-    });
+    return entry.lines.map((line, index) => (
+      <SentenceLine key={`${line.metricType}-${index}`}>
+        <MiniBadge>
+          <MiniBadgeIcon src={METRIC_ICONS[line.metricType] ?? mBody} alt="" />
+        </MiniBadge>
+        <SentenceText>{line.text}</SentenceText>
+      </SentenceLine>
+    ));
   };
 
   return (
@@ -563,15 +522,7 @@ function TodayReport() {
             </SummaryChip>
             <SummaryChip>
               <ChipLabel>컨디션</ChipLabel>
-              {/* 저녁 체크 1번 답변을 표정으로 보여준다. 아직 안 했으면 '-' */}
-              {report.summary.conditionScore ? (
-                <ChipFace
-                  src={CONDITION_FACE[Math.round(report.summary.conditionScore)] ?? faceNormal}
-                  alt={report.summary.condition}
-                />
-              ) : (
-                <ChipValue>-</ChipValue>
-              )}
+              <ChipValue>{report.summary.condition}</ChipValue>
             </SummaryChip>
           </SummaryChips>
 
@@ -581,17 +532,6 @@ function TodayReport() {
               <InfoTextCol>
                 <InfoLabel>온담 한마디</InfoLabel>
                 <InfoText>{report.aiComment}</InfoText>
-              </InfoTextCol>
-            </InfoCard>
-          )}
-
-          {/* 걸음수는 헬스케어 연동이 없어 서버가 주지 않는다. 값이 생기면 노출된다. */}
-          {report.stepMessage && (
-            <InfoCard $tone="step">
-              <InfoIcon src={stepsIcon} alt="" />
-              <InfoTextCol>
-                <InfoLabel $tone="step">오늘의 걸음수</InfoLabel>
-                <InfoText $tone="step">{report.stepMessage}</InfoText>
               </InfoTextCol>
             </InfoCard>
           )}
