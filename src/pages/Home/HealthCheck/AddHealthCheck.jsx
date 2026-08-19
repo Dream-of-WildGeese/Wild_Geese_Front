@@ -3,7 +3,6 @@ import styled from 'styled-components';
 import DatePickerModal from '../../../components/DatePickerModal';
 import { useApiAction } from '../../../hooks/useApi';
 import { createCheckup, updateCheckup } from '../../../api/checkup';
-import { setCheckupAlert, getCheckupAlert } from '../../../utils/localSettings';
 import {
   PopupBackdrop,
   PopupCard,
@@ -26,11 +25,14 @@ const HEALTH_CHECK_TYPES = [
   '직접 입력',
 ];
 
-const ALERT_OPTIONS = ['3일 전', '1일 전', '알림 받지 않기'];
+// 백엔드 reminderDaysBefore 숫자와 UI 라벨 매핑
+const ALERT_OPTIONS = [
+  { label: '3일 전', value: 3 },
+  { label: '1일 전', value: 1 },
+  { label: '당일 알림', value: 0 },
+];
 
-// editing이 있으면 그 일정을 고치고, 없으면 새로 만든다.
 const AddHealthCheck = ({ onClose, onSuccess, editing = null }) => {
-  // 고치는 중이면 기존 값으로 시작한다. 목록에 없는 종류면 '직접 입력'으로 연다.
   const isCustomType = Boolean(editing) && !HEALTH_CHECK_TYPES.includes(editing.checkupType);
   const [checkType, setCheckType] = useState(
     editing ? (isCustomType ? '직접 입력' : editing.checkupType) : '',
@@ -42,8 +44,12 @@ const AddHealthCheck = ({ onClose, onSuccess, editing = null }) => {
   const [date, setDate] = useState(editing?.checkupDate ?? '');
   const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
   const [hospital, setHospital] = useState(editing?.hospitalName ?? '');
-  const [alertOption, setAlertOption] = useState(
-    (editing && getCheckupAlert(editing.checkupId)) || '3일 전',
+
+  // 💡 서버에서 내려준 reminderDaysBefore 값(기본값 3)으로 초기화
+  const [reminderDays, setReminderDays] = useState(
+    editing && editing.reminderDaysBefore !== undefined && editing.reminderDaysBefore !== null
+      ? editing.reminderDaysBefore
+      : 3,
   );
 
   const { execute: addCheckup, loading: creating } = useApiAction(createCheckup);
@@ -68,7 +74,6 @@ const AddHealthCheck = ({ onClose, onSuccess, editing = null }) => {
     setCustomTypes((prev) => prev.filter((item) => item !== target));
   };
 
-  // 못 채운 항목을 알려주는 팝업 ('검진 종류' 등) / 저장 실패 팝업
   const [missing, setMissing] = useState(null);
   const [saveError, setSaveError] = useState(null);
 
@@ -82,14 +87,15 @@ const AddHealthCheck = ({ onClose, onSuccess, editing = null }) => {
     if (!date) return setMissing('날짜를 골라주세요');
     if (!hospital.trim()) return setMissing('병원 이름을 적어주세요');
 
+    // 💡 reminderDaysBefore 포함
     const body = {
       checkupDate: date,
       checkupType: finalType,
       hospitalName: hospital.trim(),
+      reminderDaysBefore: Number(reminderDays),
     };
 
-    // 고치는 중이면 PATCH, 새로 만드는 중이면 POST
-    const { ok, data, error } = editing
+    const { ok, error } = editing
       ? await editCheckup(editing.checkupId, body)
       : await addCheckup(body);
 
@@ -97,11 +103,6 @@ const AddHealthCheck = ({ onClose, onSuccess, editing = null }) => {
       setSaveError(error);
       return;
     }
-
-    // 알림 시점은 서버 요청 본문에 자리가 없어서 이 기기에만 남긴다.
-    // POST 응답(ApiResponseLong)은 새 checkupId를 숫자로 그대로 돌려준다.
-    const savedId = editing ? editing.checkupId : data;
-    if (savedId != null) setCheckupAlert(savedId, alertOption);
 
     onSuccess?.();
   };
@@ -217,12 +218,12 @@ const AddHealthCheck = ({ onClose, onSuccess, editing = null }) => {
             <AlertWrap>
               {ALERT_OPTIONS.map((option) => (
                 <AlertChip
-                  key={option}
+                  key={option.value}
                   type="button"
-                  $active={alertOption === option}
-                  onClick={() => setAlertOption(option)}
+                  $active={reminderDays === option.value}
+                  onClick={() => setReminderDays(option.value)}
                 >
-                  {option}
+                  {option.label}
                 </AlertChip>
               ))}
             </AlertWrap>
@@ -251,7 +252,6 @@ const AddHealthCheck = ({ onClose, onSuccess, editing = null }) => {
         />
       )}
 
-      {/* 못 채운 항목 안내 / 저장 실패. 브라우저 기본 알림창은 폰 프레임 밖에 뜬다 */}
       {(missing || saveError) && (
         <PopupBackdrop
           onClick={() => {
@@ -284,7 +284,7 @@ const AddHealthCheck = ({ onClose, onSuccess, editing = null }) => {
 export default AddHealthCheck;
 
 /* =========================
-   Overlay
+   Styles
 ========================= */
 
 const NoticeText = styled.p`
@@ -302,32 +302,23 @@ const Overlay = styled.div`
   position: absolute;
   inset: 0;
   z-index: 9999;
-
   display: flex;
   align-items: center;
   justify-content: center;
-
   padding: 14px;
   box-sizing: border-box;
-
   background: rgba(38, 34, 30, 0.52);
 `;
-/* =========================
-   Modal & Inner Card
-========================= */
 
 const Modal = styled.div`
   width: 100%;
   max-width: 390px;
   max-height: calc(100% - 12px);
-
   padding: 8px;
   box-sizing: border-box;
-
   border-radius: 10px;
-border: 3px solid rgba(108, 67, 23, 0.70);
-background: #FEF3D5;
-
+  border: 3px solid rgba(108, 67, 23, 0.70);
+  background: #FEF3D5;
   box-shadow: 0 10px 40px rgba(74, 58, 47, 0.2);
   overflow: hidden;
   display: flex;
@@ -336,15 +327,11 @@ background: #FEF3D5;
 const ModalInner = styled.div`
   width: 100%;
   max-height: calc(100vh - 48px);
-
   padding: 20px 16px 18px;
   box-sizing: border-box;
-
   border-radius: 10px;
   border: 3px dashed rgba(108, 67, 23, 0.70);
-
   background: #FEF3D5;
-
   overflow-y: auto;
   display: flex;
   flex-direction: column;
@@ -358,22 +345,15 @@ const ModalInner = styled.div`
 const HeaderTitle = styled.h1`
   margin: 0 0 6px;
   color: #4A3A2F;
-text-align: center;
-font-family: "Noto Sans KR";
-font-size: 26px;
-font-style: normal;
-font-weight: 700;
-line-height: normal;
+  text-align: center;
+  font-family: "Noto Sans KR";
+  font-size: 26px;
+  font-weight: 700;
 `;
-
-/* =========================
-   Form Sections
-========================= */
 
 const FormSection = styled.div`
   padding: 16px 14px;
   box-sizing: border-box;
-
   border: 1.3px solid rgba(74, 58, 47, 0.35);
   border-radius: 18px;
   background: rgba(255, 255, 255, 0.55);
@@ -382,7 +362,7 @@ const FormSection = styled.div`
 const Label = styled.p`
   margin: 0 0 12px;
   color: #4A3A2F;
-font-family: "Noto Sans KR";
+  font-family: "Noto Sans KR";
   font-size: 15px;
   font-weight: 700;
 `;
@@ -397,17 +377,14 @@ const TypeChip = styled.button`
   height: 38px;
   padding: 0 16px;
   box-sizing: border-box;
-
   border-radius: 20px;
   border: 1.3px
     ${({ $active }) =>
       $active ? 'solid rgba(74, 58, 47, 0.65)' : 'dashed rgba(74, 58, 47, 0.4)'};
-
   background: ${({ $active }) =>
     $active ? '#DDD39A' : 'rgba(255, 255, 255, 0.8)'};
-
   color: #4A3A2F;
-font-family: "Noto Sans KR";
+  font-family: "Noto Sans KR";
   font-size: 13px;
   font-weight: 700;
   cursor: pointer;
@@ -445,11 +422,9 @@ const Input = styled.input`
   height: 46px;
   padding: 0 14px;
   box-sizing: border-box;
-
   border: 1.3px solid rgba(74, 58, 47, 0.35);
   border-radius: 14px;
   background: rgba(255, 255, 255, 0.85);
-
   color: #4A3A2F;
   font-family: 'Noto Sans KR', sans-serif;
   font-size: 14px;
@@ -469,18 +444,14 @@ const DateSelectButton = styled.button`
   height: 46px;
   padding: 0 14px;
   box-sizing: border-box;
-
   display: flex;
   align-items: center;
   justify-content: space-between;
-
   border: 1.3px solid rgba(74, 58, 47, 0.35);
   border-radius: 14px;
   background: rgba(255, 255, 255, 0.85);
-
   color: ${({ children }) =>
     String(children).includes('선택해주세요') ? '#A79C8E' : '#4A3A2F'};
-
   font-family: 'Noto Sans KR';
   font-size: 14px;
   cursor: pointer;
@@ -510,15 +481,12 @@ const AddTypeButton = styled.button`
   width: 44px;
   height: 44px;
   flex-shrink: 0;
-
   display: flex;
   align-items: center;
   justify-content: center;
-
   border-radius: 12px;
   border: 1.3px solid rgba(138, 123, 62, 0.9);
   background: #DDD39A;
-
   color: #4A3A2F;
   font-size: 24px;
   font-weight: 700;
@@ -533,10 +501,6 @@ const FieldHint = styled.p`
   line-height: 1.4;
 `;
 
-/* =========================
-   Alert Wrap
-========================= */
-
 const AlertWrap = styled.div`
   display: flex;
   gap: 8px;
@@ -546,15 +510,12 @@ const AlertChip = styled.button`
   flex: 1;
   height: 40px;
   padding: 0 4px;
-
   border: 1.3px
     ${({ $active }) =>
       $active ? 'solid rgba(74, 58, 47, 0.65)' : 'dashed rgba(74, 58, 47, 0.4)'};
-
   border-radius: 12px;
   background: ${({ $active }) =>
     $active ? '#DDD39A' : 'rgba(255, 255, 255, 0.8)'};
-
   color: #4A3A2F;
   font-family: 'Noto Sans KR';
   font-size: 13px;
@@ -563,25 +524,17 @@ const AlertChip = styled.button`
   transition: all 0.15s ease;
 `;
 
-/* =========================
-   Save Button
-========================= */
-
 const SaveButton = styled.button`
   width: 100%;
   height: 52px;
   margin-top: 6px;
-
   border-radius: 10px;
-border: 1.5px solid rgba(74, 58, 47, 0.55);
-background: #DBE4A1;
-
+  border: 1.5px solid rgba(74, 58, 47, 0.55);
+  background: #DBE4A1;
   color: #4A3A2F;
-font-family: Jua;
-font-size: 20px;
-font-style: normal;
-font-weight: 400;
-line-height: normal;
+  font-family: Jua;
+  font-size: 20px;
+  cursor: pointer;
 
   &:active {
     transform: translateY(1px);
