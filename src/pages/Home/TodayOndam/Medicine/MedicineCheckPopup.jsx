@@ -257,7 +257,7 @@ function MedicineCheckPopup({ onClose }) {
           <CompleteNote>{note}</CompleteNote>
 
           <PopupPrimaryButton type="button" onClick={() => setStep('edit')}>
-            기록 수정하기 ›
+            기록 수정하기
           </PopupPrimaryButton>
         </PopupCard>
       </PopupBackdrop>

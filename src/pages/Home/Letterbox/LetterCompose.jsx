@@ -4,7 +4,6 @@ import letterPaper from '../../../assets/letterbox/letter-paper.png';
 import ruledLines from '../../../assets/letterbox/ruled-lines.svg';
 import heartIcon from '../../../assets/letterbox/heart.svg';
 import micIcon from '../../../assets/letterbox/mic-small.png';
-import planeIcon from '../../../assets/letterbox/plane.png';
 import { transcribeVoiceLetter } from '../../../api/letter';
 import { useVoiceRecorder } from '../../../hooks/useVoiceRecorder';
 import {
@@ -145,7 +144,6 @@ function LetterCompose({ onBack, onSend, sending, recipientName }) {
         disabled={!message.trim() || sending}
         onClick={() => onSend(message.trim(), audioUrl)}
       >
-        <PopupIcon $size={30} src={planeIcon} alt="" />
         {sending ? '보내는 중...' : '편지 보내기'}
       </PopupPrimaryButton>
     </PopupCard>

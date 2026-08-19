@@ -19,48 +19,16 @@ import {
   PopupTitle,
   PopupPrimaryButton,
 } from '../../../components/PopupShell';
-
-const Page = styled.div`
-  position: relative;
-  width: 100%;
-  height: 100%;
-  overflow-y: auto;
-  background: #FFF8ED;
-
-  &::-webkit-scrollbar {
-    display: none;
-  }
-`;
-
-const Content = styled.div`
-  padding: 16px 20px 30px;
-`;
-
-const Header = styled.div`
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding-bottom: 12px;
-  border-bottom: 1.3px solid rgba(74,58,47,.25);
-`;
-
-const BackButton = styled.button`
-  width: 20px;
-  font-size: 22px;
-  color: #000;
-  line-height: 1;
-`;
-
-const Title = styled.p`
-  margin: 0;
-  font-size: 18px;
-  font-weight: 500;
-  color: #000;
-`;
-
-const HeaderSpacer = styled.div`
-  width: 20px;
-`;
+import {
+  PageFrame,
+  PageContent,
+  PageBack,
+  PageHeader,
+  PageTitle,
+  PageDivider,
+  PageScrollArea,
+  PageFooter,
+} from '../../../components/PageShell';
 
 const Label = styled.p`
   margin: 20px 0 6px;
@@ -168,10 +136,11 @@ const BlockedText = styled.p`
   line-height: 1.5;
 `;
 
+// 저장하기만 화면 아래에 고정한다. 삭제는 되돌릴 수 없어서 목록 끝까지
+// 내려야 닿도록 스크롤 영역 안에 남겨둔다.
 const SaveButton = styled.button`
   width: 100%;
   height: 54px;
-  margin-top: 28px;
   border-radius: 14px;
   background: #DBE4A1;
   color: #fff;
@@ -182,7 +151,7 @@ const SaveButton = styled.button`
 const DeleteButton = styled.button`
   width: 100%;
   height: 50px;
-  margin-top: 12px;
+  margin-top: 28px;
   border-radius: 12px;
   border: 1.3px solid rgba(74,58,47,.4);
   color: #cc4d4d;
@@ -228,28 +197,26 @@ function MedicineEdit() {
 
   if (loading) {
     return (
-      <Page>
-        <Content>
+      <PageFrame>
+        <PageContent>
           <Label>불러오는 중이에요...</Label>
-        </Content>
-      </Page>
+        </PageContent>
+      </PageFrame>
     );
   }
 
   if (!medication) {
     return (
-      <Page>
-        <Content>
-          <Header>
-            <BackButton type="button" onClick={() => navigate('/home/medicine')}>
-              ‹
-            </BackButton>
-            <Title>약 정보 수정</Title>
-            <HeaderSpacer />
-          </Header>
+      <PageFrame>
+        <PageContent>
+          <PageBack onClick={() => navigate('/home/medicine')} />
+          <PageHeader>
+            <PageTitle>약 정보 수정</PageTitle>
+          </PageHeader>
+          <PageDivider />
           <Label>이미 삭제된 약이에요.</Label>
-        </Content>
-      </Page>
+        </PageContent>
+      </PageFrame>
     );
   }
 
@@ -311,88 +278,91 @@ function MedicineEdit() {
   };
 
   return (
-    <Page>
-      <Content>
-        <Header>
-          <BackButton type="button" aria-label="뒤로가기" onClick={() => navigate('/home/medicine')}>
-            ‹
-          </BackButton>
-          <Title>약 정보 수정</Title>
-          <HeaderSpacer />
-        </Header>
+    <PageFrame>
+      <PageContent>
+        <PageBack onClick={() => navigate('/home/medicine')} />
+        <PageHeader>
+          <PageTitle>약 정보 수정</PageTitle>
+        </PageHeader>
+        <PageDivider />
 
-        <Label>약 이름</Label>
-        <Input value={name} onChange={(e) => setName(e.target.value)} />
+        <PageScrollArea>
+          <Label>약 이름</Label>
+          <Input value={name} onChange={(e) => setName(e.target.value)} />
 
-        <Label>복용 시간을 골라주세요 (여러 개 가능)</Label>
-        <ChipRow>
-          {[...new Set([...PRESET_TIMES, ...times])].map((time) => (
-            <Chip key={time} type="button" $active={times.includes(time)} onClick={() => toggleTime(time)}>
-              {time}
-            </Chip>
-          ))}
-        </ChipRow>
-
-        <Label>직접 시간 정하기</Label>
-        <CustomTimeRow>
-          <Select value={period} onChange={(e) => setPeriod(e.target.value)}>
-            <option value="오전">오전</option>
-            <option value="오후">오후</option>
-          </Select>
-          <Select value={hour} onChange={(e) => setHour(e.target.value)}>
-            <option value="">시</option>
-            {Array.from({ length: 12 }, (_, i) => i + 1).map((h) => (
-              <option key={h} value={h}>
-                {h}
-              </option>
+          <Label>복용 시간을 골라주세요 (여러 개 가능)</Label>
+          <ChipRow>
+            {[...new Set([...PRESET_TIMES, ...times])].map((time) => (
+              <Chip key={time} type="button" $active={times.includes(time)} onClick={() => toggleTime(time)}>
+                {time}
+              </Chip>
             ))}
-          </Select>
-          <Select value={minute} onChange={(e) => setMinute(e.target.value)}>
-            <option value="">분</option>
-            {['00', '10', '20', '30', '40', '50'].map((m) => (
-              <option key={m} value={m}>
-                {m}
-              </option>
+          </ChipRow>
+
+          <Label>직접 시간 정하기</Label>
+          <CustomTimeRow>
+            <Select value={period} onChange={(e) => setPeriod(e.target.value)}>
+              <option value="오전">오전</option>
+              <option value="오후">오후</option>
+            </Select>
+            <Select value={hour} onChange={(e) => setHour(e.target.value)}>
+              <option value="">시</option>
+              {Array.from({ length: 12 }, (_, i) => i + 1).map((h) => (
+                <option key={h} value={h}>
+                  {h}
+                </option>
+              ))}
+            </Select>
+            <Select value={minute} onChange={(e) => setMinute(e.target.value)}>
+              <option value="">분</option>
+              {['00', '10', '20', '30', '40', '50'].map((m) => (
+                <option key={m} value={m}>
+                  {m}
+                </option>
+              ))}
+            </Select>
+            <AddTimeButton type="button" onClick={handleAddManualTime}>
+              +
+            </AddTimeButton>
+          </CustomTimeRow>
+
+          <Label>무슨 요일에 드시나요?</Label>
+          <DailyToggle
+            type="button"
+            $on={isEveryDay(days)}
+            onClick={() => setDays(isEveryDay(days) ? [] : ALL_DAY_VALUES)}
+          >
+            매일 먹어요
+          </DailyToggle>
+          <DayRow>
+            {DAY_OPTIONS.map((day) => (
+              <DayChip
+                key={day.value}
+                type="button"
+                $on={days.includes(day.value)}
+                onClick={() => toggleDay(day.value)}
+              >
+                {day.label}
+              </DayChip>
             ))}
-          </Select>
-          <AddTimeButton type="button" onClick={handleAddManualTime}>
-            +
-          </AddTimeButton>
-        </CustomTimeRow>
+          </DayRow>
+          {days.length === 0 && <HelpText>드시는 요일을 하나 이상 골라주세요.</HelpText>}
 
-        <Label>무슨 요일에 드시나요?</Label>
-        <DailyToggle
-          type="button"
-          $on={isEveryDay(days)}
-          onClick={() => setDays(isEveryDay(days) ? [] : ALL_DAY_VALUES)}
-        >
-          매일 먹어요
-        </DailyToggle>
-        <DayRow>
-          {DAY_OPTIONS.map((day) => (
-            <DayChip
-              key={day.value}
-              type="button"
-              $on={days.includes(day.value)}
-              onClick={() => toggleDay(day.value)}
-            >
-              {day.label}
-            </DayChip>
-          ))}
-        </DayRow>
-        {days.length === 0 && <HelpText>드시는 요일을 하나 이상 골라주세요.</HelpText>}
+          <DeleteButton type="button" onClick={handleDelete}>
+            삭제하기
+          </DeleteButton>
+        </PageScrollArea>
 
-        <SaveButton
-          type="button"
-          onClick={handleSave}
-          disabled={!name.trim() || times.length === 0 || days.length === 0}
-        >
-          저장하기
-        </SaveButton>
-        <DeleteButton type="button" onClick={handleDelete}>
-          삭제하기
-        </DeleteButton>
-      </Content>
+        <PageFooter>
+          <SaveButton
+            type="button"
+            onClick={handleSave}
+            disabled={!name.trim() || times.length === 0 || days.length === 0}
+          >
+            저장하기
+          </SaveButton>
+        </PageFooter>
+      </PageContent>
 
       {missing && (
         <PopupBackdrop onClick={() => setMissing(null)}>
@@ -427,7 +397,7 @@ function MedicineEdit() {
           </PopupCard>
         </PopupBackdrop>
       )}
-    </Page>
+    </PageFrame>
   );
 }
 

@@ -1,7 +1,6 @@
 import styled from 'styled-components';
 import envelopeBox from '../../../assets/letterbox/envelope-box.svg';
 import avatarChild from '../../../assets/letterbox/avatar-child.png';
-import pencilBtn from '../../../assets/letterbox/pencil-btn.svg';
 import {
   PopupCard,
   PopupInnerBorder,
@@ -174,7 +173,6 @@ function LetterboxList({ letters, onSelectLetter, onWrite, onClose }) {
       </MessageList>
 
       <PopupPrimaryButton type="button" onClick={onWrite}>
-        <PopupIcon $size={30} src={pencilBtn} alt="" />
         편지쓰기
       </PopupPrimaryButton>
     </PopupCard>

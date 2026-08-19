@@ -4,65 +4,23 @@ import { getMedications, deleteMedication } from '../../../api/medication';
 import { useApi, useApiAction } from '../../../hooks/useApi';
 import { toMedicationView } from '../../../utils/medication';
 import { loadTodayMedications, flattenAll } from '../TodayOndam/Medicine/medicationData';
-import backIcon from '../../../assets/settings/back-icon.png';
 import pillIcon from '../../../assets/medicine/pill.png';
 import trashIcon from '../../../assets/medicine/trash.png';
 import vineFlowerIcon from '../../../assets/medicine/vine-flower.png';
+import {
+  PageFrame,
+  PageContent,
+  PageBack,
+  PageHeader,
+  PageTitle,
+  PageDivider,
+  PageScrollArea,
+  PageFooter,
+} from '../../../components/PageShell';
 
 // Figma 25_ver02: '내 복용약'. 오늘 몇 개를 챙겼는지 덩굴+꽃으로 보여주고,
 // 카드 안의 '수정' 글자 버튼은 없애고 카드 전체를 눌러 수정 화면으로 들어가게 했다.
 const SLOT_ORDER = ['아침', '점심', '저녁'];
-
-const Page = styled.div`
-  position: relative;
-  width: 100%;
-  height: 100%;
-  overflow-y: auto;
-  background: #fff8ed;
-
-  &::-webkit-scrollbar {
-    display: none;
-  }
-`;
-
-const Content = styled.div`
-  padding: 20px 20px 30px;
-`;
-
-const Header = styled.div`
-  display: flex;
-  align-items: center;
-`;
-
-const BackButton = styled.button`
-  width: 40px;
-  height: 40px;
-  flex-shrink: 0;
-
-  img {
-    width: 100%;
-    height: 100%;
-    object-fit: contain;
-  }
-`;
-
-const Title = styled.p`
-  flex: 1;
-  margin: 0;
-  text-align: center;
-  color: #4a3a2f;
-  font-family: Jua;
-  font-size: 32px;
-`;
-
-const HeaderSpacer = styled.div`
-  width: 40px;
-`;
-
-const TitleDivider = styled.div`
-  margin: 16px 0 20px;
-  border-top: 2px dashed rgba(74, 58, 47, 0.3);
-`;
 
 const ProgressBlock = styled.div`
   display: flex;
@@ -230,10 +188,10 @@ const EmptyState = styled.p`
   font-size: 14px;
 `;
 
+// 목록이 길어져도 늘 보이도록 화면 아래에 고정한다(PageFooter 안).
 const AddButton = styled.button`
   width: 100%;
   height: 56px;
-  margin-top: 22px;
   border-radius: 16px;
   border: 1.5px solid rgba(74, 58, 47, 0.55);
   background: #dbe4a1;
@@ -269,87 +227,89 @@ function MedicineList() {
   };
 
   return (
-    <Page>
-      <Content>
-        <Header>
-          <BackButton type="button" aria-label="뒤로가기" onClick={() => navigate('/home')}>
-            <img src={backIcon} alt="" />
-          </BackButton>
-          <Title>내 복용약</Title>
-          <HeaderSpacer />
-        </Header>
-        <TitleDivider />
+    <PageFrame>
+      <PageContent>
+        <PageBack onClick={() => navigate('/home')} />
+        <PageHeader>
+          <PageTitle>내 복용약</PageTitle>
+        </PageHeader>
+        <PageDivider />
 
-        {totalToday > 0 && (
-          <>
-            <ProgressBlock>
-              <ProgressText>
-                오늘 <ProgressHighlight>{takenToday}/{totalToday}</ProgressHighlight> 챙기셨어요
-              </ProgressText>
-              <ProgressSub>
-                {takenToday >= totalToday ? '오늘 약을 모두 챙기셨어요!' : `아직 ${nextSlot}약이 남았어요!`}
-              </ProgressSub>
-            </ProgressBlock>
+        <PageScrollArea>
+          {totalToday > 0 && (
+            <>
+              <ProgressBlock>
+                <ProgressText>
+                  오늘 <ProgressHighlight>{takenToday}/{totalToday}</ProgressHighlight> 챙기셨어요
+                </ProgressText>
+                <ProgressSub>
+                  {takenToday >= totalToday ? '오늘 약을 모두 챙기셨어요!' : `아직 ${nextSlot}약이 남았어요!`}
+                </ProgressSub>
+              </ProgressBlock>
 
-            <VineWrap>
-              <VineStem />
-              <FlowerRow>
-                {Array.from({ length: takenToday }).map((_, index) => (
-                  <FlowerImg
-                    key={index}
-                    src={vineFlowerIcon}
-                    alt=""
-                    style={{ left: `${((index + 1) / (totalToday + 1)) * 100}%` }}
-                  />
-                ))}
-              </FlowerRow>
-            </VineWrap>
-          </>
-        )}
-
-        {loading ? (
-          <EmptyState>불러오는 중이에요...</EmptyState>
-        ) : error ? (
-          <EmptyState>{error.message}</EmptyState>
-        ) : medications.length === 0 ? (
-          <EmptyState>등록된 약이 아직 없어요. 아래에서 추가해보세요.</EmptyState>
-        ) : (
-          <MedList>
-            {medications.map((med) => (
-              <MedCard
-                key={med.id}
-                type="button"
-                onClick={() => navigate(`/home/medicine/${med.id}`)}
-              >
-                <DeleteButton
-                  type="button"
-                  aria-label={`${med.name} 삭제`}
-                  onClick={(event) => handleDelete(event, med.id)}
-                >
-                  <img src={trashIcon} alt="" />
-                </DeleteButton>
-
-                <MedRow>
-                  <PillIcon src={pillIcon} alt="" />
-                  <MedName>{med.name}</MedName>
-                </MedRow>
-                <ChipRow>
-                  {/* 설정한 반복 주기를 먼저 보여주고, 그 뒤에 복용 시간을 늘어놓는다 */}
-                  <RepeatChip $daily={med.repeat === '매일'}>{med.repeat}</RepeatChip>
-                  {med.times.map((time) => (
-                    <TimeChip key={time}>{time}</TimeChip>
+              <VineWrap>
+                <VineStem />
+                <FlowerRow>
+                  {Array.from({ length: takenToday }).map((_, index) => (
+                    <FlowerImg
+                      key={index}
+                      src={vineFlowerIcon}
+                      alt=""
+                      style={{ left: `${((index + 1) / (totalToday + 1)) * 100}%` }}
+                    />
                   ))}
-                </ChipRow>
-              </MedCard>
-            ))}
-          </MedList>
-        )}
+                </FlowerRow>
+              </VineWrap>
+            </>
+          )}
 
-        <AddButton type="button" onClick={() => navigate('/onboarding/medication/add')}>
-          + 새 약 추가하기
-        </AddButton>
-      </Content>
-    </Page>
+          {loading ? (
+            <EmptyState>불러오는 중이에요...</EmptyState>
+          ) : error ? (
+            <EmptyState>{error.message}</EmptyState>
+          ) : medications.length === 0 ? (
+            <EmptyState>등록된 약이 아직 없어요. 아래에서 추가해보세요.</EmptyState>
+          ) : (
+            <MedList>
+              {medications.map((med) => (
+                <MedCard
+                  key={med.id}
+                  type="button"
+                  onClick={() => navigate(`/home/medicine/${med.id}`)}
+                >
+                  <DeleteButton
+                    type="button"
+                    aria-label={`${med.name} 삭제`}
+                    onClick={(event) => handleDelete(event, med.id)}
+                  >
+                    <img src={trashIcon} alt="" />
+                  </DeleteButton>
+
+                  <MedRow>
+                    <PillIcon src={pillIcon} alt="" />
+                    <MedName>{med.name}</MedName>
+                  </MedRow>
+                  <ChipRow>
+                    {/* 설정한 반복 주기를 먼저 보여주고, 그 뒤에 복용 시간을 늘어놓는다 */}
+                    <RepeatChip $daily={med.repeat === '매일'}>{med.repeat}</RepeatChip>
+                    {med.times.map((time) => (
+                      <TimeChip key={time}>{time}</TimeChip>
+                    ))}
+                  </ChipRow>
+                </MedCard>
+              ))}
+            </MedList>
+          )}
+
+        </PageScrollArea>
+
+        <PageFooter>
+          <AddButton type="button" onClick={() => navigate('/onboarding/medication/add')}>
+            + 새 약 추가하기
+          </AddButton>
+        </PageFooter>
+      </PageContent>
+    </PageFrame>
   );
 }
 

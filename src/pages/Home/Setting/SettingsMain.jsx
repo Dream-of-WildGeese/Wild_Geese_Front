@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
-import backIcon from '../../../assets/settings/back-icon.png';
 import { useAppData } from '../../../store/AppDataContext';
 import { clearUserId } from '../../../api/client/userId';
 import {
@@ -27,59 +26,16 @@ import {
   PopupTitle,
   PopupPrimaryButton,
 } from '../../../components/PopupShell';
+import {
+  PageFrame,
+  PageContent,
+  PageBack,
+  PageHeader,
+  PageTitle,
+  PageDivider,
+  PageScrollArea,
+} from '../../../components/PageShell';
 
-
-const Page = styled.div`
-  position: relative;
-  width: 100%;
-  height: 100%;
-  overflow-y: auto;
-  background: #FFF8ED;
-
-  &::-webkit-scrollbar {
-    display: none;
-  }
-`;
-
-const Content = styled.div`
-  padding: 20px 20px 30px;
-`;
-
-const Header = styled.div`
-  display: flex;
-  align-items: center;
-`;
-
-const BackButton = styled.button`
-  width: 40px;
-  height: 40px;
-  flex-shrink: 0;
-
-  img {
-    width: 100%;
-    height: 100%;
-    object-fit: contain;
-  }
-`;
-
-const Title = styled.p`
-  flex: 1;
-  margin: 0;
-  text-align: center;
-  color: #4a3a2f;
-  font-family: Jua;
-  font-size: 32px;
-`;
-
-const HeaderSpacer = styled.div`
-  width: 40px;
-`;
-
-const TitleDivider = styled.div`
-  height: 0;
-  margin: 16px 0 20px;
-  border-top: 2px dashed rgba(74, 58, 47, 0.4);
-`;
 
 const SectionLabel = styled.p`
   margin: 0 0 8px;
@@ -336,114 +292,113 @@ function SettingsMain() {
   };
 
   return (
-    <Page>
-      <Content>
-        <Header>
-          <BackButton type="button" aria-label="뒤로가기" onClick={() => navigate('/home')}>
-            <img src={backIcon} alt="" />
-          </BackButton>
-          <Title>설정</Title>
-          <HeaderSpacer />
-        </Header>
-        <TitleDivider />
+    <PageFrame>
+      <PageContent>
+        <PageBack onClick={() => navigate('/home')} />
+        <PageHeader>
+          <PageTitle>설정</PageTitle>
+        </PageHeader>
+        <PageDivider />
 
-        <SectionLabel>내 정보</SectionLabel>
-        <Card>
-          <Row>
-            <RowLabel>이름</RowLabel>
-            <RowValue>{me?.name || data.profile.name || '이름을 등록해주세요'}</RowValue>
-          </Row>
-          <RowDivider />
-          <Row>
-            <RowLabel>역할</RowLabel>
-            <RowValue>{ROLE_LABEL[data.profile.role] || '미설정'}</RowValue>
-          </Row>
-          <RowDivider />
-          <ClickableRow type="button" onClick={() => navigate('/home/settings/profile')}>
-            <RowLabel>프로필 수정하기</RowLabel>
-            <Chevron>›</Chevron>
-          </ClickableRow>
-        </Card>
+        <PageScrollArea>
+          <SectionLabel>내 정보</SectionLabel>
+          <Card>
+            <Row>
+              <RowLabel>이름</RowLabel>
+              <RowValue>{me?.name || data.profile.name || '이름을 등록해주세요'}</RowValue>
+            </Row>
+            <RowDivider />
+            <Row>
+              <RowLabel>역할</RowLabel>
+              <RowValue>{ROLE_LABEL[data.profile.role] || '미설정'}</RowValue>
+            </Row>
+            <RowDivider />
+            <ClickableRow type="button" onClick={() => navigate('/home/settings/profile')}>
+              <RowLabel>프로필 수정하기</RowLabel>
+              <Chevron>›</Chevron>
+            </ClickableRow>
+          </Card>
 
-        <SectionLabel>알림 시간</SectionLabel>
-        <Card>
-          <ClickableRow
-            type="button"
-            disabled={!setting}
-            onClick={() => setTimeEditor('morningTime')}
-          >
-            <RowLabel>아침 연결 질문</RowLabel>
-            <RowValue>{setting ? formatAlarmTime(setting.morningTime) : '불러오는 중...'}</RowValue>
-          </ClickableRow>
-          <RowDivider />
-          <ClickableRow
-            type="button"
-            disabled={!setting}
-            onClick={() => setTimeEditor('eveningTime')}
-          >
-            <RowLabel>저녁 건강 체크</RowLabel>
-            <RowValue>{setting ? formatAlarmTime(setting.eveningTime) : '불러오는 중...'}</RowValue>
-          </ClickableRow>
-        </Card>
-
-        <SectionLabel>푸시 알림</SectionLabel>
-        <Card>
-          {NOTIFICATION_ROWS.map((row, index) => (
-            <div key={row.key}>
-              {index > 0 && <RowDivider />}
-              <ToggleRow>
-                <RowLabel>{row.label}</RowLabel>
-                <ToggleTrack
-                  type="button"
-                  $on={Boolean(setting?.[row.key])}
-                  onClick={() => handleToggle(row.key)}
-                  aria-pressed={Boolean(setting?.[row.key])}
-                  disabled={!setting}
-                >
-                  <ToggleThumb $on={Boolean(setting?.[row.key])} />
-                </ToggleTrack>
-              </ToggleRow>
-            </div>
-          ))}
-
-          <RowDivider />
-          {/* 서버 알림 설정에 편지 항목이 없어서 이 토글만 기기에 저장된다 */}
-          <ToggleRow>
-            <RowLabel>우편 보기</RowLabel>
-            <ToggleTrack
+          <SectionLabel>알림 시간</SectionLabel>
+          <Card>
+            <ClickableRow
               type="button"
-              $on={showMailbox}
-              onClick={toggleMailbox}
-              aria-pressed={showMailbox}
+              disabled={!setting}
+              onClick={() => setTimeEditor('morningTime')}
             >
-              <ToggleThumb $on={showMailbox} />
-            </ToggleTrack>
-          </ToggleRow>
+              <RowLabel>아침 연결 질문</RowLabel>
+              <RowValue>{setting ? formatAlarmTime(setting.morningTime) : '불러오는 중...'}</RowValue>
+            </ClickableRow>
+            <RowDivider />
+            <ClickableRow
+              type="button"
+              disabled={!setting}
+              onClick={() => setTimeEditor('eveningTime')}
+            >
+              <RowLabel>저녁 건강 체크</RowLabel>
+              <RowValue>{setting ? formatAlarmTime(setting.eveningTime) : '불러오는 중...'}</RowValue>
+            </ClickableRow>
+          </Card>
 
-          <RowDivider />
-          <ClickableRow type="button" onClick={() => setPopup('notifications')}>
-            <RowLabel>받은 알림 보기</RowLabel>
-            <Chevron>›</Chevron>
-          </ClickableRow>
-        </Card>
+          <SectionLabel>푸시 알림</SectionLabel>
+          <Card>
+            {NOTIFICATION_ROWS.map((row, index) => (
+              <div key={row.key}>
+                {index > 0 && <RowDivider />}
+                <ToggleRow>
+                  <RowLabel>{row.label}</RowLabel>
+                  <ToggleTrack
+                    type="button"
+                    $on={Boolean(setting?.[row.key])}
+                    onClick={() => handleToggle(row.key)}
+                    aria-pressed={Boolean(setting?.[row.key])}
+                    disabled={!setting}
+                  >
+                    <ToggleThumb $on={Boolean(setting?.[row.key])} />
+                  </ToggleTrack>
+                </ToggleRow>
+              </div>
+            ))}
 
-        <SectionLabel>가족 연결</SectionLabel>
-        <Card>
-          <Row>
-            <RowLabel>연결된 가족</RowLabel>
-            {/* 가족 구성원 조회는 userId와 email만 내려줘서 이름 대신 email을 보여준다 */}
-            <RowValue>{partner ? partner.email : '아직 연결된 가족이 없어요'}</RowValue>
-          </Row>
-        </Card>
+            <RowDivider />
+            {/* 서버 알림 설정에 편지 항목이 없어서 이 토글만 기기에 저장된다 */}
+            <ToggleRow>
+              <RowLabel>우편 보기</RowLabel>
+              <ToggleTrack
+                type="button"
+                $on={showMailbox}
+                onClick={toggleMailbox}
+                aria-pressed={showMailbox}
+              >
+                <ToggleThumb $on={showMailbox} />
+              </ToggleTrack>
+            </ToggleRow>
 
-        <SectionLabel>계정</SectionLabel>
-        <AccountButton type="button" onClick={() => setPopup('logout')}>
-          로그아웃
-        </AccountButton>
-        <AccountButton type="button" $tone="withdraw" onClick={() => setPopup('withdraw')}>
-          탈퇴하기
-        </AccountButton>
-      </Content>
+            <RowDivider />
+            <ClickableRow type="button" onClick={() => setPopup('notifications')}>
+              <RowLabel>받은 알림 보기</RowLabel>
+              <Chevron>›</Chevron>
+            </ClickableRow>
+          </Card>
+
+          <SectionLabel>가족 연결</SectionLabel>
+          <Card>
+            <Row>
+              <RowLabel>연결된 가족</RowLabel>
+              {/* 가족 구성원 조회는 userId와 email만 내려줘서 이름 대신 email을 보여준다 */}
+              <RowValue>{partner ? partner.email : '아직 연결된 가족이 없어요'}</RowValue>
+            </Row>
+          </Card>
+
+          <SectionLabel>계정</SectionLabel>
+          <AccountButton type="button" onClick={() => setPopup('logout')}>
+            로그아웃
+          </AccountButton>
+          <AccountButton type="button" $tone="withdraw" onClick={() => setPopup('withdraw')}>
+            탈퇴하기
+          </AccountButton>
+        </PageScrollArea>
+      </PageContent>
 
       {popup === 'notifications' && <NotificationListPopup onClose={() => setPopup(null)} />}
       {(popup === 'logout' || popup === 'withdraw') && (
@@ -478,7 +433,7 @@ function SettingsMain() {
           </PopupCard>
         </PopupBackdrop>
       )}
-    </Page>
+    </PageFrame>
   );
 }
 

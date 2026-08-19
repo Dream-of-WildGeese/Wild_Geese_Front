@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { useNavigate, useLocation, useParams } from 'react-router-dom';
 import styled from 'styled-components';
-import closeIcon from '../../../assets/journal/close.png';
 import aiIcon from '../../../assets/journal/ai.png';
 import sunIcon from '../../../assets/journal/sun.png';
 import pillIcon from '../../../assets/journal/pill.png';
@@ -28,6 +27,16 @@ import EveningCheckPopup from '../TodayOndam/Night/EveningCheckPopup';
 import PhoneNumberPopup from '../../../components/PhoneNumberPopup';
 import { callPhone, getFamilyPhone } from '../../../utils/call';
 import { toDateString } from '../../../utils/medication';
+import {
+  PageFrame,
+  PageContent,
+  PageBack,
+  PageHeader,
+  PageTitle,
+  PageCaption,
+  PageDivider,
+  PageScrollArea,
+} from '../../../components/PageShell';
 
 // Figma 31 / 31b: '오늘의 온담'이 '오늘의 건강일지'로 이름이 바뀌고
 // 타임라인 카드 형태로 재설계됐다.
@@ -45,72 +54,6 @@ const ENTRY_TITLES = { question: '오늘의 질문', medication: '복약 체크'
 
 // 상단 요약 칩의 컨디션은 글자 대신 점수(3=좋음~1=아쉬움)에 맞는 표정 이모지를 띄운다.
 const CONDITION_FACE = { 3: faceGood, 2: faceNormal, 1: faceBad };
-
-const Page = styled.div`
-  position: relative;
-  width: 100%;
-  height: 100%;
-  overflow-y: auto;
-  box-sizing: border-box;
-
-  padding: 16px 20px 28px;
-  background: #fff8ed;
-
-  display: flex;
-  flex-direction: column;
-  gap: 22px;
-
-  &::-webkit-scrollbar {
-    display: none;
-  }
-`;
-
-const CloseButton = styled.button`
-  width: 40px;
-  height: 40px;
-  flex-shrink: 0;
-  align-self: flex-start;
-`;
-
-const CloseIcon = styled.img`
-  width: 40px;
-  height: 40px;
-  object-fit: contain;
-`;
-
-const HeaderBlock = styled.div`
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 4px;
-`;
-
-const DateLabel = styled.p`
-  margin: 0;
-  width: 100%;
-  text-align: center;
-  color: #a79c8e;
-  font-family: 'Noto Sans KR';
-  font-size: 18px;
-  font-weight: 700;
-`;
-
-const Title = styled.h1`
-  margin: 0;
-  width: 100%;
-  text-align: center;
-  color: #4a3a2f;
-  font-family: Jua;
-  font-size: 40px;
-  font-weight: 400;
-`;
-
-const TitleDivider = styled.div`
-  margin-top: 10px;
-  width: 100%;
-  height: 2px;
-  background: rgba(74, 58, 47, 0.25);
-`;
 
 const PersonToggle = styled.div`
   display: flex;
@@ -494,139 +437,141 @@ function TodayReport() {
   };
 
   return (
-    <Page>
-      <CloseButton type="button" aria-label="닫기" onClick={closeJournal}>
-        <CloseIcon src={closeIcon} alt="" />
-      </CloseButton>
+    <PageFrame>
+      <PageContent>
+        <PageBack onClick={closeJournal} />
+        <PageHeader>
+          <PageCaption>{report?.dateLabel ?? ''}</PageCaption>
+          <PageTitle $size={40}>오늘의 건강일지</PageTitle>
+        </PageHeader>
+        <PageDivider />
 
-      <HeaderBlock>
-        <DateLabel>{report?.dateLabel ?? ''}</DateLabel>
-        <Title>오늘의 건강일지</Title>
-        <TitleDivider />
-      </HeaderBlock>
+        <PageScrollArea $gap={22}>
+          <PersonToggle>
+            <ToggleTab type="button" $mine $active={isMine} onClick={() => setPerson('me')}>
+              나
+            </ToggleTab>
+            <ToggleTab type="button" $active={!isMine} onClick={() => setPerson('family')}>
+              {partnerLabel}
+            </ToggleTab>
+          </PersonToggle>
 
-      <PersonToggle>
-        <ToggleTab type="button" $mine $active={isMine} onClick={() => setPerson('me')}>
-          나
-        </ToggleTab>
-        <ToggleTab type="button" $active={!isMine} onClick={() => setPerson('family')}>
-          {partnerLabel}
-        </ToggleTab>
-      </PersonToggle>
-
-      {loading || error || !report ? (
-        <StatusText>
-          {loading
-            ? '기록을 불러오는 중이에요...'
-            : error
-              ? error.message
-              : '아직 연결된 가족이 없어요.'}
-        </StatusText>
-      ) : (
-        <>
-          <SummaryChips>
-            <SummaryChip>
-              <ChipLabel>질문 답변</ChipLabel>
-              <ChipValue>{report.summary.questionStatus}</ChipValue>
-            </SummaryChip>
-            <SummaryChip>
-              <ChipLabel>복약</ChipLabel>
-              <ChipValue>{report.summary.medication}</ChipValue>
-            </SummaryChip>
-            <SummaryChip>
-              <ChipLabel>컨디션</ChipLabel>
-              {/* 저녁 체크 전이라 점수가 없으면 이모지 대신 '-'를 보여준다 */}
-              {report.summary.conditionScore ? (
-                <ChipFace
-                  src={CONDITION_FACE[Math.round(report.summary.conditionScore)] ?? faceNormal}
-                  alt={report.summary.condition}
-                />
-              ) : (
-                <ChipValue>-</ChipValue>
-              )}
-            </SummaryChip>
-          </SummaryChips>
-
-          {report.aiComment && (
-            <InfoCard>
-              <InfoIcon src={aiIcon} alt="" />
-              <InfoTextCol>
-                <InfoLabel>온담 한마디</InfoLabel>
-                <InfoText>{report.aiComment}</InfoText>
-              </InfoTextCol>
-            </InfoCard>
-          )}
-
-          <SectionDivider />
-
-          {/* 작성 시각은 보여주지 않는다. 카드 제목만으로 아침·복약·저녁이 구분된다. */}
-          {report.timeline.map((entry) => (
-            <TimelineEntry key={entry.type}>
-              <Rail />
-              <EntryContent>
-                <EntryCard>
-                  <CardHead>
-                    <CardHeadIcon src={ENTRY_ICONS[entry.type]} alt="" />
-                    <CardTitle>{ENTRY_TITLES[entry.type]}</CardTitle>
-                    {/* 내 기록만, 그리고 오늘 것만 고칠 수 있다 */}
-                    {canEdit && (
-                      <EditButton type="button" onClick={() => setEditing(entry.type)}>
-                        수정
-                      </EditButton>
-                    )}
-                    {entry.type === 'medication' && entry.hasMissed && (
-                      <ExclaimIcon src={exclaimIcon} alt="" />
-                    )}
-                  </CardHead>
-                  {renderEntryBody(entry)}
-                </EntryCard>
-              </EntryContent>
-            </TimelineEntry>
-          ))}
-
-          {report.eveningComment && (
-            <InfoCard>
-              <InfoIcon src={aiIcon} alt="" />
-              <InfoTextCol>
-                <InfoText $small>{report.eveningComment}</InfoText>
-              </InfoTextCol>
-            </InfoCard>
-          )}
-
-          {report.cta && (
+          {loading || error || !report ? (
+            <StatusText>
+              {loading
+                ? '기록을 불러오는 중이에요...'
+                : error
+                  ? error.message
+                  : '아직 연결된 가족이 없어요.'}
+            </StatusText>
+          ) : (
             <>
+              <SummaryChips>
+                <SummaryChip>
+                  <ChipLabel>질문 답변</ChipLabel>
+                  <ChipValue>{report.summary.questionStatus}</ChipValue>
+                </SummaryChip>
+                <SummaryChip>
+                  <ChipLabel>복약</ChipLabel>
+                  <ChipValue>{report.summary.medication}</ChipValue>
+                </SummaryChip>
+                <SummaryChip>
+                  <ChipLabel>컨디션</ChipLabel>
+                  {/* 저녁 체크 전이라 점수가 없으면 이모지 대신 '-'를 보여준다 */}
+                  {report.summary.conditionScore ? (
+                    <ChipFace
+                      src={CONDITION_FACE[Math.round(report.summary.conditionScore)] ?? faceNormal}
+                      alt={report.summary.condition}
+                    />
+                  ) : (
+                    <ChipValue>-</ChipValue>
+                  )}
+                </SummaryChip>
+              </SummaryChips>
+
+              {report.aiComment && (
+                <InfoCard>
+                  <InfoIcon src={aiIcon} alt="" />
+                  <InfoTextCol>
+                    <InfoLabel>온담 한마디</InfoLabel>
+                    <InfoText>{report.aiComment}</InfoText>
+                  </InfoTextCol>
+                </InfoCard>
+              )}
+
               <SectionDivider />
-              <JournalCta
-                title={report.cta.title}
-                message={report.cta.suggestedMessage}
-                onCall={handleCall}
-                onSendLetter={() => navigate('/home', { state: { openLetterbox: 'compose' } })}
-              />
+
+              {/* 작성 시각은 보여주지 않는다. 카드 제목만으로 아침·복약·저녁이 구분된다. */}
+              {report.timeline.map((entry) => (
+                <TimelineEntry key={entry.type}>
+                  <Rail />
+                  <EntryContent>
+                    <EntryCard>
+                      <CardHead>
+                        <CardHeadIcon src={ENTRY_ICONS[entry.type]} alt="" />
+                        <CardTitle>{ENTRY_TITLES[entry.type]}</CardTitle>
+                        {/* 내 기록만, 그리고 오늘 것만 고칠 수 있다 */}
+                        {canEdit && (
+                          <EditButton type="button" onClick={() => setEditing(entry.type)}>
+                            수정
+                          </EditButton>
+                        )}
+                        {entry.type === 'medication' && entry.hasMissed && (
+                          <ExclaimIcon src={exclaimIcon} alt="" />
+                        )}
+                      </CardHead>
+                      {renderEntryBody(entry)}
+                    </EntryCard>
+                  </EntryContent>
+                </TimelineEntry>
+              ))}
+
+              {report.eveningComment && (
+                <InfoCard>
+                  <InfoIcon src={aiIcon} alt="" />
+                  <InfoTextCol>
+                    <InfoText $small>{report.eveningComment}</InfoText>
+                  </InfoTextCol>
+                </InfoCard>
+              )}
+
+              {report.cta && (
+                <>
+                  <SectionDivider />
+                  <JournalCta
+                    title={report.cta.title}
+                    message={report.cta.suggestedMessage}
+                    onCall={handleCall}
+                    onSendLetter={() => navigate('/home', { state: { openLetterbox: 'compose' } })}
+                  />
+                </>
+              )}
             </>
           )}
-        </>
-      )}
 
-      {/* 백엔드가 재제출을 덮어쓰기로 바꿔줘서 기록을 다시 열어 고칠 수 있다 */}
-      {editing === 'question' && <DayQuestionPopup onClose={closeEditor} />}
-      {editing === 'medication' && (
-        <MedicineLogEditPopup onClose={closeEditor} onDone={closeEditor} />
-      )}
-      {editing === 'healthcheck' && (
-        <EveningCheckPopup forceEdit onClose={closeEditor} onCompleted={closeEditor} />
-      )}
+        </PageScrollArea>
 
-      {askingPhone && (
-        <PhoneNumberPopup
-          name={report?.personLabel}
-          onSaved={(phone) => {
-            setAskingPhone(false);
-            callPhone(phone);
-          }}
-          onClose={() => setAskingPhone(false)}
-        />
-      )}
-    </Page>
+        {/* 백엔드가 재제출을 덮어쓰기로 바꿔줘서 기록을 다시 열어 고칠 수 있다 */}
+        {editing === 'question' && <DayQuestionPopup onClose={closeEditor} />}
+        {editing === 'medication' && (
+          <MedicineLogEditPopup onClose={closeEditor} onDone={closeEditor} />
+        )}
+        {editing === 'healthcheck' && (
+          <EveningCheckPopup forceEdit onClose={closeEditor} onCompleted={closeEditor} />
+        )}
+
+        {askingPhone && (
+          <PhoneNumberPopup
+            name={report?.personLabel}
+            onSaved={(phone) => {
+              setAskingPhone(false);
+              callPhone(phone);
+            }}
+            onClose={() => setAskingPhone(false)}
+          />
+        )}
+      </PageContent>
+    </PageFrame>
   );
 }
 

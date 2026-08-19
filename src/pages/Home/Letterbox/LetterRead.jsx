@@ -1,8 +1,7 @@
 import styled from 'styled-components';
 import letterPaper from '../../../assets/letterbox/letter-paper-read.png';
 import ruledLines from '../../../assets/letterbox/ruled-lines-read.svg';
-import pencilBtn from '../../../assets/letterbox/pencil-btn.svg';
-import { PopupPrimaryButton, PopupIcon } from '../../../components/PopupShell';
+import { PopupPrimaryButton } from '../../../components/PopupShell';
 
 // Figma 35b ver02: 편지를 펼친 화면.
 // 크림색 팝업 카드가 아니라 편지지 이미지 자체가 카드가 되고, 버튼은 카드 바깥에 붙는다.
@@ -118,7 +117,6 @@ function LetterRead({ letter, onReply, onClose }) {
       </PaperCard>
 
       <PopupPrimaryButton type="button" onClick={onReply} style={{ height: 52, borderRadius: 12 }}>
-        <PopupIcon $size={30} src={pencilBtn} alt="" />
         {/* 누구에게 답하는지 보이면 훨씬 분명하다 */}
         {letter.sender ? `${letter.sender}에게 답장하기` : '답장하기'}
       </PopupPrimaryButton>

@@ -4,48 +4,16 @@ import styled from 'styled-components';
 import { useAppData } from '../../../store/AppDataContext';
 import { getMe, getHealthProfile, updateHealthProfile } from '../../../api/user';
 import { useApi, useApiAction } from '../../../hooks/useApi';
-
-const Page = styled.div`
-  position: relative;
-  width: 100%;
-  height: 100%;
-  overflow-y: auto;
-  background: #FFF8ED;
-
-  &::-webkit-scrollbar {
-    display: none;
-  }
-`;
-
-const Content = styled.div`
-  padding: 16px 20px 30px;
-`;
-
-const Header = styled.div`
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding-bottom: 12px;
-  border-bottom: 1.3px solid rgba(74,58,47,.25);
-`;
-
-const BackButton = styled.button`
-  width: 20px;
-  font-size: 22px;
-  color: #000;
-  line-height: 1;
-`;
-
-const Title = styled.p`
-  margin: 0;
-  font-size: 18px;
-  font-weight: 500;
-  color: #000;
-`;
-
-const HeaderSpacer = styled.div`
-  width: 20px;
-`;
+import {
+  PageFrame,
+  PageContent,
+  PageBack,
+  PageHeader,
+  PageTitle,
+  PageDivider,
+  PageScrollArea,
+  PageFooter,
+} from '../../../components/PageShell';
 
 const Card = styled.div`
   margin-top: 20px;
@@ -119,10 +87,10 @@ const Chip = styled.button`
   font-size: 15px;
 `;
 
+// 스크롤과 상관없이 화면 아래에 붙는다(PageFooter 안).
 const SaveButton = styled.button`
   width: 100%;
   height: 54px;
-  margin-top: 28px;
   border-radius: 14px;
   background: #DBE4A1;
   color: #fff;
@@ -202,54 +170,57 @@ function ProfileEdit() {
   };
 
   return (
-    <Page>
-      <Content>
-        <Header>
-          <BackButton type="button" aria-label="뒤로가기" onClick={() => navigate('/home/settings')}>
-            ‹
-          </BackButton>
-          <Title>프로필 수정</Title>
-          <HeaderSpacer />
-        </Header>
+    <PageFrame>
+      <PageContent>
+        <PageBack onClick={() => navigate('/home/settings')} />
+        <PageHeader>
+          <PageTitle>프로필 수정</PageTitle>
+        </PageHeader>
+        <PageDivider />
 
-        <Card>
-          <CardTitle>기본 정보</CardTitle>
-          <Label>이름</Label>
-          <Input value={name} onChange={(e) => setName(e.target.value)} />
-          <Label>생년월일</Label>
-          <Input type="date" value={birth} onChange={(e) => setBirth(e.target.value)} />
-          <Label>성별</Label>
-          <GenderRow>
-            <GenderButton type="button" $active={gender === 'MALE'} onClick={() => setGender('MALE')}>
-              남성
-            </GenderButton>
-            <GenderButton
-              type="button"
-              $active={gender === 'FEMALE'}
-              onClick={() => setGender('FEMALE')}
-            >
-              여성
-            </GenderButton>
-          </GenderRow>
-        </Card>
+        <PageScrollArea>
+          <Card>
+            <CardTitle>기본 정보</CardTitle>
+            <Label>이름</Label>
+            <Input value={name} onChange={(e) => setName(e.target.value)} />
+            <Label>생년월일</Label>
+            <Input type="date" value={birth} onChange={(e) => setBirth(e.target.value)} />
+            <Label>성별</Label>
+            <GenderRow>
+              <GenderButton type="button" $active={gender === 'MALE'} onClick={() => setGender('MALE')}>
+                남성
+              </GenderButton>
+              <GenderButton
+                type="button"
+                $active={gender === 'FEMALE'}
+                onClick={() => setGender('FEMALE')}
+              >
+                여성
+              </GenderButton>
+            </GenderRow>
+          </Card>
 
-        <Card>
-          <CardTitle>건강 관심사</CardTitle>
-          <CardDesc>여러 개 골라도 좋아요</CardDesc>
-          <ChipRow>
-            {INTEREST_LIST.map((item) => (
-              <Chip key={item} type="button" $active={interests.includes(item)} onClick={() => toggleInterest(item)}>
-                {item}
-              </Chip>
-            ))}
-          </ChipRow>
-        </Card>
+          <Card>
+            <CardTitle>건강 관심사</CardTitle>
+            <CardDesc>여러 개 골라도 좋아요</CardDesc>
+            <ChipRow>
+              {INTEREST_LIST.map((item) => (
+                <Chip key={item} type="button" $active={interests.includes(item)} onClick={() => toggleInterest(item)}>
+                  {item}
+                </Chip>
+              ))}
+            </ChipRow>
+          </Card>
 
-        <SaveButton type="button" onClick={handleSave} disabled={saving}>
-          {saving ? '저장 중...' : '저장하기'}
-        </SaveButton>
-      </Content>
-    </Page>
+        </PageScrollArea>
+
+        <PageFooter>
+          <SaveButton type="button" onClick={handleSave} disabled={saving}>
+            {saving ? '저장 중...' : '저장하기'}
+          </SaveButton>
+        </PageFooter>
+      </PageContent>
+    </PageFrame>
   );
 }
 

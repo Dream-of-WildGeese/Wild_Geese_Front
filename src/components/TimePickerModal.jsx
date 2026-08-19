@@ -39,8 +39,9 @@ const CloseButton = styled.button`
   align-items: center;
   justify-content: center;
   border-radius: 999px;
-  color: #4a3a2f;
-  font-size: 16px;
+  color: #8c8780;
+  font-size: 22px;
+  font-weight: 700;
 `;
 
 const Title = styled.p`

@@ -1,6 +1,6 @@
 import styled from 'styled-components';
 import { useNavigate } from 'react-router-dom';
-import closeIcon from '../../assets/journal/close.png';
+import backIcon from '../../assets/onboarding/back.svg';
 
 const HeaderWrap = styled.div`
   flex-shrink: 0;
@@ -18,8 +18,7 @@ const TopRow = styled.div`
   padding: 0 6px;
 `;
 
-// 다른 화면(건강일지·주간 리포트)과 같은 40px 닫기 아이콘으로 맞춘다.
-// 여기만 살구색 '뒤로가기' 알약 버튼이라 화면을 옮길 때마다 위치가 달라 보였다.
+// 다른 화면(건강일지·주간 리포트·건강검진)과 같은 뒤로가기 아이콘으로 맞춘다.
 const BackButton = styled.button`
   width: 40px;
   height: 40px;
@@ -27,12 +26,12 @@ const BackButton = styled.button`
 `;
 
 const BackIcon = styled.img`
-  width: 40px;
-  height: 40px;
+  width: 38px;
+  height: 38px;
   object-fit: contain;
 `;
 
-// 닫기 버튼과 균형을 맞추는 빈 자리. 없으면 닫기가 가운데로 밀린다.
+// 뒤로가기 버튼과 균형을 맞추는 빈 자리. 없으면 버튼이 가운데로 밀린다.
 const TopRowSpacer = styled.div`
   width: 40px;
   height: 40px;
@@ -94,8 +93,8 @@ function MorningReportHeader({ year, month, onPrevMonth, onNextMonth, onOpenPick
   return (
     <HeaderWrap>
       <TopRow>
-        <BackButton type="button" aria-label="닫기" onClick={() => navigate('/home')}>
-          <BackIcon src={closeIcon} alt="" />
+        <BackButton type="button" aria-label="뒤로가기" onClick={() => navigate('/home')}>
+          <BackIcon src={backIcon} alt="" />
         </BackButton>
         <TopRowSpacer />
       </TopRow>

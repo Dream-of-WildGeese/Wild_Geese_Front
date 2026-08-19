@@ -1,81 +1,25 @@
 import { useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
-import closeIcon from '../../../assets/journal/close.png';
 import cloudIcon from '../../../assets/weekly/cloud.png';
 import checkIcon from '../../../assets/weekly/check.png';
 import pencilIcon from '../../../assets/weekly/pencil.png';
 import { loadWeeklyList } from './weeklyReportData';
 import { useApi } from '../../../hooks/useApi';
 import { useFamilyRelation } from '../../../hooks/useFamilyRelation';
+import {
+  PageFrame,
+  PageContent,
+  PageBack,
+  PageHeader,
+  PageTitle,
+  PageCaption,
+  PageDivider,
+  PageScrollArea,
+} from '../../../components/PageShell';
 
 // Figma 33_ver02 / ver04: 주간 리포트 목록.
 // 월 칩은 필터가 아니라 그 달 구간으로 스크롤을 옮기는 점프다(레이어 이름 Month Jump Row).
-const Page = styled.div`
-  position: relative;
-  width: 100%;
-  height: 100%;
-  overflow-y: auto;
-  box-sizing: border-box;
-
-  padding: 16px 20px 28px;
-  background: #fff8ed;
-
-  display: flex;
-  flex-direction: column;
-  gap: 22px;
-
-  &::-webkit-scrollbar {
-    display: none;
-  }
-`;
-
-const CloseButton = styled.button`
-  width: 40px;
-  height: 40px;
-  flex-shrink: 0;
-  align-self: flex-start;
-`;
-
-const CloseIcon = styled.img`
-  width: 40px;
-  height: 40px;
-  object-fit: contain;
-`;
-
-const Header = styled.div`
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 4px;
-`;
-
-const PageTitle = styled.h1`
-  margin: 0;
-  width: 100%;
-  font-family: 'Jua';
-  font-size: 40px;
-  font-weight: 400;
-  color: #4a3a2f;
-  text-align: center;
-`;
-
-const PageSubtitle = styled.p`
-  margin: 0;
-  width: 100%;
-  font-family: 'Noto Sans KR';
-  font-size: 18px;
-  font-weight: 700;
-  color: #a79c8e;
-  text-align: center;
-`;
-
-const TitleDivider = styled.div`
-  width: 100%;
-  margin-top: 10px;
-  border-top: 1.5px dashed rgba(74, 58, 47, 0.3);
-`;
-
 const SectionDivider = styled.div`
   width: 100%;
   border-top: 2px dashed rgba(74, 58, 47, 0.35);
@@ -330,117 +274,118 @@ function WeeklyReport() {
     navigate(`/home/weekly-report/${weekId}`, { state: { person } });
 
   return (
-    <Page>
-      <CloseButton type="button" aria-label="닫기" onClick={() => navigate('/home')}>
-        <CloseIcon src={closeIcon} alt="" />
-      </CloseButton>
+    <PageFrame>
+      <PageContent>
+        <PageBack onClick={() => navigate('/home')} />
+        <PageHeader>
+          <PageTitle $size={40}>주간 리포트</PageTitle>
+          <PageCaption>
+            {person === 'me'
+              ? '매주 일요일에 새로운 리포트가 만들어져요!'
+              : `${partnerLabel}의 리포트도 매주 일요일에 만들어져요!`}
+          </PageCaption>
+        </PageHeader>
+        <PageDivider />
 
-      <Header>
-        <PageTitle>주간 리포트</PageTitle>
-        <PageSubtitle>
-          {person === 'me'
-            ? '매주 일요일에 새로운 리포트가 만들어져요!'
-            : `${partnerLabel}의 리포트도 매주 일요일에 만들어져요!`}
-        </PageSubtitle>
-        <TitleDivider />
-      </Header>
+        <PageScrollArea $gap={22}>
+          <PersonToggle>
+            <ToggleTab type="button" $active={person === 'me'} onClick={() => setPerson('me')}>
+              나
+            </ToggleTab>
+            <ToggleTab type="button" $active={person !== 'me'} onClick={() => setPerson('mom')}>
+              {partnerLabel}
+            </ToggleTab>
+          </PersonToggle>
 
-      <PersonToggle>
-        <ToggleTab type="button" $active={person === 'me'} onClick={() => setPerson('me')}>
-          나
-        </ToggleTab>
-        <ToggleTab type="button" $active={person !== 'me'} onClick={() => setPerson('mom')}>
-          {partnerLabel}
-        </ToggleTab>
-      </PersonToggle>
+          {loading && <StatusText>리포트를 불러오는 중이에요...</StatusText>}
+          {error && <StatusText>{error.message}</StatusText>}
 
-      {loading && <StatusText>리포트를 불러오는 중이에요...</StatusText>}
-      {error && <StatusText>{error.message}</StatusText>}
+          {currentWeek && (
+            <ThisWeekCard>
+              <CloudIcon src={cloudIcon} alt="" />
+              <ThisWeekText>
+                {currentWeek.inProgress ? (
+                  <>
+                    이번 주는 아직 쌓이는 중이에요
+                    <br />
+                    눌러서 지금까지 기록을 볼 수 있어요
+                  </>
+                ) : (
+                  <>
+                    온담과 한 주를 마무리하며
+                    <br />
+                    이번 주 일상을 살펴보세요!
+                  </>
+                )}
+              </ThisWeekText>
 
-      {currentWeek && (
-        <ThisWeekCard>
-          <CloudIcon src={cloudIcon} alt="" />
-          <ThisWeekText>
-            {currentWeek.inProgress ? (
-              <>
-                이번 주는 아직 쌓이는 중이에요
-                <br />
-                눌러서 지금까지 기록을 볼 수 있어요
-              </>
-            ) : (
-              <>
-                온담과 한 주를 마무리하며
-                <br />
-                이번 주 일상을 살펴보세요!
-              </>
-            )}
-          </ThisWeekText>
+              <WeekRow type="button" onClick={() => openWeek(currentWeek.id)}>
+                <ContentCol>
+                  <TitleLine>
+                    <CheckIcon src={checkIcon} alt="" />
+                    <WeekLabel>{currentWeek.label}</WeekLabel>
+                  </TitleLine>
+                  <DateRow>
+                    <DateChip>{currentWeek.range}</DateChip>
+                  </DateRow>
+                </ContentCol>
+                <Badge $progress={currentWeek.inProgress}>
+                  {currentWeek.inProgress ? '입력 중' : '이번 주'}
+                </Badge>
+              </WeekRow>
+            </ThisWeekCard>
+          )}
 
-          <WeekRow type="button" onClick={() => openWeek(currentWeek.id)}>
-            <ContentCol>
-              <TitleLine>
-                <CheckIcon src={checkIcon} alt="" />
-                <WeekLabel>{currentWeek.label}</WeekLabel>
-              </TitleLine>
-              <DateRow>
-                <DateChip>{currentWeek.range}</DateChip>
-              </DateRow>
-            </ContentCol>
-            <Badge $progress={currentWeek.inProgress}>
-              {currentWeek.inProgress ? '입력 중' : '이번 주'}
-            </Badge>
-          </WeekRow>
-        </ThisWeekCard>
-      )}
+          {months.length > 0 && (
+            <>
+              <SectionDivider />
+              <MonthJumpRow>
+                {months.map((month) => (
+                  <MonthChip
+                    key={month.monthKey}
+                    type="button"
+                    $active={activeMonthKey === month.monthKey}
+                    onClick={() => jumpToMonth(month.monthKey)}
+                  >
+                    {month.monthLabel}
+                  </MonthChip>
+              ))}
+              </MonthJumpRow>
+            </>
+          )}
 
-      {months.length > 0 && (
-        <>
-          <SectionDivider />
-          <MonthJumpRow>
-            {months.map((month) => (
-              <MonthChip
-                key={month.monthKey}
-                type="button"
-                $active={activeMonthKey === month.monthKey}
-                onClick={() => jumpToMonth(month.monthKey)}
-              >
-                {month.monthLabel}
-              </MonthChip>
-            ))}
-          </MonthJumpRow>
-        </>
-      )}
+          {months.map((month, index) => (
+            <MonthSection
+              key={month.monthKey}
+              ref={(node) => {
+                sectionRefs.current[month.monthKey] = node;
+              }}
+            >
+              {/* 맨 위 구간은 월 칩이 이미 어느 달인지 보여줘서 제목을 생략한다. */}
+              {index > 0 && <MonthLabel>{month.monthLabel}</MonthLabel>}
 
-      {months.map((month, index) => (
-        <MonthSection
-          key={month.monthKey}
-          ref={(node) => {
-            sectionRefs.current[month.monthKey] = node;
-          }}
-        >
-          {/* 맨 위 구간은 월 칩이 이미 어느 달인지 보여줘서 제목을 생략한다. */}
-          {index > 0 && <MonthLabel>{month.monthLabel}</MonthLabel>}
-
-          {weeksByMonth.get(month.monthKey).map((week) => (
-            <WeekRow key={week.id} type="button" onClick={() => openWeek(week.id)}>
-              <ContentCol>
-                <TitleLine>
-                  <CheckIcon src={checkIcon} alt="" />
-                  <WeekLabel>{week.label}</WeekLabel>
-                </TitleLine>
-                <DateRow>
-                  <DateChip>{week.range}</DateChip>
-                </DateRow>
-              </ContentCol>
-              <EditLabel>
-                <PencilIcon src={pencilIcon} alt="" />
-                <EditText>{week.comment}</EditText>
-              </EditLabel>
-            </WeekRow>
+              {weeksByMonth.get(month.monthKey).map((week) => (
+                <WeekRow key={week.id} type="button" onClick={() => openWeek(week.id)}>
+                  <ContentCol>
+                    <TitleLine>
+                      <CheckIcon src={checkIcon} alt="" />
+                      <WeekLabel>{week.label}</WeekLabel>
+                    </TitleLine>
+                    <DateRow>
+                      <DateChip>{week.range}</DateChip>
+                    </DateRow>
+                  </ContentCol>
+                  <EditLabel>
+                    <PencilIcon src={pencilIcon} alt="" />
+                    <EditText>{week.comment}</EditText>
+                  </EditLabel>
+                </WeekRow>
+              ))}
+            </MonthSection>
           ))}
-        </MonthSection>
-      ))}
-    </Page>
+        </PageScrollArea>
+      </PageContent>
+    </PageFrame>
   );
 }
 
