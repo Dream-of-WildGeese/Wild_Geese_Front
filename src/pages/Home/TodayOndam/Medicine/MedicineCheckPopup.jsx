@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import styled from 'styled-components';
-import clockIcon from '../../../../assets/popup/clock.svg';
+import clockIcon from '../../../../assets/popup/clock.png';
 import medFlowerA from '../../../../assets/popup/med-flower-a.png';
 import medFlowerB from '../../../../assets/popup/med-flower-b.png';
 import medEmpty from '../../../../assets/popup/med-empty.png';

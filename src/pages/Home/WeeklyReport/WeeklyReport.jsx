@@ -5,11 +5,9 @@ import closeIcon from '../../../assets/journal/close.png';
 import cloudIcon from '../../../assets/weekly/cloud.png';
 import checkIcon from '../../../assets/weekly/check.png';
 import pencilIcon from '../../../assets/weekly/pencil.png';
-import sectionDividerSrc from '../../../assets/weekly/section-divider.svg';
 import { loadWeeklyList } from './weeklyReportData';
 import { useApi } from '../../../hooks/useApi';
 import { useFamilyRelation } from '../../../hooks/useFamilyRelation';
-import { wobblyBorder } from '../../../styles/wobble';
 
 // Figma 33_ver02 / ver04: 주간 리포트 목록.
 // 월 칩은 필터가 아니라 그 달 구간으로 스크롤을 옮기는 점프다(레이어 이름 Month Jump Row).
@@ -78,10 +76,9 @@ const TitleDivider = styled.div`
   border-top: 1.5px dashed rgba(74, 58, 47, 0.3);
 `;
 
-const SectionDivider = styled.img`
+const SectionDivider = styled.div`
   width: 100%;
-  height: auto;
-  display: block;
+  border-top: 2px dashed rgba(74, 58, 47, 0.35);
 `;
 
 const PersonToggle = styled.div`
@@ -103,11 +100,9 @@ const ToggleTab = styled.button`
   font-size: 17px;
   font-weight: 700;
 
+  border: 2px solid ${({ $active }) => ($active ? '#e6a794' : 'rgba(232, 205, 115, 0.7)')};
   background: ${({ $active }) => ($active ? 'rgba(230, 167, 148, 0.5)' : 'transparent')};
   color: ${({ $active }) => ($active ? '#c97158' : '#b9862e')};
-
-  ${({ $active }) =>
-    wobblyBorder({ radius: 12, width: 2, color: $active ? '#e6a794' : 'rgba(232, 205, 115, 0.7)' })}
 `;
 
 const ThisWeekCard = styled.div`
@@ -118,9 +113,8 @@ const ThisWeekCard = styled.div`
 
   padding: 16px;
   border-radius: 18px;
+  border: 3px solid rgba(143, 174, 74, 0.5);
   background: #edf2d4;
-
-  ${wobblyBorder({ radius: 18, width: 3, color: 'rgba(143, 174, 74, 0.5)' })}
 `;
 
 const CloudIcon = styled.img`
@@ -149,10 +143,9 @@ const WeekRow = styled.button`
   gap: 10px;
 
   border-radius: 18px;
+  border: 1.5px solid rgba(74, 58, 47, 0.4);
   background: rgba(255, 255, 255, 0.55);
   text-align: left;
-
-  ${wobblyBorder({ radius: 18, width: 1.5, color: 'rgba(74, 58, 47, 0.4)' })}
 `;
 
 const ContentCol = styled.div`
@@ -194,6 +187,7 @@ const DateRow = styled.div`
 const DateChip = styled.span`
   padding: 4px 10px;
   border-radius: 10px;
+  border: 1px solid rgba(74, 58, 47, 0.35);
   background: rgba(255, 255, 255, 0.8);
 
   font-family: 'Noto Sans KR';
@@ -201,8 +195,6 @@ const DateChip = styled.span`
   font-weight: 700;
   color: #4a3a2f;
   white-space: nowrap;
-
-  ${wobblyBorder({ radius: 10, width: 1, color: 'rgba(74, 58, 47, 0.35)' })}
 `;
 
 // 이번 주는 아직 쌓이는 중이라 색을 달리해서 완성된 주와 구분한다.
@@ -211,19 +203,13 @@ const Badge = styled.span`
   padding: 4px 12px;
   border-radius: 20px;
   background: ${({ $progress }) => ($progress ? '#f6ebc7' : '#cbd879')};
+  border: ${({ $progress }) => ($progress ? '1px solid rgba(184, 134, 46, 0.5)' : 'none')};
 
   font-family: 'Noto Sans KR';
   font-size: 13px;
   font-weight: 700;
   color: ${({ $progress }) => ($progress ? '#a8761c' : '#3f5a1b')};
   white-space: nowrap;
-
-  ${({ $progress }) =>
-    wobblyBorder({
-      radius: 20,
-      width: 1,
-      color: $progress ? 'rgba(184, 134, 46, 0.5)' : '#cbd879',
-    })}
 `;
 
 // 폭을 고정하고 왼쪽 정렬해야, 한 줄평 길이가 주마다 달라도 연필 아이콘이
@@ -273,11 +259,9 @@ const MonthChip = styled.button`
   font-size: 15px;
   font-weight: ${({ $active }) => ($active ? 700 : 500)};
 
+  border: 1px solid ${({ $active }) => ($active ? 'rgba(74, 58, 47, 0.25)' : '#e5e0d9')};
   background: ${({ $active }) => ($active ? '#f6ebc7' : '#fcf8ea')};
   color: ${({ $active }) => ($active ? '#4a3a2f' : '#a79c8e')};
-
-  ${({ $active }) =>
-    wobblyBorder({ radius: 18, width: 1, color: $active ? 'rgba(74, 58, 47, 0.25)' : '#e5e0d9' })}
 `;
 
 const MonthSection = styled.div`
@@ -411,7 +395,7 @@ function WeeklyReport() {
 
       {months.length > 0 && (
         <>
-          <SectionDivider src={sectionDividerSrc} alt="" />
+          <SectionDivider />
           <MonthJumpRow>
             {months.map((month) => (
               <MonthChip

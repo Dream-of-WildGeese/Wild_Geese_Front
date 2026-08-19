@@ -1,5 +1,7 @@
 import styled from 'styled-components';
 import PopupPortal from '../../../../components/PopupPortal';
+import pencilIcon from '../../../../assets/night/complete-pencil.png';
+import leafIcon from '../../../../assets/night/complete-leaf.png';
 
 // Figma 24: 저녁 건강체크 완료. 버튼이 '닫기'에서 '오늘의 건강일지 보러가기'로 바뀌었다.
 const Backdrop = styled.div`
@@ -45,9 +47,19 @@ const IconRing = styled.div`
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #edf3d5;
-  border: 1.5px solid #cbd879;
-  font-size: 36px;
+  border: 1.3px solid rgba(108, 67, 23, 0.6);
+`;
+
+const PencilIcon = styled.img`
+  width: 64px;
+  height: 64px;
+  object-fit: contain;
+`;
+
+const LeafIcon = styled.img`
+  width: 24px;
+  height: 24px;
+  object-fit: contain;
 `;
 
 const Title = styled.p`
@@ -66,6 +78,12 @@ const Description = styled.p`
   font-family: 'Noto Sans KR';
   font-size: 14px;
   line-height: 1.6;
+`;
+
+const HighlightRow = styled.span`
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
 `;
 
 const Highlight = styled.span`
@@ -97,12 +115,18 @@ function NightCompletePopup({ onClose, onGoToJournal }) {
       <Backdrop onClick={onClose}>
         <Card onClick={(event) => event.stopPropagation()}>
           <InnerBorder />
-          <IconRing>✎</IconRing>
+          <IconRing>
+            <PencilIcon src={pencilIcon} alt="" />
+          </IconRing>
           <Title>오늘의 건강기록도 잘 남겨주셨어요!</Title>
           <Description>
             매일의 건강기록은
             <br />
-            🌿 <Highlight>오늘의 건강일지</Highlight> 🌿
+            <HighlightRow>
+              <LeafIcon src={leafIcon} alt="" />
+              <Highlight>오늘의 건강일지</Highlight>
+              <LeafIcon src={leafIcon} alt="" />
+            </HighlightRow>
             <br />
             에서 모아볼 수 있어요!
           </Description>
