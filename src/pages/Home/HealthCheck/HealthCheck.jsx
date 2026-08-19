@@ -11,8 +11,8 @@ import { getUserId } from '../../../api/client';
 import { useAppData } from '../../../store/AppDataContext';
 import aiIcon from '../../../assets/journal/ai.png';
 import trashBin from '../../../assets/trash_bin.svg';
+import yellowFlower from '../../../assets/yellow_flower.svg';
 import DatePickerModal from '../../../components/DatePickerModal';
-import { getCheckupAlert } from '../../../utils/localSettings';
 import {
   PopupBackdrop,
   PopupCard,
@@ -54,16 +54,13 @@ const getInsightSubTitle = (person, partnerLabel) => {
 
 const HealthCheck = () => {
   const navigate = useNavigate();
-  // 1. 기본 탭을 'me'(나)로 시작
-  const [person, setPerson] = useState('me'); 
+  const [person, setPerson] = useState('me');
   const [showAddModal, setShowAddModal] = useState(false);
   const { partnerLabel } = useFamilyRelation();
   const { data: appData } = useAppData();
 
-  // 2. 가족 목록 조회
   const { data: familyData } = useApi(getMyFamily);
 
-  // 3. getUserId()를 통해 현재 유저와 상대방 ID 분리
   const currentMyId = getUserId();
   const partnerMember = (familyData?.members || []).find(
     (member) => String(member.userId) !== String(currentMyId)
@@ -75,21 +72,16 @@ const HealthCheck = () => {
     appData?.family?.connectedUserId ||
     appData?.family?.userId;
 
-  // '나' 선택 시 undefined (내 검진), '가족' 선택 시 상대방 userId
   const targetId = person === 'family' ? partnerUserId : undefined;
 
-  // 4. useApi 규격에 맞게 args 전달 (targetId 변경 시 자동 재조회)
   const { data: checkupData, refetch } = useApi(getCheckups, {
     args: targetId ? [targetId] : [],
   });
 
-  // 5. 검진 삭제 액션
   const { execute: removeCheckup, loading: deleting } = useApiAction(deleteCheckup);
 
-  // 연/월 직접 선택 팝업 열림 상태
   const [isMonthPickerOpen, setIsMonthPickerOpen] = useState(false);
 
-  // 연/월 선택 완료 시 캘린더 이동
   const handleJumpDate = (selectedDateStr) => {
     if (!selectedDateStr) return;
     const [y, m] = selectedDateStr.split('-').map(Number);
@@ -97,9 +89,7 @@ const HealthCheck = () => {
     setIsMonthPickerOpen(false);
   };
 
-  // 어떤 일정을 지울지 물어보는 중인지 (checkupId | null)
   const [deleteTarget, setDeleteTarget] = useState(null);
-  // 고치는 중인 일정 (upcomingCheckup 객체 | null)
   const [editTarget, setEditTarget] = useState(null);
   const [deleteError, setDeleteError] = useState(null);
 
@@ -119,10 +109,6 @@ const HealthCheck = () => {
   const pastList = checkupData?.pastCheckups || [];
   const doctorQuestions = checkupData?.doctorQuestions || [];
 
-  // =========================
-  // 달력 월 이동 상태 (년, 월)
-  // =========================
-  // 이번 달부터 보여준다. 특정 달을 박아두면 달이 바뀐 뒤 지난 달이 먼저 뜬다.
   const [currentDate, setCurrentDate] = useState(() => {
     const today = new Date();
     return new Date(today.getFullYear(), today.getMonth(), 1);
@@ -146,8 +132,6 @@ const HealthCheck = () => {
   for (let i = 0; i < firstDayIndex; i += 1) calendarDays.push(null);
   for (let day = 1; day <= daysInMonth; day += 1) calendarDays.push(day);
 
-  // pastList는 매 렌더 새 배열이라 의존성으로 두면 memo가 무의미해진다.
-  // 원본인 checkupData를 기준으로 잡는다.
   const checkupDaysInView = useMemo(() => {
     const daySet = new Set();
     const allCheckups = [];
@@ -208,23 +192,12 @@ const HealthCheck = () => {
           {/* 달력 카드 */}
           <CalendarCard>
             <CalendarNavHeader>
-              <NavArrowButton type="button" onClick={handlePrevMonth} aria-label="이전 달">
-                ‹
-              </NavArrowButton>
-
               <MonthTitleButton
                 type="button"
                 onClick={() => setIsMonthPickerOpen(true)}
               >
-                <span>{currentYear}년 {currentMonth + 1}월</span>
-                <DownArrowIcon viewBox="0 0 24 24">
-                  <polyline points="6 9 12 15 18 9" />
-                </DownArrowIcon>
+                <span>{currentMonth + 1}월</span>
               </MonthTitleButton>
-
-              <NavArrowButton type="button" onClick={handleNextMonth} aria-label="다음 달">
-                ›
-              </NavArrowButton>
             </CalendarNavHeader>
 
             <WeekRow>
@@ -266,68 +239,86 @@ const HealthCheck = () => {
               <UpcomingBannerTitle>
                 {displayName}의 다음 검진까지 D-{upcoming.dDay}
               </UpcomingBannerTitle>
-              <UpcomingBannerMeta>
-                {formatMonthDay(upcoming.checkupDate)} · {upcoming.hospitalName} · {upcoming.checkupType}
-              </UpcomingBannerMeta>
+              <UpcomingBannerInnerCard>
+                <UpcomingMetaRow>
+                  <MetaLabel>날짜 :</MetaLabel>
+                  <MetaValue>{formatMonthDay(upcoming.checkupDate)}</MetaValue>
+                </UpcomingMetaRow>
+                <UpcomingMetaRow>
+                  <MetaLabel>위치 :</MetaLabel>
+                  <MetaValue>{upcoming.hospitalName || '위치 미지정'}</MetaValue>
+                </UpcomingMetaRow>
+                <UpcomingMetaRow>
+                  <MetaLabel>종류 :</MetaLabel>
+                  <MetaValue>{upcoming.checkupType || '일반검진'}</MetaValue>
+                </UpcomingMetaRow>
+              </UpcomingBannerInnerCard>
             </UpcomingBanner>
           ) : (
             <EmptyBanner>예정된 다음 검진 일정이 없어요</EmptyBanner>
           )}
 
+          <SectionDivider />
+
           {/* 지난 검진 섹션 */}
           <SectionTitle>지난 검진</SectionTitle>
-          <PastList>
+          <CheckupList>
             {pastList.length > 0 ? (
               pastList.map((item) => (
-                <PastCard key={item.checkupId}>
-                  <PastInfoGroup>
-                    <PastDate>{formatMonthDay(item.checkupDate)}</PastDate>
-                    <PastType>{item.checkupType}</PastType>
-                  </PastInfoGroup>
-                  <PastBadge>{item.relativeTime}</PastBadge>
-                </PastCard>
+                <CheckupCard key={item.checkupId}>
+                  <CheckupLeftGroup>
+                    <FlowerIcon src={yellowFlower} alt="" />
+                    <CheckupDateText>{formatMonthDay(item.checkupDate)}</CheckupDateText>
+                    <Badge>{item.relativeTime || '지난 검진'}</Badge>
+                    <CheckupTypeText>{item.checkupType}</CheckupTypeText>
+                  </CheckupLeftGroup>
+                </CheckupCard>
               ))
             ) : (
               <EmptyCardText>지난 검진 기록이 없어요</EmptyCardText>
             )}
-          </PastList>
+          </CheckupList>
 
           {/* 다가오는 검진 섹션 */}
           <SectionTitle>다가오는 검진</SectionTitle>
-          {upcoming ? (
-            <UpcomingCard>
-              <UpcomingCardHeader>
-                <UpcomingCardTitle>
-                  {person === 'family' ? `${displayName}의 ` : ''}
-                  {upcoming.checkupType}
-                </UpcomingCardTitle>
-                <CardActions>
-                  <EditTextButton type="button" onClick={() => setEditTarget(upcoming)}>
-                    수정
-                  </EditTextButton>
-                  <DeleteIconButton
-                    type="button"
-                    aria-label="삭제"
-                    disabled={deleting}
-                    onClick={() => setDeleteTarget(upcoming.checkupId)}
-                  >
-                    <TrashIcon src={trashBin} alt="삭제" />
-                  </DeleteIconButton>
-                </CardActions>
-              </UpcomingCardHeader>
-              <ChipGroup>
-                <InfoChip>{formatMonthDay(upcoming.checkupDate)}</InfoChip>
-                <InfoChip>{upcoming.hospitalName}</InfoChip>
-                {/* 알림 시점은 서버에 자리가 없어 이 기기에 저장된 값이다 */}
-                {getCheckupAlert(upcoming.checkupId) &&
-                  getCheckupAlert(upcoming.checkupId) !== '알림 받지 않기' && (
-                    <InfoChip>{getCheckupAlert(upcoming.checkupId)} 알림</InfoChip>
-                  )}
-              </ChipGroup>
-            </UpcomingCard>
-          ) : (
-            <EmptyCardText>다가오는 검진 일정이 없어요</EmptyCardText>
-          )}
+            {upcoming ? (
+              <CheckupList>
+                <ClickableCheckupCard
+                  onClick={() => setEditTarget(upcoming)}
+                >
+                  <CheckupLeftGroup>
+                    <FlowerIcon src={yellowFlower} alt="" />
+                    <CheckupDateText>{formatMonthDay(upcoming.checkupDate)}</CheckupDateText>
+                    <Badge>
+                      {upcoming.dDay === 0
+                        ? '오늘'
+                        : upcoming.dDay < 0
+                        ? `D+${Math.abs(upcoming.dDay)}`
+                        : `D-${upcoming.dDay}`}
+                    </Badge>
+                    <CheckupTypeText>{upcoming.checkupType}</CheckupTypeText>
+                  </CheckupLeftGroup>
+                  <CardRightGroup>
+                    <EditTextBadge>수정</EditTextBadge>
+                    <DeleteIconButton
+                      type="button"
+                      aria-label="삭제"
+                      disabled={deleting}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setDeleteTarget(upcoming.checkupId);
+                      }}
+                    >
+                      <TrashIcon src={trashBin} alt="삭제" />
+                    </DeleteIconButton>
+                  </CardRightGroup>
+                </ClickableCheckupCard>
+              </CheckupList>
+            ) : (
+              <EmptyCardText>다가오는 검진 일정이 없어요</EmptyCardText>
+            )}
+
+          <SectionDivider />
 
           {/* 그동안의 기록에서 찾은 변화 섹션 */}
           <SectionTitle>그동안의 기록에서 찾은 변화</SectionTitle>
@@ -336,13 +327,15 @@ const HealthCheck = () => {
               <SparkleIcon src={aiIcon} alt="AI 분석" />
               <InsightHeaderTextGroup>
                 <InsightMainTitle>
-                  진료 때 이런 걸 여쭤보시면 좋을 것 같아요
+                  진료 때 이런 걸 여쭤보시면 좋아요!
                 </InsightMainTitle>
                 <InsightSubTitle>
                   {getInsightSubTitle(person, partnerLabel)}
                 </InsightSubTitle>
               </InsightHeaderTextGroup>
             </InsightHeader>
+
+            <InsightDivider />
 
             <InsightList>
               {doctorQuestions.length > 0 ? (
@@ -386,7 +379,6 @@ const HealthCheck = () => {
           />
         )}
 
-        {/* 삭제는 되돌릴 수 없어서 한 번 물어본다 */}
         {deleteTarget !== null && (
           <PopupBackdrop onClick={() => setDeleteTarget(null)}>
             <PopupCard
@@ -505,6 +497,12 @@ const HeaderDivider = styled.div`
   margin-bottom: 18px;
 `;
 
+const SectionDivider = styled.div`
+  width: 100%;
+  border-bottom: 1.5px dashed rgba(74, 58, 47, 0.25);
+  margin: 18px 0 16px;
+`;
+
 const ScrollArea = styled.div`
   flex: 1;
   overflow-y: auto;
@@ -554,7 +552,7 @@ const ToggleButton = styled.button`
 `;
 
 /* =========================
-   Calendar Card (네비게이션 포함)
+   Calendar Card
 ========================= */
 
 const CalendarCard = styled.div`
@@ -568,60 +566,21 @@ const CalendarCard = styled.div`
 const CalendarNavHeader = styled.div`
   display: flex;
   align-items: center;
-  justify-content: space-between;
   margin-bottom: 12px;
   padding: 0 4px;
 `;
 
-const CardActions = styled.div`
-  display: flex;
+const MonthTitleButton = styled.button`
+  display: inline-flex;
   align-items: center;
-  gap: 6px;
-  flex-shrink: 0;
-`;
-
-// 다른 화면의 수정 버튼과 같은 모양으로 맞춘다.
-const EditTextButton = styled.button`
-  padding: 4px 10px;
-  border-radius: 8px;
-  border: 1px solid rgba(74, 58, 47, 0.35);
-  background: rgba(255, 255, 255, 0.7);
-
-  color: #8c8172;
-  font-family: 'Noto Sans KR', sans-serif;
-  font-size: 13px;
-  font-weight: 700;
-`;
-
-// 삭제 확인·실패 팝업의 본문
-const PopupMessage = styled.p`
-  margin: 0;
-  width: 100%;
-  text-align: center;
-  color: #6b6661;
-  font-family: 'Noto Sans KR', sans-serif;
-  font-size: 16px;
-  line-height: 1.5;
-  word-break: keep-all;
-`;
-
-const NavArrowButton = styled.button`
+  padding: 0;
   border: none;
   background: transparent;
-  color: #8C8780;
-  font-size: 22px;
-  font-weight: 700;
+  color: #4A3A2F;
+  font-family: Jua, sans-serif;
+  font-size: 24px;
+  font-weight: 400;
   cursor: pointer;
-  padding: 0 6px;
-  line-height: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: color 0.15s ease;
-
-  &:hover {
-    color: #4A3A2F;
-  }
 `;
 
 const WeekRow = styled.div`
@@ -656,14 +615,13 @@ const DayButton = styled.button`
   height: 32px;
   padding: 0;
   border: none;
-  border-radius: 12px;
-  background: ${({ $selected }) => ($selected ? '#DDD39A' : 'transparent')};
+  border-radius: 16px;
+  background: ${({ $selected }) => ($selected ? '#E8CD73;' : 'transparent')};
   color: #4A3A2F;
-  font-family: 'Noto Sans KR', sans-serif;
+  font-family: 'Noto Sans KR';
   font-size: 14px;
   font-weight: ${({ $selected }) => ($selected ? '800' : '500')};
   cursor: pointer;
-  transition: background 0.15s ease;
 `;
 
 /* =========================
@@ -671,27 +629,51 @@ const DayButton = styled.button`
 ========================= */
 
 const UpcomingBanner = styled.div`
-  padding: 14px 16px;
-  border-radius: 16px;
-  border: 1.3px solid rgba(74, 58, 47, 0.3);
-  background: #EFF4D4;
-  margin-bottom: 22px;
+  padding: 16px;
+  border-radius: 18px;
+border: 1.5px solid rgba(230, 167, 148, 0.50);
+background: rgba(243, 222, 190, 0.70);
+  margin-bottom: 18px;
 `;
 
 const UpcomingBannerTitle = styled.p`
-  margin: 0;
-  color: #3B6B38;
-  font-family: 'Noto Sans KR', sans-serif;
-  font-size: 16px;
-  font-weight: 800;
+  margin: 0 0 12px;
+  color: #C97158;
+  font-family: 'Noto Sans KR';
+  font-size: 14px;;
+  font-size: 20px;
+  font-weight: 700;
+  text-align: center;
 `;
 
-const UpcomingBannerMeta = styled.p`
-  margin: 4px 0 0;
+const UpcomingBannerInnerCard = styled.div`
+  background: #FFFFFF;
+  border-radius: 14px;
+  padding: 14px 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+`;
+
+const UpcomingMetaRow = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 8px;
+`;
+
+const MetaLabel = styled.span`
   color: #4A3A2F;
-  font-family: 'Noto Sans KR', sans-serif;
-  font-size: 13px;
-  font-weight: 500;
+  font-family: 'Noto Sans KR';
+  font-size: 14px;
+  font-weight: 700;
+`;
+
+const MetaValue = styled.span`
+  color: #4A3A2F;
+  font-family: 'Noto Sans KR';
+  font-size: 14px;
+  font-weight: 700;
 `;
 
 const EmptyBanner = styled.div`
@@ -700,10 +682,10 @@ const EmptyBanner = styled.div`
   border: 1.3px dashed rgba(74, 58, 47, 0.3);
   background: rgba(255, 255, 255, 0.6);
   color: #8C8780;
-  font-family: 'Noto Sans KR', sans-serif;
+  font-family: 'Noto Sans KR';
   font-size: 14px;
   text-align: center;
-  margin-bottom: 22px;
+  margin-bottom: 18px;
 `;
 
 /* =========================
@@ -718,79 +700,117 @@ const SectionTitle = styled.h2`
   font-weight: 700;
 `;
 
-const PastList = styled.div`
+const CheckupList = styled.div`
   display: flex;
   flex-direction: column;
   gap: 10px;
-  margin-bottom: 22px;
+  margin-bottom: 20px;
 `;
 
-const PastCard = styled.div`
+const CheckupCard = styled.div`
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 14px 16px;
+  padding: 12px 16px;
   border-radius: 16px;
   border: 1.3px solid rgba(74, 58, 47, 0.35);
   background: rgba(255, 255, 255, 0.75);
+  box-sizing: border-box;
 `;
 
-const PastInfoGroup = styled.div`
+const ClickableCheckupCard = styled(CheckupCard)`
+  width: 100%;
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.15s ease, transform 0.1s ease;
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.95);
+  }
+
+  &:active {
+    transform: translateY(1px);
+  }
+`;
+
+const CheckupLeftGroup = styled.div`
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 8px;
+  flex: 1;
+  min-width: 0;
 `;
 
-const PastDate = styled.span`
-  color: #4A3A2F;
-  font-family: 'Noto Sans KR', sans-serif;
-  font-size: 15px;
-  font-weight: 800;
+const FlowerIcon = styled.img`
+  width: 22px;
+  height: 22px;
+  flex-shrink: 0;
+  object-fit: contain;
 `;
 
-const PastType = styled.span`
-  color: #8C8780;
-  font-family: 'Noto Sans KR', sans-serif;
-  font-size: 14px;
-  font-weight: 500;
-`;
-
-const PastBadge = styled.span`
-  padding: 4px 10px;
-  border-radius: 999px;
-  border: 1px solid #E8A79B;
-  background: #FEECE9;
-  color: #D25C4D;
-  font-family: 'Noto Sans KR', sans-serif;
-  font-size: 11px;
-  font-weight: 700;
-`;
-
-const UpcomingCard = styled.div`
-  padding: 16px;
-  border-radius: 18px;
-  border: 1.3px solid rgba(74, 58, 47, 0.35);
-  background: rgba(255, 255, 255, 0.75);
-  margin-bottom: 22px;
-`;
-
-const UpcomingCardHeader = styled.div`
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 10px;
-`;
-
-const UpcomingCardTitle = styled.h3`
-  margin: 0;
+// 날짜 텍스트의 고정 너비를 지정하여 1자리/2자리 날짜여도 뒤쪽 뱃지 위치가 동일하게 정렬됨
+const CheckupDateText = styled.span`
+  width: 72px;
+  flex-shrink: 0;
   color: #4A3A2F;
   font-family: 'Noto Sans KR', sans-serif;
   font-size: 16px;
   font-weight: 800;
+  letter-spacing: -0.5px;
+`;
+
+// 뱃지 너비와 텍스트 정렬을 고정하여 '1주 전', 'D-1', '오늘' 모두 동일한 칸을 차지
+const Badge = styled.span`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 52px;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: #C4DA85;
+  color: #374619;
+  font-family: 'Noto Sans KR', sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.3;
+  flex-shrink: 0;
+  text-align: center;
+`;
+
+// 검진 종류 텍스트
+const CheckupTypeText = styled.span`
+  color: #8C8780;
+  font-family: 'Noto Sans KR', sans-serif;
+  font-size: 15px;
+  font-weight: 600;
+  margin-left: 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+`;
+
+const CardRightGroup = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+`;
+
+
+
+const EditTextBadge = styled.span`
+  padding: 4px 8px;
+  border-radius: 8px;
+  border: 1px solid rgba(74, 58, 47, 0.35);
+  background: rgba(255, 255, 255, 0.7);
+  color: #8c8172;
+  font-family: 'Noto Sans KR', sans-serif;
+  font-size: 12px;
+  font-weight: 700;
 `;
 
 const DeleteIconButton = styled.button`
-  padding: 0;
+  padding: 2px;
   border: none;
   background: transparent;
   cursor: pointer;
@@ -811,21 +831,6 @@ const TrashIcon = styled.img`
   object-fit: contain;
 `;
 
-const ChipGroup = styled.div`
-  display: flex;
-  gap: 8px;
-`;
-
-const InfoChip = styled.span`
-  padding: 6px 14px;
-  border-radius: 12px;
-  background: rgba(237, 230, 218, 0.65);
-  color: #4A3A2F;
-  font-family: 'Noto Sans KR', sans-serif;
-  font-size: 13px;
-  font-weight: 600;
-`;
-
 const EmptyCardText = styled.p`
   margin: 0;
   padding: 16px;
@@ -836,7 +841,7 @@ const EmptyCardText = styled.p`
   border: 1.3px dashed rgba(74, 58, 47, 0.25);
   border-radius: 16px;
   background: rgba(255, 255, 255, 0.45);
-  margin-bottom: 22px;
+  margin-bottom: 20px;
 `;
 
 /* =========================
@@ -844,26 +849,25 @@ const EmptyCardText = styled.p`
 ========================= */
 
 const InsightCard = styled.div`
-  padding: 18px 16px;
+  padding: 16px;
   border-radius: 18px;
-  border: 1.3px solid rgba(138, 123, 62, 0.45);
-  background: rgba(246, 243, 222, 0.75);
-  margin-bottom: 22px;
+  border: 1.3px solid rgba(138, 123, 62, 0.35);
+  background: #EFF3D8;
+  margin-bottom: 20px;
 `;
 
 const InsightHeader = styled.div`
   display: flex;
-  align-items: flex-start;
-  gap: 8px;
-  margin-bottom: 14px;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
 `;
 
 const SparkleIcon = styled.img`
-  width: 32px;
-  height: 32px;
+  width: 36px;
+  height: 36px;
   flex-shrink: 0;
   object-fit: contain;
-  margin-top: 2px;
 `;
 
 const InsightHeaderTextGroup = styled.div`
@@ -877,15 +881,21 @@ const InsightMainTitle = styled.h4`
   font-family: 'Noto Sans KR', sans-serif;
   font-size: 15px;
   font-weight: 800;
-  line-height: 1.4;
+  line-height: 1.3;
 `;
 
 const InsightSubTitle = styled.p`
-  margin: 3px 0 0;
-  color: #8C8780;
+  margin: 2px 0 0;
+  color: #6C7A3C;
   font-family: 'Noto Sans KR', sans-serif;
   font-size: 12px;
   font-weight: 500;
+`;
+
+const InsightDivider = styled.div`
+  width: 100%;
+  border-bottom: 1px dashed rgba(110, 128, 60, 0.35);
+  margin-bottom: 14px;
 `;
 
 const InsightList = styled.ul`
@@ -894,7 +904,7 @@ const InsightList = styled.ul`
   list-style: none;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 12px;
 `;
 
 const InsightItem = styled.li`
@@ -904,17 +914,18 @@ const InsightItem = styled.li`
 `;
 
 const InsightBullet = styled.span`
-  color: #8FA248;
-  font-size: 16px;
-  line-height: 1.3;
+  color: #6C7A3C;
+  font-size: 14px;
+  line-height: 1.4;
 `;
 
 const InsightText = styled.span`
   color: #4A3A2F;
   font-family: 'Noto Sans KR', sans-serif;
-  font-size: 13px;
+  font-size: 13.5px;
   font-weight: 500;
-  line-height: 1.5;
+  line-height: 1.45;
+  word-break: keep-all;
 `;
 
 /* =========================
@@ -927,13 +938,13 @@ const AddButtonArea = styled.div`
 
 const AddButton = styled.button`
   width: 100%;
-  height: 56px;
+  height: 54px;
   border-radius: 16px;
   border: 1.5px solid rgba(74, 58, 47, 0.55);
-  background: #CBD879;
+  background: #DBE59B;
   color: #4A3A2F;
   font-family: Jua, sans-serif;
-  font-size: 19px;
+  font-size: 20px;
   font-weight: 400;
   cursor: pointer;
   transition: transform 0.1s ease;
@@ -943,30 +954,13 @@ const AddButton = styled.button`
   }
 `;
 
-const MonthTitleButton = styled.button`
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 4px 10px;
-  border: none;
-  border-radius: 8px;
-  background: transparent;
-  color: #4A3A2F;
+const PopupMessage = styled.p`
+  margin: 0;
+  width: 100%;
+  text-align: center;
+  color: #6b6661;
   font-family: 'Noto Sans KR', sans-serif;
-  font-size: 17px;
-  font-weight: 800;
-  cursor: pointer;
-  transition: background 0.15s ease;
-
-  &:hover {
-    background: rgba(74, 58, 47, 0.06);
-  }
-`;
-
-const DownArrowIcon = styled.svg`
-  width: 14px;
-  height: 14px;
-  fill: none;
-  stroke: #8C8780;
-  stroke-width: 2.5;
+  font-size: 16px;
+  line-height: 1.5;
+  word-break: keep-all;
 `;

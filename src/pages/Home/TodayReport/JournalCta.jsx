@@ -1,5 +1,5 @@
 import styled from 'styled-components';
-import phoneIcon from '../../../assets/journal/cta-phone.png';
+import phoneIcon from '../../../assets/journal/cta-phone.svg';
 import momIcon from '../../../assets/journal/cta-mom.png';
 import bubbleImage from '../../../assets/journal/cta-bubble.png';
 
