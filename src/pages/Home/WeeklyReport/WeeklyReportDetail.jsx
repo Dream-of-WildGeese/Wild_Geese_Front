@@ -47,6 +47,12 @@ const scoreColor = (score) => SCORE_COLOR[Math.round(score)] ?? '#d9d4cc';
 const activityColor = (score) => ACTIVITY_COLOR[Math.round(score)] ?? '#d9d4cc';
 const barHeight = (score, max) => (score ? (score / SCORE_MAX) * max : 4);
 
+// 지표마다 그림이 달라도(막대·그릇·꽃·점) 요일 글자가 카드 안에서 같은 높이에
+// 놓이도록 줄 높이를 하나로 맞춘다. 가장 큰 그림(수면 막대 52px)에 글자와
+// 사이 간격을 더한 값이다.
+const CHART_ROW = 76;
+// 활동만 걷는 그림 위에 막대를 얹어서 두 겹이라, 그만큼 더 높다.
+const ACTIVITY_ROW = CHART_ROW + 38;
 
 // 이름이 길어지면 40px에서 두 줄로 넘쳐 카드를 밀어낸다. 폰 프레임(최대 402px) 안에서
 // 늘 한 줄에 들어가도록 34px로 고정하고 줄바꿈을 막는다.
@@ -166,19 +172,25 @@ const InnerGroup = styled.div`
   border: 1.5px dashed rgba(74, 58, 47, 0.4);
 `;
 
+// 예전에는 flex + space-between이라 칸 너비가 그 안의 그림 크기를 따라갔다.
+// (수면 막대 18px, 식사 그릇 40px, 컨디션 점 34px…) 그래서 카드마다 월요일이
+// 다른 자리에 찍혔다. 일곱 칸을 똑같이 나눠서 어느 카드든 같은 자리에 오게 한다.
 const DayRow = styled.div`
   width: 100%;
-  display: flex;
-  align-items: ${({ $bottom }) => ($bottom ? 'flex-end' : 'flex-start')};
-  justify-content: space-between;
+  height: ${({ $height }) => $height}px;
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  align-items: end;
 `;
 
+// 그림과 요일 글자 사이 간격도 카드마다 달랐다(수면 4px, 나머지 8px).
+// 여기서 하나로 정해서 요일 글자가 같은 높이에 놓이게 한다.
 const DayCol = styled.div`
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: flex-end;
-  gap: ${({ $gap }) => $gap ?? 8}px;
+  gap: 8px;
 `;
 
 const DayLabel = styled.span`
@@ -500,7 +512,7 @@ function WeeklyReportDetail() {
               <MetricTitle>컨디션</MetricTitle>
             </MetricHead>
             <InnerGroup>
-              <DayRow>
+              <DayRow $height={CHART_ROW}>
                 {detail.condition.map((item) => (
                   <DayCol key={item.day}>
                     {/* 아직 답하지 않은 날은 빈 원으로 둔다. 표정을 채우면 기록한 것처럼 보인다 */}
@@ -533,9 +545,9 @@ function WeeklyReportDetail() {
               <MetricTitle>수면</MetricTitle>
             </MetricHead>
             <InnerGroup>
-              <DayRow $bottom style={{ height: 70 }}>
+              <DayRow $height={CHART_ROW}>
                 {detail.sleep.map((item) => (
-                  <DayCol key={item.day} $gap={4}>
+                  <DayCol key={item.day}>
                     <Bar $height={barHeight(item.value, 52)} $color={scoreColor(item.value)} />
                     <DayLabel>{item.day}</DayLabel>
                   </DayCol>
@@ -559,7 +571,7 @@ function WeeklyReportDetail() {
               <MetricTitle>식사</MetricTitle>
             </MetricHead>
             <InnerGroup>
-              <DayRow>
+              <DayRow $height={CHART_ROW}>
                 {detail.meal.map((item) => (
                   <DayCol key={item.day}>
                     <IconWrap>
@@ -584,7 +596,7 @@ function WeeklyReportDetail() {
               <MetricTitle>활동 (걸음 수)</MetricTitle>
             </MetricHead>
             <InnerGroup>
-              <DayRow $bottom style={{ height: 108 }}>
+              <DayRow $height={ACTIVITY_ROW}>
                 {detail.steps.map((item) => (
                   <DayCol key={item.day}>
                     <WalkIcon src={walkIcon} alt="" />
@@ -603,7 +615,7 @@ function WeeklyReportDetail() {
               <MetricTitle>복약</MetricTitle>
             </MetricHead>
             <InnerGroup>
-              <DayRow>
+              <DayRow $height={CHART_ROW}>
                 {detail.meds.map((item) => (
                   <DayCol key={item.day}>
                     <IconWrap>

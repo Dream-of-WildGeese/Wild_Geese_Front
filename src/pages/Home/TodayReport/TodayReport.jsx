@@ -34,6 +34,7 @@ import {
   PageDivider,
   PageScrollArea,
 } from '../../../components/PageShell';
+import { Spinner } from '../../../components/Loading';
 
 // Figma 31 / 31b: '오늘의 온담'이 '오늘의 건강일지'로 이름이 바뀌고
 // 타임라인 카드 형태로 재설계됐다.
@@ -149,6 +150,13 @@ const InfoText = styled.p`
   font-size: ${({ $small }) => ($small ? 13 : 16)}px;
   font-weight: 500;
   line-height: 1.4;
+`;
+
+// 온담 한마디를 기다리는 동안 도는 표시와 글자를 나란히 둔다.
+const PendingRow = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 8px;
 `;
 
 // Figma 907:1801 — 온담 한마디보다 한 톤 진한 연두로 채워서 눈에 먼저 들어오게 한다.
@@ -509,17 +517,23 @@ function TodayReport() {
               </SummaryChips>
 
               {/* 온담 한마디는 서버가 기록을 보고 만들어 준다.
-                  아직 안 만들어졌으면 자리를 비우지 않고 언제 채워지는지 알려준다. */}
+                  아직 안 만들어졌으면 자리를 비우지 않고 언제 채워지는지 알려준다.
+                  저녁 체크를 마쳤는데 아직 안 왔을 때는, 글자만 두면 멈춘 것처럼
+                  보여서 만드는 중이라는 표시를 함께 둔다. */}
               <InfoCard>
                 <InfoIcon src={aiIcon} alt="" />
                 <InfoTextCol>
                   <InfoLabel>온담 한마디</InfoLabel>
-                  <InfoText>
-                    {report.aiComment ||
-                      (report.eveningDone
-                        ? '오늘 기록을 살펴보고 있어요.'
-                        : '저녁 건강 체크를 마치면 온담이 한마디 남겨드려요.')}
-                  </InfoText>
+                  {report.aiComment ? (
+                    <InfoText>{report.aiComment}</InfoText>
+                  ) : report.eveningDone ? (
+                    <PendingRow>
+                      <Spinner $size={15} aria-hidden="true" />
+                      <InfoText>오늘 기록을 살펴보고 있어요.</InfoText>
+                    </PendingRow>
+                  ) : (
+                    <InfoText>저녁 건강 체크를 마치면 온담이 한마디 남겨드려요.</InfoText>
+                  )}
                 </InfoTextCol>
               </InfoCard>
 
@@ -557,15 +571,6 @@ function TodayReport() {
                   </EntryContent>
                 </TimelineEntry>
               ))}
-
-              {report.eveningComment && (
-                <InfoCard>
-                  <InfoIcon src={aiIcon} alt="" />
-                  <InfoTextCol>
-                    <InfoText $small>{report.eveningComment}</InfoText>
-                  </InfoTextCol>
-                </InfoCard>
-              )}
 
               {report.cta && (
                 <>

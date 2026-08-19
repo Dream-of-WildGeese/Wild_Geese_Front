@@ -10,15 +10,11 @@ import { getDailyLog, getFamilyDailyLog } from '../../api/daily';
 import { getMyFamily } from '../../api/family';
 import { getUserId } from '../../api/client';
 import { useApi } from '../../hooks/useApi';
+import { useLazyList } from '../../hooks/useLazyList';
+import { LoadingLine } from '../../components/Loading';
 import { toDateString } from '../../utils/medication';
 import { getRelationLabel } from '../../utils/family';
 import { findMyLatestAnswer, findPartnerLatestAnswer } from '../../utils/morningAnswer';
-import { getWeekStart } from '../Home/WeeklyReport/weeklyReportData';
-import { getMockMorningEntry } from '../../mock/dailyReport';
-
-// 이번 주를 0으로 놓고 몇 주 전인지 센다. 하루 일지/주간 리포트와 같은 기준이다.
-const weeksAgoOf = (date) =>
-  Math.round((getWeekStart() - getWeekStart(date)) / (7 * 24 * 60 * 60 * 1000));
 
 // 아침 질문 이력 API는 질문 목록만 주고 답변은 담아주지 않는다.
 // 그래서 질문 목록을 받은 뒤, 각 날짜의 일지에서 나와 가족의 답변을 따로 채워 넣는다.
@@ -38,8 +34,6 @@ async function loadMonthJournal({ from, to }) {
   const members = family?.members ?? [];
   const me = members.find((member) => String(member.userId) === String(myUserId));
   const partner = members.find((member) => String(member.userId) !== String(myUserId));
-  const myRole = me?.role === 'CHILD' ? 'child' : 'parent';
-  const partnerRole = myRole === 'parent' ? 'child' : 'parent';
 
   const realEntries = await Promise.all(
     (history ?? []).map(async (item) => {
@@ -81,45 +75,8 @@ async function loadMonthJournal({ from, to }) {
     }),
   );
 
-  // 서버에는 지난 기록이 아직 없어서, 하루 일지/주간 리포트가 쓰는 것과 같은
-  // 시연용 데이터로 지난 달을 채운다. 실제 기록이 있는 날짜는 그대로 둔다.
-  const realDates = new Set(realEntries.map((entry) => entry.id));
-  const mockEntries = [];
-  const cursor = new Date(`${from}T00:00:00`);
-  const end = new Date(`${to}T00:00:00`);
-  while (cursor <= end) {
-    const dateString = toDateString(cursor);
-    const weeksAgo = weeksAgoOf(cursor);
-
-    if (!realDates.has(dateString) && weeksAgo > 0) {
-      const mine = getMockMorningEntry({ role: myRole, weeksAgo, date: cursor });
-      if (mine) {
-        const answers = [{ id: 'me', name: '나', avatar: getMascotImage(me), text: mine.answer }];
-        if (partner) {
-          const theirs = getMockMorningEntry({ role: partnerRole, weeksAgo, date: cursor });
-          if (theirs) {
-            answers.push({
-              id: 'family',
-              name: getRelationLabel(partner),
-              avatar: getMascotImage(partner),
-              text: theirs.answer,
-            });
-          }
-        }
-        mockEntries.push({
-          id: dateString,
-          date: new Date(cursor),
-          question: mine.question,
-          answers,
-        });
-      }
-    }
-
-    cursor.setDate(cursor.getDate() + 1);
-  }
-
   // 최신 날짜가 위로 오도록 내림차순 정렬한다.
-  return [...realEntries, ...mockEntries].sort((a, b) => b.date - a.date);
+  return [...realEntries].sort((a, b) => b.date - a.date);
 }
 
 const TOAST_DURATION_MS = 1800;
@@ -169,6 +126,11 @@ const Divider = styled.div`
   background: #d8c4a8;
 `;
 
+const MoreSentinel = styled.div`
+  width: 100%;
+  height: 1px;
+`;
+
 const EmptyState = styled.p`
   margin: 40px 0;
   font-size: 14px;
@@ -212,6 +174,13 @@ function MorningReport() {
   const { data: entries, loading, error } = useApi(loadMonthJournal, { args: [range] });
   const entriesForMonth = entries ?? [];
 
+  // 한 달치를 한 번에 다 그리지 않는다. 달을 옮기면 처음 묶음부터 다시 센다.
+  const {
+    visible: visibleEntries,
+    hasMore,
+    sentinelRef,
+  } = useLazyList(entriesForMonth, { step: 10, resetKey: `${year}-${month}` });
+
   // 달을 옮긴 직후에는 아직 조회 결과가 없으므로, 응답이 도착한 뒤 비어 있으면 안내한다.
   useEffect(() => {
     if (loading || error) return;
@@ -247,20 +216,25 @@ function MorningReport() {
 
       <ScrollArea>
         {loading ? (
-          <EmptyState>기록을 불러오는 중이에요...</EmptyState>
+          <LoadingLine>기록을 불러오는 중이에요...</LoadingLine>
         ) : error ? (
           <EmptyState>{error.message}</EmptyState>
         ) : entriesForMonth.length === 0 ? (
           <EmptyState>이 달에는 아직 쌓인 기록이 없어요.</EmptyState>
         ) : (
-          entriesForMonth.map((entry) => (
-            <MorningJournalCard
-              key={entry.id}
-              date={entry.date}
-              question={entry.question}
-              answers={entry.answers}
-            />
-          ))
+          <>
+            {visibleEntries.map((entry) => (
+              <MorningJournalCard
+                key={entry.id}
+                date={entry.date}
+                question={entry.question}
+                answers={entry.answers}
+              />
+            ))}
+            {/* 바닥에 닿으면 다음 묶음을 잇는다 */}
+            {hasMore && <MoreSentinel ref={sentinelRef} />}
+            {hasMore && <LoadingLine $compact $size={16}>더 불러오는 중이에요...</LoadingLine>}
+          </>
         )}
       </ScrollArea>
 

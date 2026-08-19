@@ -19,7 +19,7 @@ import {
   findMyLatestAnswer,
   findPartnerLatestAnswer,
 } from '../../../../utils/morningAnswer';
-import { useVoiceRecorder } from '../../../../hooks/useVoiceRecorder';
+import { useVoiceRecorder, voiceButtonLabel } from '../../../../hooks/useVoiceRecorder';
 import {
   PopupBackdrop,
   PopupCard,
@@ -300,28 +300,16 @@ function DayQuestionPopup({ onClose }) {
   }, []);
   const voice = useVoiceRecorder(transcribe, handleVoiceDone);
 
-  // 마이크는 녹음을 시작만 하고, 멈추는 건 아래 '입력 완료' 버튼이 맡는다.
+  // 저녁 체크·편지 쓰기와 같이 마이크를 다시 눌러 멈춘다. 예전에는 여기만
+  // 아래 '완료' 버튼이 녹음을 멈추는 일까지 겸해서, 같은 버튼이 화면 상태에 따라
+  // 다른 일을 했다.
   const handleMicClick = () => {
-    if (voice.recording || voice.busy) return;
-    setVoiceText(null);
-    voice.start();
+    if (voice.busy) return;
+    if (!voice.recording) setVoiceText(null);
+    voice.toggle();
   };
 
-  const primaryLabel = voice.recording
-    ? '입력 완료'
-    : voice.busy
-      ? '옮겨 적는 중...'
-      : submitting
-        ? '보내는 중...'
-        : '완료';
-
-  const handlePrimaryClick = () => {
-    if (voice.recording) {
-      voice.stop();
-      return;
-    }
-    handleSubmit();
-  };
+  const primaryLabel = voice.busy ? '옮겨 적는 중...' : submitting ? '보내는 중...' : '완료';
 
   if (step === 'result') {
     return (
@@ -436,27 +424,19 @@ function DayQuestionPopup({ onClose }) {
         <VoiceButton
           type="button"
           onClick={handleMicClick}
-          disabled={!voice.supported || voice.busy || voice.recording || !question}
+          disabled={!voice.supported || voice.busy || !question}
           $recording={voice.recording}
         >
           <PopupIcon $size={100} src={micIcon} alt="" />
           <VoiceLabel $recording={voice.recording}>
-            {!voice.supported
-              ? '음성 미지원'
-              : voice.busy
-                ? '옮겨 적는 중...'
-                : voice.recording
-                  ? '듣고 있어요'
-                  : '눌러서 말하기'}
+            {voiceButtonLabel(voice)}
           </VoiceLabel>
         </VoiceButton>
 
         <PopupPrimaryButton
           type="button"
-          onClick={handlePrimaryClick}
-          disabled={
-            voice.busy || (!voice.recording && (!answer.trim() || submitting || !question))
-          }
+          onClick={handleSubmit}
+          disabled={voice.recording || voice.busy || !answer.trim() || submitting || !question}
         >
           {primaryLabel}
         </PopupPrimaryButton>

@@ -8,9 +8,16 @@ import {
   PopupPrimaryButton,
   PopupIcon,
 } from '../../../components/PopupShell';
+import { LoadingLine } from '../../../components/Loading';
+import { useLazyList } from '../../../hooks/useLazyList';
 
 // Figma 35 ver02: 우체통 본문.
 // 목록 행은 읽음/안읽음 구분 없이 흰 배경 + 살구색 테두리로 통일돼 있다.
+const MoreSentinel = styled.div`
+  width: 100%;
+  height: 1px;
+`;
+
 const HeaderGroup = styled.div`
   display: flex;
   flex-direction: column;
@@ -141,6 +148,13 @@ const Preview = styled.p`
 `;
 
 function LetterboxList({ letters, senderLabel, onSelectLetter, onWrite, onClose }) {
+  // 편지가 쌓일수록 목록이 길어진다. 보이는 만큼만 그리고 바닥에서 이어 붙인다.
+  const {
+    visible: visibleLetters,
+    hasMore,
+    sentinelRef,
+  } = useLazyList(letters, { step: 12 });
+
   return (
     <PopupCard $center $gap={16} $padTop={32} onClick={(event) => event.stopPropagation()}>
       <PopupInnerBorder />
@@ -155,7 +169,7 @@ function LetterboxList({ letters, senderLabel, onSelectLetter, onWrite, onClose 
       </HeaderGroup>
 
       <MessageList>
-        {letters.map((letter) => (
+        {visibleLetters.map((letter) => (
           <MessageRow key={letter.id} type="button" onClick={() => onSelectLetter(letter)}>
             <Avatar>
               <AvatarImage src={avatarChild} alt="" />
@@ -171,6 +185,9 @@ function LetterboxList({ letters, senderLabel, onSelectLetter, onWrite, onClose 
             </TextCol>
           </MessageRow>
         ))}
+        {/* 바닥에 닿으면 다음 묶음을 잇는다 */}
+        {hasMore && <MoreSentinel ref={sentinelRef} />}
+        {hasMore && <LoadingLine $compact $size={16}>더 불러오는 중이에요...</LoadingLine>}
       </MessageList>
 
       <PopupPrimaryButton type="button" onClick={onWrite}>
