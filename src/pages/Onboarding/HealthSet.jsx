@@ -1,8 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import styled from 'styled-components';
-import { useLocation } from 'react-router-dom';
-import back from '../../assets/onboarding/back.svg';
 import { useAppData } from '../../store/AppDataContext';
 import { getMe, updateHealthProfile, getHealthProfile } from '../../api/user';
 import { getMedications } from '../../api/medication';
@@ -18,28 +16,32 @@ const formatBirthLabel = (value) => {
   return `${year}년 ${month}월 ${day}일`;
 };
 
-// 화면이 쓰는 성별 값을 서버 enum(MALE/FEMALE)으로 바꾼다.
 const GENDER_VALUES = { male: 'MALE', female: 'FEMALE' };
+const GENDER_LABELS = { MALE: 'male', FEMALE: 'female' };
 
-// 건강 관심사도 서버가 enum만 받는다. 한글 라벨을 그대로 보내면 400이 난다.
-// 화면에 보여주던 목록('체력관리' 등)이 이 키와 달라서, 무엇을 골라도
-// 변환 결과가 비어 저장이 안 되고 있었다. 목록을 이 키에 맞춘다.
+
+
+// 서버가 실제로 받는 enum은 SLEEP/ACTIVITY/MEAL/MEDICINE/MOOD뿐이고 NONE은 없다.
+// '없음'은 여기 안 넣어서, 고르면 wellnessInterests가 자연스럽게 빈 배열로 나가게 한다.
 const INTEREST_VALUES = {
-  수면: 'SLEEP',
-  활동량: 'ACTIVITY',
-  식사: 'MEAL',
-  복약: 'MEDICINE',
-  기분: 'MOOD',
+  '체력 관리': 'ACTIVITY',
+  '스트레스 관리': 'MOOD',
+  '수면 개선': 'SLEEP',
+  '식습관 개선': 'MEAL',
 };
 
 const INTEREST_LABELS = Object.fromEntries(
   Object.entries(INTEREST_VALUES).map(([label, value]) => [value, label]),
 );
 
-const GENDER_LABELS = { MALE: 'male', FEMALE: 'female' };
+const INTEREST_LIST = [
+  '체력 관리',
+  '스트레스 관리',
+  '수면 개선',
+  '식습관 개선',
+  '없음',
+];
 
-// 만 나이 기준 가입 가능 연령. 개인정보보호법상 만 14세 미만은 법정대리인 동의가
-// 필요해서, 그 절차가 없는 지금은 14세를 하한으로 둔다.
 const MIN_AGE = 14;
 const MAX_AGE = 120;
 
@@ -47,24 +49,21 @@ const HealthSet = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const {
-  data,
-  setProfile,
-  setInterests: saveInterests,
-  setConditions,
-} = useAppData();
+    data,
+    setProfile,
+    setInterests: saveInterests,
+    setConditions,
+  } = useAppData();
   const role = location.state?.role || data.profile.role || 'parent';
 
   const [name, setName] = useState(data.profile.name || '');
   const [birth, setBirth] = useState(data.profile.birth || '');
   const [gender, setGender] = useState(data.profile.gender || '');
-  // 개인정보 수집 동의. 체크해야만 다음으로 넘어갈 수 있다.
   const [agreed, setAgreed] = useState(false);
   const [isBirthPickerOpen, setIsBirthPickerOpen] = useState(false);
   const [isMissingPopupOpen, setIsMissingPopupOpen] = useState(false);
   const [interests, setInterests] = useState(data.interests || []);
 
-  // 로그인 대신 쓰는 임시 유저 선택 화면(UserType)에는 실제 이름이 없어서,
-  // 여기서 서버가 아는 내 이름을 받아와 채워준다.
   const { data: me } = useApi(getMe);
 
   useEffect(() => {
@@ -74,8 +73,6 @@ const HealthSet = () => {
     }
   }, [me]);
 
-  // 이미 저장해둔 건강 프로필이 있으면 그 값으로 채워서 연다.
-  // 빈 화면에서 다시 고르게 하면 저장돼 있던 값이 지워진 것처럼 보인다.
   const { data: healthProfile } = useApi(getHealthProfile);
   const prefilledRef = useRef(false);
   useEffect(() => {
@@ -91,10 +88,8 @@ const HealthSet = () => {
       setProfile({ gender: GENDER_LABELS[healthProfile.gender] });
     }
     if (healthProfile.diseases?.length) {
-      // 과거 저장 버그로 서버에 같은 값이 중복 저장돼 있을 수 있어 중복 제거한다.
       const uniqueDiseases = [...new Set(healthProfile.diseases)];
       setConditions(uniqueDiseases);
-      // 목록에 없는 병명은 '기타'로 직접 넣은 것이다.
       setOtherDiseases(uniqueDiseases.filter((d) => !DISEASE_LIST.includes(d)));
     }
     if (healthProfile.wellnessInterests?.length) {
@@ -115,15 +110,11 @@ const HealthSet = () => {
   const { execute: saveHealthProfile, loading: saving } = useApiAction(updateHealthProfile);
 
   const handleNext = async () => {
-    // 필수 항목이 비어 있으면 저장하지 않고 무엇이 비었는지 알려준다.
     if (!canProceed) {
       setIsMissingPopupOpen(true);
       return;
     }
 
-    // '기타' 입력창에 글자를 쓰고도 '+'를 안 누른 채 바로 저장을 누르면
-    // 그 값이 어디에도 반영되지 않고 사라지던 문제. 저장 시점에 남아있는
-    // 입력값도 커밋된 것처럼 함께 담는다.
     const pendingOtherDisease = otherDiseaseInput.trim();
     const finalOtherDiseases =
       pendingOtherDisease && !otherDiseases.includes(pendingOtherDisease)
@@ -135,11 +126,9 @@ const HealthSet = () => {
       birthDate: birth,
       gender: GENDER_VALUES[gender] ?? gender,
       diseases: [...new Set([...standardDiseases, ...finalOtherDiseases])],
+      wellnessInterests: interests.map((item) => INTEREST_VALUES[item]).filter(Boolean),
+    });
 
-    wellnessInterests: interests
-      .map((item) => INTEREST_VALUES[item])
-      .filter(Boolean),
-        });
     if (!ok) {
       alert(error.message);
       return;
@@ -147,23 +136,26 @@ const HealthSet = () => {
     navigate('/onboarding/complete/2');
   };
 
-  const interestList = Object.keys(INTEREST_VALUES);
-
   const toggleInterest = (item) => {
-    const next = interests.includes(item) ? interests.filter((v) => v !== item) : [...interests, item];
+    let next;
+    if (item === '없음') {
+      next = interests.includes('없음') ? [] : ['없음'];
+    } else {
+      const filtered = interests.filter((v) => v !== '없음');
+      next = filtered.includes(item)
+        ? filtered.filter((v) => v !== item)
+        : [...filtered, item];
+    }
     setInterests(next);
     saveInterests(next);
   };
 
   const toggleDisease = (disease) => {
-    // 1. '없음'을 클릭한 경우
     if (disease === '없음') {
       const isNoneSelected = selectedDiseases.includes('없음');
       if (isNoneSelected) {
-        // 이미 '없음'이 켜져 있는 상태에서 다시 누르면 해제
         setConditions([]);
       } else {
-        // '없음'을 켜면 기존 모든 질환 및 '기타' 입력값 전체 초기화
         setConditions(['없음']);
         setOtherDiseases([]);
         setOtherDiseaseInput('');
@@ -171,11 +163,9 @@ const HealthSet = () => {
       return;
     }
 
-    // 2. '없음'이 아닌 다른 질환을 클릭한 경우 ('없음'은 자동으로 제외)
     let nextDiseases = selectedDiseases.filter((d) => d !== '없음');
 
     if (disease === '기타' && nextDiseases.includes('기타')) {
-      // '기타'를 해제할 때는 직접 입력한 기타 질환 목록 초기화
       setOtherDiseases([]);
       setOtherDiseaseInput('');
     }
@@ -188,43 +178,34 @@ const HealthSet = () => {
 
     setConditions(nextDiseases);
   };
-    const addOtherDisease = () => {
-      const value = otherDiseaseInput.trim();
 
-      if (!value || otherDiseases.includes(value)) return;
+  const addOtherDisease = () => {
+    const value = otherDiseaseInput.trim();
+    if (!value || otherDiseases.includes(value)) return;
 
-      const updated = [...otherDiseases, value];
+    const updated = [...otherDiseases, value];
+    setOtherDiseases(updated);
+    setOtherDiseaseInput('');
+    setConditions([...standardDiseases, '기타', ...updated]);
+  };
 
-      setOtherDiseases(updated);
-      setOtherDiseaseInput('');
-
-      setConditions([...standardDiseases, '기타', ...updated]);
-    };
-    const removeOtherDisease = (target) => {
-      const updated = otherDiseases.filter((d) => d !== target);
-
-      setOtherDiseases(updated);
-
-      setConditions([
-        ...standardDiseases,
-        ...(updated.length ? ['기타', ...updated] : []),
-      ]);
-    };
-  const diseaseList = DISEASE_LIST;
-
+  const removeOtherDisease = (target) => {
+    const updated = otherDiseases.filter((d) => d !== target);
+    setOtherDiseases(updated);
+    setConditions([
+      ...standardDiseases,
+      ...(updated.length ? ['기타', ...updated] : []),
+    ]);
+  };
 
   const selectedDiseases = data.conditions || [];
-  // conditions에는 표준 질환 목록 항목(과 '기타' 마커)만 있어야 한다. 과거에
-  // 커스텀 질환 텍스트가 섞여 들어간 적이 있어도, 여기서 표준 목록에 없는
-  // 값은 걸러내서 otherDiseases와 중복으로 더해지지 않게 한다.
   const standardDiseases = selectedDiseases.filter(
     (d) => DISEASE_LIST.includes(d) && d !== '기타',
   );
   const [otherDiseaseInput, setOtherDiseaseInput] = useState('');
-const [otherDiseases, setOtherDiseases] = useState(
-  data.conditions?.filter((d) => !diseaseList.includes(d)) || []
-);
-
+  const [otherDiseases, setOtherDiseases] = useState(
+    data.conditions?.filter((d) => !DISEASE_LIST.includes(d)) || [],
+  );
 
   const handleNameChange = (e) => {
     setName(e.target.value);
@@ -237,8 +218,6 @@ const [otherDiseases, setOtherDiseases] = useState(
     setIsBirthPickerOpen(false);
   };
 
-  // 이름·생년월일·성별을 모두 채우고 개인정보 수집에 동의해야 다음으로 넘어간다.
-  // 무엇이 비었는지 짚어주지 않으면 버튼이 왜 안 눌리는지 알기 어렵다.
   const requirements = [
     { label: '이름', done: Boolean(name.trim()) },
     { label: '생년월일', done: Boolean(birth) },
@@ -255,10 +234,6 @@ const [otherDiseases, setOtherDiseases] = useState(
   return (
     <Page>
       <Content>
-        <BackButton onClick={() => navigate('/onboarding/complete/1', { state: { role } })}>
-          <BackIcon src={back} alt="뒤로가기" />
-        </BackButton>
-
         <Header>
           <Title>건강 프로필</Title>
         </Header>
@@ -277,166 +252,153 @@ const [otherDiseases, setOtherDiseases] = useState(
             <StageDesc>가족과 나누고 싶은 건강 정보를 알려주세요</StageDesc>
           </StageTextWrap>
         </StageBlock>
+
         <ScrollArea>
-            <Card>
+          {/* 기본 정보 */}
+          <Card>
             <CardHeader>
-                <CardTitle>기본 정보</CardTitle>
-                <RoleBadge>{role === 'parent' ? '부모' : '자녀'}</RoleBadge>
+              <CardTitle>기본 정보</CardTitle>
+              <RoleBadge>{role === 'parent' ? '부모' : '자녀'}</RoleBadge>
             </CardHeader>
-           
 
             <InputGroup>
-                <Label>이름</Label>
-                <Input
-                value={name}
-                onChange={handleNameChange}
-                />
+              <Label>이름</Label>
+              <Input value={name} onChange={handleNameChange} />
             </InputGroup>
 
             <InputGroup>
-                <Label>생년월일 </Label>
-                <DateSelectButton type="button" onClick={() => setIsBirthPickerOpen(true)}>
-                  {birth ? formatBirthLabel(birth) : '생년월일을 선택해주세요'}
-                </DateSelectButton>
+              <Label>생년월일</Label>
+              <DateSelectButton type="button" onClick={() => setIsBirthPickerOpen(true)}>
+                {birth ? formatBirthLabel(birth) : '생년월일을 선택해주세요'}
+              </DateSelectButton>
             </InputGroup>
 
             <InputGroup>
-                <Label>성별 </Label>
-
-                <GenderWrap>
+              <Label>성별</Label>
+              <GenderWrap>
                 <GenderButton
-                    $active={gender === 'MALE'}
-                    onClick={() => handleGenderChange('MALE')}
+                  $active={gender === 'MALE'}
+                  onClick={() => handleGenderChange('MALE')}
                 >
-                    남성
+                  남성
                 </GenderButton>
-
                 <GenderButton
-                    $active={gender === 'FEMALE'}
-                    onClick={() => handleGenderChange('FEMALE')}
+                  $active={gender === 'FEMALE'}
+                  onClick={() => handleGenderChange('FEMALE')}
                 >
-                    여성
+                  여성
                 </GenderButton>
-                </GenderWrap>
+              </GenderWrap>
             </InputGroup>
-            </Card>
+          </Card>
 
-            <Card>
-              <CardTitle>현재 꾸준히 관리하고 있는 건강 문제가 있나요?</CardTitle>
-
-              <CardDesc>해당하는 항목을 모두 골라주세요.</CardDesc>
-              <ChipWrap>
-                {diseaseList.map((item) => (
-                  <Chip
-                    key={item}
-                    $active={selectedDiseases.includes(item)}
-                    onClick={() => toggleDisease(item)}
-                  >
-                    {item}
-                  </Chip>
-                ))}
-              </ChipWrap>
-              {selectedDiseases.includes('기타') && (
-                <>
-                  <AddDiseaseRow>
-                    <DiseaseInput
-                      value={otherDiseaseInput}
-                      onChange={(e) => setOtherDiseaseInput(e.target.value)}
-                      placeholder="예: 갑상선 질환"
-                    />
-                    <AddChip type="button" onClick={addOtherDisease}>
-                      +
-                    </AddChip>
-                  </AddDiseaseRow>
-
-                  {otherDiseases.length > 0 && (
-                    <ChipWrap>
-                      {otherDiseases.map((disease) => (
-                        <Chip key={disease} as="span" $active>
-                          {disease}
-                          <RemoveIcon
-                            type="button"
-                            onClick={() => removeOtherDisease(disease)}
-                          >
-                            ×
-                          </RemoveIcon>
-                        </Chip>
-                      ))}
-                    </ChipWrap>
-                  )}
-                </>
-              )}
-            </Card>
-            <Card>
-            <CardTitle>건강 관심사를 골라주세요!</CardTitle>
-
-            <CardDesc>
-                여러 개 골라도 좋아요. 선택하신 관심사에 맞춰 맞춤 질문을
-                드릴게요.
-            </CardDesc>
-
+          {/* 걱정되는 건강 문제 */}
+          <Card>
+            <CardTitle>현재 걱정되는 건강 문제가 있나요?</CardTitle>
+            <CardDesc>해당하는 항목을 모두 골라주세요.</CardDesc>
             <ChipWrap>
-                {interestList.map((item) => (
+              {DISEASE_LIST.map((item) => (
                 <Chip
-                    key={item}
-                    $active={interests.includes(item)}
-                    onClick={() => toggleInterest(item)}
+                  key={item}
+                  $active={selectedDiseases.includes(item)}
+                  onClick={() => toggleDisease(item)}
                 >
-                    {item}
+                  {item}
                 </Chip>
-                ))}
+              ))}
             </ChipWrap>
-            </Card>
 
-            <Card>
-            <CardHeader>
-                <CardTitle>복용약</CardTitle>
-                <Manage onClick={() => navigate('/onboarding/medication/manage')}> ›</Manage>
-            </CardHeader>
+            {selectedDiseases.includes('기타') && (
+              <>
+                <AddDiseaseRow>
+                  <DiseaseInput
+                    value={otherDiseaseInput}
+                    onChange={(e) => setOtherDiseaseInput(e.target.value)}
+                    placeholder="예: 갑상선 질환"
+                  />
+                  <AddChip type="button" onClick={addOtherDisease}>
+                    +
+                  </AddChip>
+                </AddDiseaseRow>
 
-            <CardDesc>
-                잊지 않게 알림을 보내드릴게요.
-            </CardDesc>
+                {otherDiseases.length > 0 && (
+                  <ChipWrap>
+                    {otherDiseases.map((disease) => (
+                      <Chip key={disease} as="span" $active>
+                        {disease}
+                        <RemoveIcon
+                          type="button"
+                          onClick={() => removeOtherDisease(disease)}
+                        >
+                          ×
+                        </RemoveIcon>
+                      </Chip>
+                    ))}
+                  </ChipWrap>
+                )}
+              </>
+            )}
+          </Card>
+
+          {/* 건강 관심사 */}
+          <Card>
+            <CardTitle>건강 관심사를 골라주세요!</CardTitle>
+            <CardDesc>해당하는 관심사를 모두 골라주세요</CardDesc>
 
             <ChipWrap>
-                {medications.map((item) => (
-                <MedChip key={item.id}>{item.name}</MedChip>
-                ))}
-
-                <AddChip onClick={() => navigate('/onboarding/medication/add')}>+ 추가</AddChip>
+              {INTEREST_LIST.map((item) => (
+                <Chip
+                  key={item}
+                  $active={interests.includes(item)}
+                  onClick={() => toggleInterest(item)}
+                >
+                  {item}
+                </Chip>
+              ))}
             </ChipWrap>
-            </Card>
-            <AgreeBox>
+          </Card>
+
+          {/* 복용약 */}
+          <Card>
+            <CardHeader>
+              <CardTitle>복용약</CardTitle>
+              <Manage onClick={() => navigate('/onboarding/medication/manage')}>›</Manage>
+            </CardHeader>
+            <CardDesc>잊지 않게 알림을 보내드릴게요.</CardDesc>
+
+            <ChipWrap>
+              {medications.map((item) => (
+                <MedChip key={item.id}>{item.name}</MedChip>
+              ))}
+              <AddChip onClick={() => navigate('/onboarding/medication/add')}>+ 추가</AddChip>
+            </ChipWrap>
+          </Card>
+
+          {/* 개인정보 수집 동의 */}
+          <AgreeBox>
             <input
-                type="checkbox"
-                checked={agreed}
-                onChange={() => setAgreed(!agreed)}
+              type="checkbox"
+              checked={agreed}
+              onChange={() => setAgreed(!agreed)}
             />
-
             <span>
-                이름, 생년월일, 성별, 건강 상태, 복용 약물 등 개인정보 및
-                건강에 관한 민감정보를 수집하며, 수집된 정보는 가족 간 건강
-                상태 공유 및 서비스 제공 목적으로만 이용됩니다. 동의하신 가족
-                구성원에게만 제공되며, 목적 외 용도로는 사용되지 않습니다.
+              이름, 생년월일, 성별, 건강 상태, 복용 약물 등 개인정보 및
+              건강에 관한 민감정보를 수집하며, 수집된 정보는 가족 간 건강
+              상태 공유 및 서비스 제공 목적으로만 이용됩니다. 동의하신 가족
+              구성원에게만 제공되며, 목적 외 용도로는 사용되지 않습니다.
             </span>
-            </AgreeBox>
-
+          </AgreeBox>
         </ScrollArea>
-
-        
 
         {!canProceed && (
           <RequirementHint>
             {requirements.filter((item) => !item.done).length}개 항목이 아직 비어 있어요
           </RequirementHint>
         )}
-        {/* 버튼을 막아두면 눌러도 반응이 없어 이유를 알 수 없다.
-            누를 수는 있게 두고, 덜 채웠으면 무엇이 비었는지 팝업으로 알려준다. */}
+
         <NextButton onClick={handleNext} disabled={saving}>
           {saving ? '저장 중...' : '다음'}
         </NextButton>
-
-        
       </Content>
 
       {isMissingPopupOpen && (
@@ -461,6 +423,10 @@ const [otherDiseases, setOtherDiseases] = useState(
 
 export default HealthSet;
 
+/* =========================
+   Styled Components
+========================= */
+
 const Page = styled.div`
   width: calc(100% + 32px);
   height: 100%;
@@ -470,11 +436,9 @@ const Page = styled.div`
 
 const Content = styled.div`
   position: relative;
-
   max-width: 402px;
   height: 100%;
   margin: 0 auto;
-
   display: flex;
   flex-direction: column;
   box-sizing: border-box;
@@ -490,7 +454,6 @@ const ScrollArea = styled.div`
   &::-webkit-scrollbar {
     display: none;
   }
-
   scrollbar-width: none;
 `;
 
@@ -498,29 +461,6 @@ const Header = styled.div`
   display: flex;
   align-items: center;
   justify-content: center;
-  height: 40px;
-`;
-
-const BackButton = styled.button`
-  position: absolute;
-  top: 35px;
-  left: 24px;
-  z-index: 10;
-
-  width: 40px;
-  height: 40px;
-  padding: 0;
-  border: none;
-  background: transparent;
-  cursor: pointer;
-
-  display: flex;
-  align-items: center;
-  justify-content: center;
-`;
-
-const BackIcon = styled.img`
-  width: 40px;
   height: 40px;
 `;
 
@@ -582,7 +522,7 @@ const StageTitle = styled.h2`
 `;
 
 const StageDesc = styled.p`
-  margin: 0 0 0;
+  margin: 0;
   color: #A79C8E;
   font-family: 'Noto Sans KR';
   font-size: 16px;
@@ -593,7 +533,7 @@ const Card = styled.div`
   padding: 18px;
   margin-bottom: 18px;
   border-radius: 20px;
-  border: 1.5px solid rgba(74,58,47,.28);
+  border: 1.5px solid rgba(74, 58, 47, 0.28);
   background: #FFFDF8;
 `;
 
@@ -614,7 +554,7 @@ const RoleBadge = styled.span`
   padding: 5px 12px;
   border-radius: 14px;
   border: 1.2px solid rgba(74, 58, 47, 0.55);
- background: #F6EBC7;
+  background: #F6EBC7;
   color: #4A3A2F;
   font-size: 13px;
   font-weight: 700;
@@ -637,20 +577,15 @@ const DateSelectButton = styled.button`
   height: 48px;
   box-sizing: border-box;
   padding: 0 14px;
-
   border: 1.5px solid #CFC7BC;
   border-radius: 14px;
   background: #FFFDF8;
-
   color: ${({ children }) =>
     String(children).includes('선택해주세요') ? '#A79C8E' : '#4A3A2F'};
-
   font-size: 15px;
   text-align: left;
   cursor: pointer;
 `;
-
-
 
 const RequirementHint = styled.p`
   margin: 0 0 10px;
@@ -664,11 +599,9 @@ const Input = styled.input`
   height: 48px;
   box-sizing: border-box;
   padding: 0 14px;
-
   border: 1.5px solid #CFC7BC;
   border-radius: 14px;
   background: #FFFDF8;
-
   color: #4A3A2F;
   font-size: 15px;
   outline: none;
@@ -687,23 +620,17 @@ const GenderButton = styled.button`
   flex: 1;
   height: 48px;
   border-radius: 14px;
-
   border: ${({ $active }) =>
     $active
       ? '1.2px solid rgba(74, 58, 47, 0.55)'
       : '1.2px dashed rgba(74, 58, 47, 0.35)'};
-
   background: ${({ $active }) =>
-    $active ? ' #F6EBC7;' : 'rgba(255, 255, 255, 0.60)'};
-
+    $active ? '#F6EBC7' : 'rgba(255, 255, 255, 0.60)'};
   color: #4A3A2F;
-text-align: center;
-font-family: "Noto Sans KR";
-font-size: 16px;
-font-style: normal;
-font-weight: 700;
-line-height: normal;
-
+  text-align: center;
+  font-family: 'Noto Sans KR';
+  font-size: 16px;
+  font-weight: 700;
   cursor: pointer;
 `;
 
@@ -740,29 +667,21 @@ const ChipWrap = styled.div`
 
 const Chip = styled.button`
   padding: 8px 14px;
-
   border: ${({ $active }) =>
-    $active
-      ? '1.5px solid #B89A54'
-      : '1.5px dashed #D8D0C7'};
-
+    $active ? '1.5px solid #B89A54' : '1.5px dashed #D8D0C7'};
   border-radius: 999px;
-
   background: ${({ $active }) =>
-    $active ? ' #F6EBC7;' : 'rgba(255, 255, 255, 0.60)'};
-
+    $active ? '#F6EBC7' : 'rgba(255, 255, 255, 0.60)'};
   color: #4A3A2F;
-
   font-size: 14px;
   font-weight: 600;
-
   cursor: pointer;
 `;
 
 const MedChip = styled.div`
   padding: 8px 14px;
   border-radius: 999px;
-  border: 1px solid rgba(74,58,47,.2);
+  border: 1px solid rgba(74, 58, 47, 0.2);
   background: #F6EBC7;
   color: #4A3A2F;
   font-size: 14px;
@@ -773,8 +692,7 @@ const AddChip = styled.button`
   padding: 8px 14px;
   border: 1.5px solid #D8D0C7;
   border-radius: 999px;
-  background: rgba(255,255,255,0.6);
-
+  background: rgba(255, 255, 255, 0.6);
   color: #8C8780;
   font-size: 14px;
   font-weight: 600;
@@ -782,37 +700,40 @@ const AddChip = styled.button`
 `;
 
 const Manage = styled.button`
-  padding: 0;
+  padding: 4px 8px; 
   border: none;
   background: none;
-
   color: #8C6E4B;
- 
+  
+  
+  font-size: 30px; 
+  font-weight: 700;
+  line-height: 1;
 
+  display: flex;
+  align-items: center;
+  justify-content: center;
   cursor: pointer;
 `;
 
 const NextButton = styled.button`
-  width:100%;
+  width: 100%;
   height: 56px;
-
   border-radius: 16px;
-  border: 1.5px solid rgba(74,58,47,.55);
+  border: 1.5px solid rgba(74, 58, 47, 0.55);
   background: #CBD879;
-
   color: #4A3A2F;
   font-family: Jua;
   font-size: 18px;
   font-weight: 400;
-
   cursor: pointer;
-
 `;
 
 const DiseaseInput = styled(Input)`
   flex: 1;
   margin-top: 0;
 `;
+
 const AddDiseaseRow = styled.div`
   display: flex;
   align-items: center;
@@ -820,17 +741,14 @@ const AddDiseaseRow = styled.div`
   margin-top: 16px;
 `;
 
-
 const RemoveIcon = styled.button`
   margin-left: 8px;
   padding: 0;
   border: none;
   background: transparent;
-
   color: #4A3A2F;
   font-size: 18px;
   font-weight: 700;
   line-height: 1;
-
   cursor: pointer;
 `;

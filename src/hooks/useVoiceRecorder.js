@@ -5,6 +5,15 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 //
 //   const { recording, busy, error, supported, toggle } =
 //     useVoiceRecorder((blob) => transcribeEveningAnswer(questionId, blob), setText);
+// 서버(nginx) 업로드 한도가 1MB다. 브라우저 기본 녹음 품질(약 128kbps)로는
+// 1분만 말해도 이 한도를 넘어 413으로 끊긴다. 말소리는 32kbps면 충분히 알아들으므로
+// 품질을 낮춰서 같은 한도 안에 몇 배 더 담는다.
+const AUDIO_BITS_PER_SECOND = 32000;
+
+// 한도(1MB)에 조금 못 미치는 선에서 미리 걸러낸다. 넘긴 채로 보내면 서버가
+// 본문을 다 읽기도 전에 끊어서, 브라우저에선 한참 멈춘 것처럼 보인다.
+const MAX_UPLOAD_BYTES = 950 * 1024;
+
 export function useVoiceRecorder(transcribe, onTranscript) {
   const [recording, setRecording] = useState(false);
   // 녹음이 끝나고 서버 변환을 기다리는 동안
@@ -35,7 +44,13 @@ export function useVoiceRecorder(transcribe, onTranscript) {
     setError(null);
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const recorder = new MediaRecorder(stream);
+      // 품질 지정을 못 받는 브라우저가 있어서, 실패하면 기본값으로 녹음한다.
+      let recorder;
+      try {
+        recorder = new MediaRecorder(stream, { audioBitsPerSecond: AUDIO_BITS_PER_SECOND });
+      } catch {
+        recorder = new MediaRecorder(stream);
+      }
       chunksRef.current = [];
 
       recorder.ondataavailable = (event) => {
@@ -45,6 +60,16 @@ export function useVoiceRecorder(transcribe, onTranscript) {
       recorder.onstop = async () => {
         stream.getTracks().forEach((track) => track.stop());
         const blob = new Blob(chunksRef.current, { type: recorder.mimeType || 'audio/webm' });
+
+        if (blob.size === 0) {
+          setError(new Error('녹음된 소리가 없어요. 마이크를 확인하고 다시 말씀해주세요.'));
+          return;
+        }
+
+        if (blob.size > MAX_UPLOAD_BYTES) {
+          setError(new Error('녹음이 너무 길어요. 조금 나눠서 다시 말씀해주세요.'));
+          return;
+        }
 
         setBusy(true);
         try {

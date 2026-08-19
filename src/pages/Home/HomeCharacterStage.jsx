@@ -1,14 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
 import styled, { keyframes } from 'styled-components';
-import dadMascot from '../../assets/mascot.png'; // 기본 마스코트 (아빠)
-import momMascot from '../../assets/character/mom_mascot.png';
-import daughterMascot from '../../assets/character/daughter_mascot.png';
-import sonMascot from '../../assets/character/son_mascot.png';
 import mailboxImg from '../../assets/home/mailbox.png';
 import paperplaneImg from '../../assets/paperplane.png';
 import { getMyFamily } from '../../api/family';
 import { getUserId } from '../../api/client';
 import { useApi } from '../../hooks/useApi';
+import { getMascotImage } from '../../utils/character';
 
 // 오리를 누르면 하나씩 뜨는 인삿말. 기능은 없고 말만 거는 자리다.
 const GREETINGS = [
@@ -255,17 +252,7 @@ function HomeCharacterStage({ onMailboxClick, unreadLetterCount = 0 }) {
     (member) => String(member.userId) === String(currentUserId),
   );
 
-  const mascotImage = (() => {
-    if (!me) return dadMascot; // 로딩 전 기본값 (아빠)
-
-    if (me.role === 'CHILD') {
-      return me.gender === 'FEMALE' ? daughterMascot : sonMascot;
-    }
-    if (me.role === 'PARENT') {
-      return me.gender === 'FEMALE' ? momMascot : dadMascot;
-    }
-    return dadMascot;
-  })();
+  const mascotImage = getMascotImage(me);
 
   const handleMascotClick = () => {
     // 같은 말이 연달아 나오면 안 바뀐 것처럼 보여서 직전 것은 뺀다.

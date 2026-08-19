@@ -12,7 +12,7 @@ import { useAppData } from '../../../store/AppDataContext';
 import { toDateString } from '../../../utils/medication';
 import aiIcon from '../../../assets/journal/ai.png';
 import trashBin from '../../../assets/trash_bin.svg';
-import yellowFlower from '../../../assets/yellow_flower.svg';
+import pencilIcon from '../../../assets/evening/pencil.svg';
 import DatePickerModal from '../../../components/DatePickerModal';
 import {
   PopupBackdrop,
@@ -295,25 +295,6 @@ const HealthCheck = () => {
 
           <SectionDivider />
 
-          {/* 지난 검진 섹션 */}
-          <SectionTitle>지난 검진</SectionTitle>
-          <CheckupList>
-            {pastList.length > 0 ? (
-              pastList.map((item) => (
-                <CheckupCard key={item.checkupId}>
-                  <CheckupLeftGroup>
-                    <FlowerIcon src={yellowFlower} alt="" />
-                    <CheckupDateText>{formatMonthDay(item.checkupDate)}</CheckupDateText>
-                    <Badge>{item.relativeTime || '지난 검진'}</Badge>
-                    <CheckupTypeText>{item.checkupType}</CheckupTypeText>
-                  </CheckupLeftGroup>
-                </CheckupCard>
-              ))
-            ) : (
-              <EmptyCardText>지난 검진 기록이 없어요</EmptyCardText>
-            )}
-          </CheckupList>
-
           {/* 다가오는 검진 섹션 — 가장 가까운 것 하나가 아니라 미래 검진 전부를 보여준다 */}
           <SectionTitle>다가오는 검진</SectionTitle>
             {upcomingList.length > 0 ? (
@@ -324,7 +305,6 @@ const HealthCheck = () => {
                     onClick={() => setEditTarget(item)}
                   >
                     <CheckupLeftGroup>
-                      <FlowerIcon src={yellowFlower} alt="" />
                       <CheckupDateText>{formatMonthDay(item.checkupDate)}</CheckupDateText>
                       <Badge>
                         {item.dDay === 0
@@ -336,7 +316,7 @@ const HealthCheck = () => {
                       <CheckupTypeText>{item.checkupType}</CheckupTypeText>
                     </CheckupLeftGroup>
                     <CardRightGroup>
-                      <EditTextBadge>수정</EditTextBadge>
+                      <PencilIcon src={pencilIcon} alt="수정" />
                       <DeleteIconButton
                         type="button"
                         aria-label="삭제"
@@ -355,6 +335,23 @@ const HealthCheck = () => {
             ) : (
               <EmptyCardText>다가오는 검진 일정이 없어요</EmptyCardText>
             )}
+            {/* 지난 검진 섹션 */}
+          <SectionTitle>지난 검진</SectionTitle>
+          <CheckupList>
+            {pastList.length > 0 ? (
+              pastList.map((item) => (
+                <CheckupCard key={item.checkupId}>
+                  <CheckupLeftGroup>
+                    <CheckupDateText>{formatMonthDay(item.checkupDate)}</CheckupDateText>
+                    <Badge>{item.relativeTime || '지난 검진'}</Badge>
+                    <CheckupTypeText>{item.checkupType}</CheckupTypeText>
+                  </CheckupLeftGroup>
+                </CheckupCard>
+              ))
+            ) : (
+              <EmptyCardText>지난 검진 기록이 없어요</EmptyCardText>
+            )}
+          </CheckupList>
 
           <SectionDivider />
 
@@ -390,17 +387,17 @@ const HealthCheck = () => {
               )}
             </InsightList>
           </InsightCard>
-
-          {/* 하단 검진 일정 추가하기 버튼 */}
-          <AddButtonArea>
-            <AddButton
-              type="button"
-              onClick={() => setShowAddModal(true)}
-            >
-              + 검진 일정 추가하기
-            </AddButton>
-          </AddButtonArea>
         </ScrollArea>
+
+        {/* 하단 검진 일정 추가하기 버튼 — 스크롤 안 되게 ScrollArea 밖에 고정 */}
+        <AddButtonArea>
+          <AddButton
+            type="button"
+            onClick={() => setShowAddModal(true)}
+          >
+            + 검진 일정 추가하기
+          </AddButton>
+        </AddButtonArea>
 
         {(showAddModal || editTarget) && (
           <AddHealthCheck
@@ -563,18 +560,10 @@ const ToggleButton = styled.button`
   border-radius: 14px;
   box-sizing: border-box;
   border: 1.5px solid
-    ${({ $type }) =>
-      $type === 'me'
-        ? 'rgba(215, 169, 155, 0.85)'
-        : 'rgba(216, 196, 114, 0.9)'};
-  background: ${({ $active, $type }) =>
-    $active
-      ? $type === 'me'
-        ? '#FFF5F0'
-        : '#EFE3A5'
-      : '#FFFDF9'};
-  color: ${({ $type }) =>
-    $type === 'me' ? '#9E6A5A' : '#4A3A2F'};
+    ${({ $active }) =>
+      $active ? 'rgba(215, 169, 155, 0.85)' : 'rgba(74, 58, 47, 0.2)'};
+  background: ${({ $active }) => ($active ? '#F9DFD8' : '#FFFDF9')};
+  color: ${({ $active }) => ($active ? '#9E6A5A' : '#4A3A2F')};
   font-family: Jua, sans-serif;
   font-size: 22px;
   font-weight: 400;
@@ -779,13 +768,6 @@ const CheckupLeftGroup = styled.div`
   min-width: 0;
 `;
 
-const FlowerIcon = styled.img`
-  width: 22px;
-  height: 22px;
-  flex-shrink: 0;
-  object-fit: contain;
-`;
-
 // 날짜 텍스트의 고정 너비를 지정하여 1자리/2자리 날짜여도 뒤쪽 뱃지 위치가 동일하게 정렬됨
 const CheckupDateText = styled.span`
   width: 72px;
@@ -836,15 +818,11 @@ const CardRightGroup = styled.div`
 
 
 
-const EditTextBadge = styled.span`
-  padding: 4px 8px;
-  border-radius: 8px;
-  border: 1px solid rgba(74, 58, 47, 0.35);
-  background: rgba(255, 255, 255, 0.7);
-  color: #8c8172;
-  font-family: 'Noto Sans KR', sans-serif;
-  font-size: 12px;
-  font-weight: 700;
+const PencilIcon = styled.img`
+  width: 26px;
+  height: 26px;
+  flex-shrink: 0;
+  object-fit: contain;
 `;
 
 const DeleteIconButton = styled.button`

@@ -234,6 +234,8 @@ function DayQuestionPopup({ onClose }) {
   // 음성으로 다시 답하면 서버가 답변을 새로 저장은 하는데, myAnswer에는 그 답을 반영해
   // 주지 않는다(텍스트로 답할 때만 갱신된다). 그래서 familyAnswers에서 내가 마지막에
   // 남긴 답을 직접 골라 쓴다.
+  // 서버가 답변을 덮어쓰지 않고 계속 쌓아서, myAnswer에는 '맨 처음 답'이 담겨 온다.
+  // 음성으로 답을 고쳐도 화면이 그대로였던 이유다. 내가 마지막에 남긴 답을 직접 고른다.
   const myLatest = findMyLatestAnswer(question?.familyAnswers, myUserId);
   const myAnswer = myLatest?.textValue ?? question?.myAnswer ?? '';
 

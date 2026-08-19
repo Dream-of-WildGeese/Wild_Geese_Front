@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
 import styled from 'styled-components';
-import avatarCheering from '../../assets/avatar-cheering.png';
-import avatarHeartHug from '../../assets/avatar-heart-hug.png';
+import { getMascotImage } from '../../utils/character';
 import MorningReportHeader from './MorningReportHeader';
 import MorningJournalCard from './MorningJournalCard';
 import MorningReportToast from './MorningReportToast';
@@ -95,14 +94,14 @@ async function loadMonthJournal({ from, to }) {
     if (!realDates.has(dateString) && weeksAgo > 0) {
       const mine = getMockMorningEntry({ role: myRole, weeksAgo, date: cursor });
       if (mine) {
-        const answers = [{ id: 'me', name: '나', avatar: avatarCheering, text: mine.answer }];
+        const answers = [{ id: 'me', name: '나', avatar: getMascotImage(me), text: mine.answer }];
         if (partner) {
           const theirs = getMockMorningEntry({ role: partnerRole, weeksAgo, date: cursor });
           if (theirs) {
             answers.push({
               id: 'family',
               name: getRelationLabel(partner),
-              avatar: avatarHeartHug,
+              avatar: getMascotImage(partner),
               text: theirs.answer,
             });
           }

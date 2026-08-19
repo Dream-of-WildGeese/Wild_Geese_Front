@@ -5,6 +5,7 @@ import { getMyFamily } from '../../../api/family';
 import { getUserId } from '../../../api/client';
 import { toDateString, timeToLabel, activeSchedules } from '../../../utils/medication';
 import { getRelationLabel, withCompanionJosa } from '../../../utils/family';
+import { getRelationLabel } from '../../../utils/family';
 import { findMyLatestAnswer } from '../../../utils/morningAnswer';
 import { getWeekStart } from '../WeeklyReport/weeklyReportData';
 import { getMockDailyReport } from '../../../mock/dailyReport';
@@ -120,6 +121,7 @@ const buildTimeline = ({ dailyLog, question, morningAnswer, medicationLog, medic
       time: formatTimeLabel('아침', dailyLog?.morningAnswer?.answeredAt),
       question: question?.content ?? '오늘의 질문',
       // 음성으로 다시 답한 내용은 /daily의 morningAnswer에 반영되지 않는다.
+      // /daily의 morningAnswer는 그 날 '맨 처음' 답이라, 고쳐 쓴 답이 반영되지 않는다.
       // 오늘 것은 아침 질문 응답에서 마지막 답을 골라 쓴다.
       answer: morningAnswer ?? dailyLog?.morningAnswer?.textValue ?? '',
     },
