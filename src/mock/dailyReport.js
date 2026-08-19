@@ -7,6 +7,7 @@
 import { getMockWeek } from './weeklyReport';
 import { getMockSteps, buildStepsMessage } from './steps';
 import { toDateString } from '../utils/medication';
+import { withCompanionJosa } from '../utils/family';
 
 const WEEKDAY_LABELS = ['일', '월', '화', '수', '목', '금', '토'];
 
@@ -16,7 +17,7 @@ const CONDITION_TEXT = { 3: '좋았어요', 2: '보통이에요', 1: '힘들었�
 const CONDITION_SHORT = { 3: '좋음', 2: '보통', 1: '나쁨' };
 const SLEEP_TEXT = { 3: '7시간 이상 잤어요', 2: '5~7시간 잤어요', 1: '5시간도 못 잤어요' };
 const MEAL_TEXT = { 3: '세 끼 모두 챙겼어요', 2: '두 끼 챙겼어요', 1: '한 끼만 먹었어요' };
-const ACTIVITY_TEXT = { 3: '많이 걸었어요', 2: '조금 걸었어요', 1: '거의 안 걸었어요' };
+const ACTIVITY_TEXT = { 3: '1시간 이상 걸었어요', 2: '30분~1시간 걸었어요', 1: '거의 안 걸었어요' };
 
 // 온담 한마디 / 저녁 코멘트 카드용. 실제 서버는 AI가 요약해주지만,
 // 시연 데이터는 그 날의 컨디션·활동량 점수로 비슷한 느낌만 흉내낸다.
@@ -178,7 +179,7 @@ export function getMockDailyReport({ role, weeksAgo, date, personLabel, isMine }
     cta: isMine
       ? null
       : {
-          title: `이제 ${personLabel}와 안부를 나눠볼까요?`,
+          title: `이제 ${withCompanionJosa(personLabel)} 안부를 나눠볼까요?`,
           suggestedMessage: `"${week.weeklyComment}"`,
         },
   };

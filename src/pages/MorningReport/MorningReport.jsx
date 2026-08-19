@@ -6,13 +6,14 @@ import MorningReportHeader from './MorningReportHeader';
 import MorningJournalCard from './MorningJournalCard';
 import MorningReportToast from './MorningReportToast';
 import MorningReportDatePicker from './MorningReportDatePicker';
-import { getMorningHistory } from '../../api/morning';
+import { getMorningHistory, getTodayQuestion } from '../../api/morning';
 import { getDailyLog, getFamilyDailyLog } from '../../api/daily';
 import { getMyFamily } from '../../api/family';
 import { getUserId } from '../../api/client';
 import { useApi } from '../../hooks/useApi';
 import { toDateString } from '../../utils/medication';
 import { getRelationLabel } from '../../utils/family';
+import { findMyLatestAnswer, findPartnerLatestAnswer } from '../../utils/morningAnswer';
 import { getWeekStart } from '../Home/WeeklyReport/weeklyReportData';
 import { getMockMorningEntry } from '../../mock/dailyReport';
 
@@ -23,9 +24,15 @@ const weeksAgoOf = (date) =>
 // 아침 질문 이력 API는 질문 목록만 주고 답변은 담아주지 않는다.
 // 그래서 질문 목록을 받은 뒤, 각 날짜의 일지에서 나와 가족의 답변을 따로 채워 넣는다.
 async function loadMonthJournal({ from, to }) {
-  const [history, family] = await Promise.all([
+  const todayString = toDateString(new Date());
+  // 오늘 답변은 /daily가 '맨 처음 답'을 주기 때문에 고쳐 쓴 내용이 반영되지 않는다.
+  // 오늘이 이 달 안에 들어 있을 때만 아침 질문 응답을 따로 받아 최신 답을 쓴다.
+  const includesToday = from <= todayString && todayString <= to;
+
+  const [history, family, todayQuestion] = await Promise.all([
     getMorningHistory({ from, to }),
     getMyFamily().catch(() => null),
+    includesToday ? getTodayQuestion().catch(() => null) : null,
   ]);
 
   const myUserId = getUserId();
@@ -42,21 +49,27 @@ async function loadMonthJournal({ from, to }) {
         partner ? getFamilyDailyLog(partner.userId, item.questionDate).catch(() => null) : null,
       ]);
 
+      // 오늘 것만 최신 답으로 바꿔 쓴다. (지난 날짜는 서버가 최신 답을 주는 통로가 없다)
+      const isToday = item.questionDate === todayString;
+      const myText = isToday
+        ? (findMyLatestAnswer(todayQuestion?.familyAnswers, myUserId)?.textValue ??
+          myLog?.morningAnswer?.textValue)
+        : myLog?.morningAnswer?.textValue;
+      const partnerText = isToday
+        ? (findPartnerLatestAnswer(todayQuestion?.familyAnswers, myUserId)?.textValue ??
+          partnerLog?.morningAnswer?.textValue)
+        : partnerLog?.morningAnswer?.textValue;
+
       const answers = [];
-      if (myLog?.morningAnswer?.textValue) {
-        answers.push({
-          id: 'me',
-          name: '나',
-          avatar: avatarCheering,
-          text: myLog.morningAnswer.textValue,
-        });
+      if (myText) {
+        answers.push({ id: 'me', name: '나', avatar: avatarCheering, text: myText });
       }
-      if (partnerLog?.morningAnswer?.textValue) {
+      if (partnerText) {
         answers.push({
           id: 'family',
           name: getRelationLabel(partner),
           avatar: avatarHeartHug,
-          text: partnerLog.morningAnswer.textValue,
+          text: partnerText,
         });
       }
 

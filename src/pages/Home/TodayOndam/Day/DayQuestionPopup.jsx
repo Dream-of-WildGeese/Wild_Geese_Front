@@ -15,6 +15,10 @@ import {
 import { useApi, useApiAction } from '../../../../hooks/useApi';
 import { useFamilyRelation } from '../../../../hooks/useFamilyRelation';
 import { getUserId } from '../../../../api/client';
+import {
+  findMyLatestAnswer,
+  findPartnerLatestAnswer,
+} from '../../../../utils/morningAnswer';
 import { useVoiceRecorder } from '../../../../hooks/useVoiceRecorder';
 import {
   PopupBackdrop,
@@ -226,29 +230,25 @@ function DayQuestionPopup({ onClose }) {
   if (question?.content) lastQuestionRef.current = question.content;
   const questionText = question?.content ?? lastQuestionRef.current;
 
-  const myAnswer = question?.myAnswer ?? '';
+  const myUserId = getUserId();
+  // 음성으로 다시 답하면 서버가 답변을 새로 저장은 하는데, myAnswer에는 그 답을 반영해
+  // 주지 않는다(텍스트로 답할 때만 갱신된다). 그래서 familyAnswers에서 내가 마지막에
+  // 남긴 답을 직접 골라 쓴다.
+  const myLatest = findMyLatestAnswer(question?.familyAnswers, myUserId);
+  const myAnswer = myLatest?.textValue ?? question?.myAnswer ?? '';
 
   // 이미 답한 날이면 답변 비교 화면부터 보여준다. (건강일지에서 '수정'으로 들어올 때도 동일)
   useEffect(() => {
     if (step !== null || loading) return;
     setStep(myAnswer ? 'result' : 'question');
   }, [step, loading, myAnswer]);
-  // 서버가 familyAnswers에 내 답변까지 같이 담아 보낸다. 그대로 쓰면 내 답변이
-  // '가족 답변'으로 한 번 더 나오고, 반응도 나에게 보내는 것처럼 보인다.
-  const myUserId = getUserId();
-  const partnerAnswer =
-    (question?.familyAnswers ?? []).find(
-      (item) => String(item.userId) !== String(myUserId),
-    ) ?? null;
+  // familyAnswers에는 내 답변까지 섞여 오고, 같은 사람의 옛 답도 함께 온다.
+  // 나를 뺀 뒤 가장 나중 답 하나만 가족 답변으로 쓴다.
+  const partnerAnswer = findPartnerLatestAnswer(question?.familyAnswers, myUserId);
 
   const [submitError, setSubmitError] = useState(null);
 
-  // 서버는 이미 답한 질문에 다시 제출하면 400을 돌려준다(덮어쓰기를 아직 못 받는다).
-  // 그대로 두면 '일시적인 오류가 발생했어요'라고 떠서, 잠시 후 다시 하면 될 것처럼 보인다.
-  const submitErrorMessage =
-    submitError?.code === 'HTTP_400' && myAnswer
-      ? '오늘 답변은 이미 저장돼 있어요. 지금은 고칠 수 없어요.'
-      : submitError?.message;
+  const submitErrorMessage = submitError?.message;
 
   // 반응은 가족이 남긴 답변에 단다. 서버가 성공으로 답한 뒤에야 '보냈어요' 화면을 띄운다.
   const handleReaction = async (reaction) => {
