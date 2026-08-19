@@ -101,9 +101,11 @@ const HealthSet = () => {
       setProfile({ gender: GENDER_LABELS[healthProfile.gender] });
     }
     if (healthProfile.diseases?.length) {
-      setConditions(healthProfile.diseases);
+      // 과거 저장 버그로 서버에 같은 값이 중복 저장돼 있을 수 있어 중복 제거한다.
+      const uniqueDiseases = [...new Set(healthProfile.diseases)];
+      setConditions(uniqueDiseases);
       // 목록에 없는 병명은 '기타'로 직접 넣은 것이다.
-      setOtherDiseases(healthProfile.diseases.filter((d) => !DISEASE_LIST.includes(d)));
+      setOtherDiseases(uniqueDiseases.filter((d) => !DISEASE_LIST.includes(d)));
     }
     if (healthProfile.wellnessInterests?.length) {
       const labels = healthProfile.wellnessInterests
@@ -129,14 +131,20 @@ const HealthSet = () => {
       return;
     }
 
+    // '기타' 입력창에 글자를 쓰고도 '+'를 안 누른 채 바로 저장을 누르면
+    // 그 값이 어디에도 반영되지 않고 사라지던 문제. 저장 시점에 남아있는
+    // 입력값도 커밋된 것처럼 함께 담는다.
+    const pendingOtherDisease = otherDiseaseInput.trim();
+    const finalOtherDiseases =
+      pendingOtherDisease && !otherDiseases.includes(pendingOtherDisease)
+        ? [...otherDiseases, pendingOtherDisease]
+        : otherDiseases;
+
     const { ok, error } = await saveHealthProfile({
       name: name.trim(),
       birthDate: birth,
       gender: GENDER_VALUES[gender] ?? gender,
-      diseases: [
-        ...selectedDiseases.filter((d) => d !== '기타'),
-        ...otherDiseases,
-      ],
+      diseases: [...new Set([...standardDiseases, ...finalOtherDiseases])],
 
     wellnessInterests: interests
       .map((item) => INTEREST_VALUES[item])
@@ -200,11 +208,7 @@ const HealthSet = () => {
       setOtherDiseases(updated);
       setOtherDiseaseInput('');
 
-      setConditions([
-        ...selectedDiseases.filter((d) => d !== '기타'),
-        '기타',
-        ...updated,
-      ]);
+      setConditions([...standardDiseases, '기타', ...updated]);
     };
     const removeOtherDisease = (target) => {
       const updated = otherDiseases.filter((d) => d !== target);
@@ -212,7 +216,7 @@ const HealthSet = () => {
       setOtherDiseases(updated);
 
       setConditions([
-        ...selectedDiseases.filter((d) => d !== '기타' && d !== target),
+        ...standardDiseases,
         ...(updated.length ? ['기타', ...updated] : []),
       ]);
     };
@@ -220,6 +224,12 @@ const HealthSet = () => {
 
 
   const selectedDiseases = data.conditions || [];
+  // conditions에는 표준 질환 목록 항목(과 '기타' 마커)만 있어야 한다. 과거에
+  // 커스텀 질환 텍스트가 섞여 들어간 적이 있어도, 여기서 표준 목록에 없는
+  // 값은 걸러내서 otherDiseases와 중복으로 더해지지 않게 한다.
+  const standardDiseases = selectedDiseases.filter(
+    (d) => DISEASE_LIST.includes(d) && d !== '기타',
+  );
   const [otherDiseaseInput, setOtherDiseaseInput] = useState('');
 const [otherDiseases, setOtherDiseases] = useState(
   data.conditions?.filter((d) => !diseaseList.includes(d)) || []
