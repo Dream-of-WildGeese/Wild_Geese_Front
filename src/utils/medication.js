@@ -64,26 +64,6 @@ const DAY_LABEL = {
   SUNDAY: '일',
 };
 
-<<<<<<< HEAD
-// 목록 화면에 보여줄 요일 표시. '주 3회' 같은 뭉뚱그린 문구 대신
-// 실제로 고른 요일을 그대로 보여준다(월,수,금 -> "월·수·금").
-const DAY_SHORT_LABEL = {
-  MONDAY: '월',
-  TUESDAY: '화',
-  WEDNESDAY: '수',
-  THURSDAY: '목',
-  FRIDAY: '금',
-  SATURDAY: '토',
-  SUNDAY: '일',
-};
-
-export const formatDays = (days) => {
-  if (!days?.length) return '요일 미정';
-  if (days.length >= 7) return '매일';
-  return ALL_DAYS.filter((day) => days.includes(day))
-    .map((day) => DAY_SHORT_LABEL[day])
-    .join('·');
-=======
 export const ALL_DAY_VALUES = ALL_DAYS;
 
 // 목록에 보여줄 문구. 예전에는 고른 요일의 '개수'만 보고 '주 3회'·'이틀에 한 번'처럼
@@ -94,7 +74,6 @@ export const daysToLabel = (days) => {
   if (picked.length === 0) return '요일 미설정';
   if (picked.length === ALL_DAYS.length) return '매일';
   return picked.map((day) => DAY_LABEL[day]).join('·');
->>>>>>> 413f47fd40fdb6892f2ac3932110d0d4a03dbd7a
 };
 
 // 화면에서 '월' '화'처럼 한 글자로 고른 요일을 서버 값으로 바꾼다.
@@ -120,11 +99,7 @@ export const toMedicationView = (medication) => {
     times: [...new Set(schedules.map((schedule) => String(schedule.scheduledTime).slice(0, 5)))]
       .sort((a, b) => a.localeCompare(b))
       .map(timeToLabel),
-<<<<<<< HEAD
-    repeat: formatDays(schedules[0]?.daysOfWeek),
-=======
     repeat: daysToLabel(schedules[0]?.daysOfWeek),
->>>>>>> 413f47fd40fdb6892f2ac3932110d0d4a03dbd7a
     days: schedules[0]?.daysOfWeek ?? [],
     schedules,
   };

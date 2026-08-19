@@ -42,17 +42,6 @@ const INTEREST_LIST = [
   '없음',
 ];
 
-const DISEASE_LIST = [
-  '고혈압',
-  '당뇨',
-  '고지혈증',
-  '심장질환',
-  '관절·허리 통증',
-  '골다공증',
-  '기타',
-  '없음',
-];
-
 const MIN_AGE = 14;
 const MAX_AGE = 120;
 

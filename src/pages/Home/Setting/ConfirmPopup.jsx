@@ -1,7 +1,7 @@
 import styled from 'styled-components';
 
 import logoutSon from '../../../assets/character/logout-son.svg';
-import withdrawDaughter from '../../../assets/character/withdraw-daughter.png';
+import withdrawDaughter from '../../../assets/character/logout-daughter.png';
 
 
 import {
