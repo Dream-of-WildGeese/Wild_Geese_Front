@@ -8,6 +8,7 @@ import { useApi, useApiAction } from '../../hooks/useApi';
 import BirthDatePickerModal from '../../components/BirthDatePickerModal';
 import heart from '../../assets/onboarding/heart.svg';
 import MissingFieldsPopup from '../../components/MissingFieldsPopup';
+import { DISEASE_LIST } from '../../utils/health';
 
 // "1856-03-02" -> "1856년 3월 2일"
 const formatBirthLabel = (value) => {

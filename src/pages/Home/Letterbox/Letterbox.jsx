@@ -5,6 +5,7 @@ import { getMyFamily } from '../../../api/family';
 import { sendLetter } from '../../../api/letter';
 import { getUserId } from '../../../api/client';
 import { useApi, useApiAction } from '../../../hooks/useApi';
+import { findPartner, getRelationLabel } from '../../../utils/family';
 import LetterboxList from './LetterboxList';
 import LetterArrived from './LetterArrived';
 import LetterRead from './LetterRead';
@@ -47,10 +48,7 @@ function Letterbox({ letters, loading, onMarkRead, onSent, onClose, initialStep 
   const unreadCount = letters.filter((letter) => !letter.read).length;
 
   // 편지는 가족 구성원에게 보내므로, 나를 뺀 첫 번째 구성원을 받는 사람으로 삼는다.
-  const myUserId = getUserId();
-  const recipient = (family?.members ?? []).find(
-    (member) => String(member.userId) !== String(myUserId),
-  );
+  const recipient = findPartner(family, getUserId());
 
   const openLetter = (letter) => {
     if (!letter.read) onMarkRead(letter.id);
@@ -58,8 +56,10 @@ function Letterbox({ letters, loading, onMarkRead, onSent, onClose, initialStep 
     setStep('read');
   };
 
-  // 가족 조회 응답에는 이름이 없어서, 받은 편지의 보낸 사람 이름을 대신 쓴다.
-  const recipientName = letters.find((letter) => letter.sender)?.sender ?? '';
+  // 가족은 이름이 아니라 호칭으로 부른다(엄마·아빠·딸·아들).
+  // 예전에는 편지에 적힌 이름을 그대로 써서 '봉미선에게 편지 쓰기'가 됐다.
+  // 여기 목록은 '받은 편지'라 보낸 사람도 이 가족이므로, 같은 호칭을 함께 쓴다.
+  const partnerLabel = recipient ? getRelationLabel(recipient) : '';
 
   const handleSend = async (content, audioUrl) => {
     if (!recipient) {
@@ -101,6 +101,7 @@ function Letterbox({ letters, loading, onMarkRead, onSent, onClose, initialStep 
           {step === 'list' && (
             <LetterboxList
               letters={letters}
+              senderLabel={partnerLabel}
               onSelectLetter={openLetter}
               onWrite={() => setStep('compose')}
               onClose={onClose}
@@ -110,18 +111,23 @@ function Letterbox({ letters, loading, onMarkRead, onSent, onClose, initialStep 
             <LetterboxEmpty onWrite={() => setStep('compose')} onClose={onClose} />
           )}
           {step === 'read' && selectedLetter && (
-            <LetterRead letter={selectedLetter} onReply={() => setStep('compose')} onClose={backToList} />
+            <LetterRead
+              letter={selectedLetter}
+              senderLabel={partnerLabel}
+              onReply={() => setStep('compose')}
+              onClose={backToList}
+            />
           )}
           {step === 'compose' && (
             <LetterCompose
               onBack={backToList}
               onSend={handleSend}
               sending={sending}
-              recipientName={recipientName}
+              recipientName={partnerLabel}
             />
           )}
           {/* 보내고 나면 편지함으로 돌아가지 않고 홈으로 나간다 */}
-          {step === 'sent' && <LetterSent onClose={onClose} recipientName={recipientName} />}
+          {step === 'sent' && <LetterSent onClose={onClose} recipientName={partnerLabel} />}
         </div>
       </Backdrop>
     </PopupPortal>

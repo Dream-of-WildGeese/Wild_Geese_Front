@@ -3,107 +3,55 @@ import { useNavigate, useLocation, useParams } from 'react-router-dom';
 import styled from 'styled-components';
 import aiIcon from '../../../assets/weekly/ai.png';
 import leafIcon from '../../../assets/weekly/leaf.png';
-import faceGood from '../../../assets/weekly/face-good.png';
-import faceNormal from '../../../assets/weekly/face-normal.png';
-import faceBad from '../../../assets/weekly/face-bad.png';
 import mealIcon from '../../../assets/weekly/meal.png';
 import walkIcon from '../../../assets/weekly/walk.png';
 import flowerIcon from '../../../assets/weekly/flower.png';
 import emptyCircleIcon from '../../../assets/weekly/empty-circle.png';
 import starIcon from '../../../assets/weekly/star.png';
-import closeIcon from '../../../assets/journal/close.png';
 import { loadWeeklyDetail } from './weeklyReportData';
 import { useApi } from '../../../hooks/useApi';
 import { useFamilyRelation } from '../../../hooks/useFamilyRelation';
 import PhoneNumberPopup from '../../../components/PhoneNumberPopup';
 import { callPhone, getFamilyPhone } from '../../../utils/call';
 import JournalCta from '../TodayReport/JournalCta';
+import { toDateString } from '../../../utils/medication';
+import {
+  PopupBackdrop,
+  PopupCard,
+  PopupInnerBorder,
+  PopupTitle,
+  PopupPrimaryButton,
+} from '../../../components/PopupShell';
+import {
+  PageFrame,
+  PageContent,
+  PageBack,
+  PageHeader,
+  PageTitle,
+  PageCaption,
+  PageDivider,
+  PageScrollArea,
+} from '../../../components/PageShell';
 
 // Figma 1201:1144 — 주간 리포트 상세.
 // 서버는 지표를 저녁 건강체크 선택지 점수(1~3)로만 주고, 3이 가장 좋은 상태다.
 const SCORE_MAX = 3;
-const FACE_BY_SCORE = { 3: faceGood, 2: faceNormal, 1: faceBad };
 
 // 컨디션 링과 수면 막대가 같은 3색을 쓴다.
 const SCORE_COLOR = { 3: '#8fae4a', 2: '#e8cd73', 1: '#e6a794' };
 // 활동은 수면과 구분되도록 초록 계열 안에서만 진하기를 달리한다.
 const ACTIVITY_COLOR = { 3: '#8fae4a', 2: '#acc379', 1: '#d0ddb2' };
 
-const scoreFace = (score) => FACE_BY_SCORE[Math.round(score)] ?? faceNormal;
 const scoreColor = (score) => SCORE_COLOR[Math.round(score)] ?? '#d9d4cc';
 const activityColor = (score) => ACTIVITY_COLOR[Math.round(score)] ?? '#d9d4cc';
 const barHeight = (score, max) => (score ? (score / SCORE_MAX) * max : 4);
 
-const Page = styled.div`
-  position: relative;
-  width: 100%;
-  height: 100%;
-  overflow-y: auto;
-  box-sizing: border-box;
 
-  padding: 16px 20px 24px;
-  background: #fff8ed;
-
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-
-  &::-webkit-scrollbar {
-    display: none;
-  }
-`;
-
-const CloseButton = styled.button`
-  width: 40px;
-  height: 40px;
-  flex-shrink: 0;
-  align-self: flex-start;
-`;
-
-const CloseIcon = styled.img`
-  width: 40px;
-  height: 40px;
-  object-fit: contain;
-`;
-
-const HeaderBlock = styled.div`
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 4px;
-`;
-
-const DateRange = styled.p`
-  margin: 0;
-  width: 100%;
-  text-align: center;
-  color: #a79c8e;
-  font-family: 'Noto Sans KR';
-  font-size: 18px;
-  font-weight: 700;
-`;
-
-// 이름이 길어지면 40px에서 두 줄로 넘쳐 카드를 밀어낸다. 좁은 화면에서만 줄인다.
-// vw는 브라우저 창 너비 기준이라, 폰 프레임(최대 402px)보다 훨씬 넓은 데스크톱
-// 화면에서는 항상 clamp 최댓값(40px)으로 찍혀서 '엄마의/아빠의' 같은 긴 제목이
-// 한 줄에 안 들어가고 줄바꿈됐다. 프레임 안에서 늘 한 줄에 들어가는 고정 크기로 바꿨다.
-const FlowTitle = styled.h1`
-  margin: 0;
-  width: 100%;
-  text-align: center;
-  color: #4a3a2f;
-  font-family: Jua;
-  font-size: 34px;
-  font-weight: 400;
-  line-height: 1.2;
-  word-break: keep-all;
+// 이름이 길어지면 40px에서 두 줄로 넘쳐 카드를 밀어낸다. 폰 프레임(최대 402px) 안에서
+// 늘 한 줄에 들어가도록 34px로 고정하고 줄바꿈을 막는다.
+const FlowTitle = styled(PageTitle)`
   white-space: nowrap;
-`;
-
-const TitleDivider = styled.div`
-  width: 100%;
-  margin-top: 10px;
-  border-top: 1.5px dashed rgba(74, 58, 47, 0.3);
+  word-break: keep-all;
 `;
 
 const SectionDivider = styled.div`
@@ -237,12 +185,13 @@ const DayLabel = styled.span`
   font-size: 11px;
 `;
 
-// 표정 아이콘 자체에 이미 점수별 색 링이 그려져 있어서 따로 감싸지 않고
-// 칸 크기만큼 꽉 채운다.
-const FaceIcon = styled.img`
+// 컨디션은 표정 그림 대신 점수 색만 칠한 동그라미로 보여준다.
+const ConditionDot = styled.span`
   width: ${({ $size }) => $size}px;
   height: ${({ $size }) => $size}px;
-  object-fit: contain;
+  border-radius: 50%;
+  background: ${({ $color }) => $color};
+  border: 1.5px solid rgba(74, 58, 47, 0.2);
 `;
 
 const IconWrap = styled.div`
@@ -304,6 +253,16 @@ const LegendSwatch = styled.span`
   flex-shrink: 0;
   border-radius: 2px;
   background: ${({ $color }) => $color};
+`;
+
+// 컨디션 범례도 그래프와 같은 색 동그라미로 맞춘다.
+const LegendDot = styled.span`
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: ${({ $color }) => $color};
+  border: 1.5px solid rgba(74, 58, 47, 0.2);
 `;
 
 const LegendLabel = styled.span`
@@ -409,6 +368,17 @@ const DayButtonDate = styled.span`
   white-space: nowrap;
 `;
 
+const PopupMessage = styled.p`
+  margin: 0;
+  width: 100%;
+  text-align: center;
+  color: #6b6661;
+  font-family: 'Noto Sans KR', sans-serif;
+  font-size: 16px;
+  line-height: 1.5;
+  word-break: keep-all;
+`;
+
 const StatusText = styled.p`
   margin: 40px 0 0;
   text-align: center;
@@ -439,6 +409,8 @@ function WeeklyReportDetail() {
   const { partnerLabel } = useFamilyRelation();
   // 훅은 조기 반환보다 앞에 있어야 해서 여기에 둔다.
   const [askingPhone, setAskingPhone] = useState(false);
+  // 아직 오지 않은 날의 일지를 열려고 할 때 알려줄 날짜
+  const [futureDate, setFutureDate] = useState(null);
 
   const week = data?.week;
   const detail = data?.detail;
@@ -458,18 +430,18 @@ function WeeklyReportDetail() {
 
   if (loading || error || !week || !detail) {
     return (
-      <Page>
-        <CloseButton type="button" aria-label="닫기" onClick={goBack}>
-          <CloseIcon src={closeIcon} alt="" />
-        </CloseButton>
-        <StatusText>
-          {loading
-            ? '리포트를 불러오는 중이에요...'
-            : error
-              ? error.message
-              : '이 주는 아직 리포트가 준비되지 않았어요.'}
-        </StatusText>
-      </Page>
+      <PageFrame>
+        <PageContent>
+          <PageBack onClick={goBack} />
+          <StatusText>
+            {loading
+              ? '리포트를 불러오는 중이에요...'
+              : error
+                ? error.message
+                : '이 주는 아직 리포트가 준비되지 않았어요.'}
+          </StatusText>
+        </PageContent>
+      </PageFrame>
     );
   }
 
@@ -480,219 +452,252 @@ function WeeklyReportDetail() {
     date.setDate(date.getDate() + index);
     return date;
   });
-  const toDateParam = (date) =>
-    `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+  const todayString = toDateString(new Date());
+
+  // 이번 주 리포트에서는 아직 지나지 않은 요일도 함께 보인다.
+  // 그 날을 누르면 빈 일지가 열려서 기록이 사라진 것처럼 보이므로, 미리 막고 알려준다.
+  const openDay = (date) => {
+    const dateParam = toDateString(date);
+    if (dateParam > todayString) {
+      setFutureDate(date);
+      return;
+    }
+    navigate(`/home/today-report/${dateParam}`, {
+      // 일지에서 뒤로 가면 홈이 아니라 이 주간 리포트로 돌아오게 한다.
+      state: { person, from: `/home/weekly-report/${weekId}` },
+    });
+  };
 
   return (
-    <Page>
-      <CloseButton type="button" aria-label="닫기" onClick={goBack}>
-        <CloseIcon src={closeIcon} alt="" />
-      </CloseButton>
+    <PageFrame>
+      <PageContent>
+        <PageBack onClick={goBack} />
+        <PageHeader>
+          <PageCaption>{week.range}</PageCaption>
+          <FlowTitle $size={34}>{personLabel}의 이번 주 건강 흐름</FlowTitle>
+        </PageHeader>
+        <PageDivider />
 
-      <HeaderBlock>
-        <DateRange>{week.range}</DateRange>
-        <FlowTitle>{personLabel}의 이번 주 건강 흐름</FlowTitle>
-        <TitleDivider />
-      </HeaderBlock>
+        <PageScrollArea $gap={20}>
+          {/* 한 주가 다 차야 한마디를 만든다. 쌓이는 중인 주는 카드 자체를 띄우지 않는다. */}
+          {!detail.inProgress && detail.headline && (
+            <>
+              <GreenCard>
+                <AiIcon src={aiIcon} alt="" />
+                <GreenLabel>이번 주 한마디</GreenLabel>
+                <Headline>“{detail.headline}”</Headline>
+                {detail.headlineDesc && <GreenText>{detail.headlineDesc}</GreenText>}
+              </GreenCard>
 
-      <GreenCard>
-        <AiIcon src={aiIcon} alt="" />
-        {/* 아직 한 주가 안 끝난 주는 '한마디' 대신 진행 중이라는 걸 알린다 */}
-        <GreenLabel>{detail.inProgress ? '아직 쌓이는 중이에요' : '이번 주 한마디'}</GreenLabel>
-        <Headline>“{detail.headline}”</Headline>
-        {detail.headlineDesc && <GreenText>{detail.headlineDesc}</GreenText>}
-      </GreenCard>
+              <SectionDivider />
+            </>
+          )}
 
-      <SectionDivider />
+          <MetricCard>
+            <MetricHead>
+              <LeafIcon src={leafIcon} alt="" />
+              <MetricTitle>컨디션</MetricTitle>
+            </MetricHead>
+            <InnerGroup>
+              <DayRow>
+                {detail.condition.map((item) => (
+                  <DayCol key={item.day}>
+                    {/* 아직 답하지 않은 날은 빈 원으로 둔다. 표정을 채우면 기록한 것처럼 보인다 */}
+                    {item.score ? (
+                      <ConditionDot $size={40} $color={scoreColor(item.score)} />
+                    ) : (
+                      <IconWrap>
+                        <EmptyCircle src={emptyCircleIcon} alt="" />
+                      </IconWrap>
+                    )}
+                    <DayLabel>{item.day}</DayLabel>
+                  </DayCol>
+                ))}
+              </DayRow>
+              <Legend>
+                {CONDITION_LEGEND.map((item) => (
+                  <LegendItem key={item.score}>
+                    <LegendDot $color={SCORE_COLOR[item.score]} />
+                    <LegendLabel>{item.label}</LegendLabel>
+                  </LegendItem>
+                ))}
+              </Legend>
+            </InnerGroup>
+            {detail.conditionNote && <MetricNote>{detail.conditionNote}</MetricNote>}
+          </MetricCard>
 
-      <MetricCard>
-        <MetricHead>
-          <LeafIcon src={leafIcon} alt="" />
-          <MetricTitle>컨디션</MetricTitle>
-        </MetricHead>
-        <InnerGroup>
-          <DayRow>
-            {detail.condition.map((item) => (
-              <DayCol key={item.day}>
-                {/* 아직 답하지 않은 날은 빈 원으로 둔다. 표정을 채우면 기록한 것처럼 보인다 */}
-                {item.score ? (
-                  <FaceIcon $size={40} src={scoreFace(item.score)} alt="" />
-                ) : (
-                  <IconWrap>
-                    <EmptyCircle src={emptyCircleIcon} alt="" />
-                  </IconWrap>
-                )}
-                <DayLabel>{item.day}</DayLabel>
-              </DayCol>
-            ))}
-          </DayRow>
-          <Legend>
-            {CONDITION_LEGEND.map((item) => (
-              <LegendItem key={item.score}>
-                <FaceIcon $size={22} src={scoreFace(item.score)} alt="" />
-                <LegendLabel>{item.label}</LegendLabel>
-              </LegendItem>
-            ))}
-          </Legend>
-        </InnerGroup>
-        <MetricNote>{detail.conditionNote}</MetricNote>
-      </MetricCard>
+          <MetricCard>
+            <MetricHead>
+              <LeafIcon src={leafIcon} alt="" />
+              <MetricTitle>수면</MetricTitle>
+            </MetricHead>
+            <InnerGroup>
+              <DayRow $bottom style={{ height: 70 }}>
+                {detail.sleep.map((item) => (
+                  <DayCol key={item.day} $gap={4}>
+                    <Bar $height={barHeight(item.value, 52)} $color={scoreColor(item.value)} />
+                    <DayLabel>{item.day}</DayLabel>
+                  </DayCol>
+                ))}
+              </DayRow>
+              <Legend $gap={10}>
+                {SLEEP_LEGEND.map((item) => (
+                  <LegendItem key={item.score}>
+                    <LegendSwatch $color={SCORE_COLOR[item.score]} />
+                    <SmallLegendLabel>{item.label}</SmallLegendLabel>
+                  </LegendItem>
+                ))}
+              </Legend>
+            </InnerGroup>
+            {detail.sleepNote && <MetricNote>{detail.sleepNote}</MetricNote>}
+          </MetricCard>
 
-      <MetricCard>
-        <MetricHead>
-          <LeafIcon src={leafIcon} alt="" />
-          <MetricTitle>수면</MetricTitle>
-        </MetricHead>
-        <InnerGroup>
-          <DayRow $bottom style={{ height: 70 }}>
-            {detail.sleep.map((item) => (
-              <DayCol key={item.day} $gap={4}>
-                <Bar $height={barHeight(item.value, 52)} $color={scoreColor(item.value)} />
-                <DayLabel>{item.day}</DayLabel>
-              </DayCol>
-            ))}
-          </DayRow>
-          <Legend $gap={10}>
-            {SLEEP_LEGEND.map((item) => (
-              <LegendItem key={item.score}>
-                <LegendSwatch $color={SCORE_COLOR[item.score]} />
-                <SmallLegendLabel>{item.label}</SmallLegendLabel>
-              </LegendItem>
-            ))}
-          </Legend>
-        </InnerGroup>
-        <MetricNote>{detail.sleepNote}</MetricNote>
-      </MetricCard>
+          <MetricCard>
+            <MetricHead>
+              <LeafIcon src={leafIcon} alt="" />
+              <MetricTitle>식사</MetricTitle>
+            </MetricHead>
+            <InnerGroup>
+              <DayRow>
+                {detail.meal.map((item) => (
+                  <DayCol key={item.day}>
+                    <IconWrap>
+                      {/* 기록이 없거나(null) 끼니를 거른 날(1점, '한 끼만 먹었어요')은 빈 원으로 둔다 */}
+                      {item.score > 1 ? (
+                        <MealIcon src={mealIcon} alt="" />
+                      ) : (
+                        <EmptyCircle src={emptyCircleIcon} alt="" />
+                      )}
+                    </IconWrap>
+                    <DayLabel>{item.day}</DayLabel>
+                  </DayCol>
+                ))}
+              </DayRow>
+            </InnerGroup>
+            {detail.mealNote && <MetricNote>{detail.mealNote}</MetricNote>}
+          </MetricCard>
 
-      <MetricCard>
-        <MetricHead>
-          <LeafIcon src={leafIcon} alt="" />
-          <MetricTitle>식사</MetricTitle>
-        </MetricHead>
-        <InnerGroup>
-          <DayRow>
-            {detail.meal.map((item) => (
-              <DayCol key={item.day}>
-                <IconWrap>
-                  {/* 기록이 없거나(null) 끼니를 거른 날(1점, '한 끼만 먹었어요')은 빈 원으로 둔다 */}
-                  {item.score > 1 ? (
-                    <MealIcon src={mealIcon} alt="" />
-                  ) : (
-                    <EmptyCircle src={emptyCircleIcon} alt="" />
-                  )}
-                </IconWrap>
-                <DayLabel>{item.day}</DayLabel>
-              </DayCol>
-            ))}
-          </DayRow>
-        </InnerGroup>
-        <MetricNote>{detail.mealNote}</MetricNote>
-      </MetricCard>
+          <MetricCard>
+            <MetricHead>
+              <LeafIcon src={leafIcon} alt="" />
+              <MetricTitle>활동 (걸음 수)</MetricTitle>
+            </MetricHead>
+            <InnerGroup>
+              <DayRow $bottom style={{ height: 108 }}>
+                {detail.steps.map((item) => (
+                  <DayCol key={item.day}>
+                    <WalkIcon src={walkIcon} alt="" />
+                    <Bar $height={barHeight(item.value, 53)} $color={activityColor(item.value)} />
+                    <DayLabel>{item.day}</DayLabel>
+                  </DayCol>
+                ))}
+              </DayRow>
+            </InnerGroup>
+            {detail.stepsNote && <MetricNote>{detail.stepsNote}</MetricNote>}
+          </MetricCard>
 
-      <MetricCard>
-        <MetricHead>
-          <LeafIcon src={leafIcon} alt="" />
-          <MetricTitle>활동 (걸음 수)</MetricTitle>
-        </MetricHead>
-        <InnerGroup>
-          <DayRow $bottom style={{ height: 108 }}>
-            {detail.steps.map((item) => (
-              <DayCol key={item.day}>
-                <WalkIcon src={walkIcon} alt="" />
-                <Bar $height={barHeight(item.value, 53)} $color={activityColor(item.value)} />
-                <DayLabel>{item.day}</DayLabel>
-              </DayCol>
-            ))}
-          </DayRow>
-        </InnerGroup>
-        <MetricNote>{detail.stepsNote}</MetricNote>
-      </MetricCard>
+          <MetricCard>
+            <MetricHead>
+              <LeafIcon src={leafIcon} alt="" />
+              <MetricTitle>복약</MetricTitle>
+            </MetricHead>
+            <InnerGroup>
+              <DayRow>
+                {detail.meds.map((item) => (
+                  <DayCol key={item.day}>
+                    <IconWrap>
+                      {item.done ? (
+                        <FlowerIcon src={flowerIcon} alt="" />
+                      ) : (
+                        <EmptyCircle src={emptyCircleIcon} alt="" />
+                      )}
+                    </IconWrap>
+                    <DayLabel>{item.day}</DayLabel>
+                  </DayCol>
+                ))}
+              </DayRow>
+            </InnerGroup>
+            {detail.medsNote && <MetricNote>{detail.medsNote}</MetricNote>}
+          </MetricCard>
 
-      <MetricCard>
-        <MetricHead>
-          <LeafIcon src={leafIcon} alt="" />
-          <MetricTitle>복약</MetricTitle>
-        </MetricHead>
-        <InnerGroup>
-          <DayRow>
-            {detail.meds.map((item) => (
-              <DayCol key={item.day}>
-                <IconWrap>
-                  {item.done ? (
-                    <FlowerIcon src={flowerIcon} alt="" />
-                  ) : (
-                    <EmptyCircle src={emptyCircleIcon} alt="" />
-                  )}
-                </IconWrap>
-                <DayLabel>{item.day}</DayLabel>
-              </DayCol>
-            ))}
-          </DayRow>
-        </InnerGroup>
-        <MetricNote>{detail.medsNote}</MetricNote>
-      </MetricCard>
+          {detail.adviceText && (
+            <GreenCard>
+              <AiIcon src={aiIcon} alt="" />
+              <GreenLabel>다음 주 제안</GreenLabel>
+              <GreenText>{detail.adviceText}</GreenText>
+              {/* 서버가 기록을 분석해 써주는 문장 (aiCoachInsight) */}
+              {detail.aiInsight && <GreenText>{detail.aiInsight}</GreenText>}
+            </GreenCard>
+          )}
 
-      {detail.adviceText && (
-        <GreenCard>
-          <AiIcon src={aiIcon} alt="" />
-          <GreenLabel>다음 주 제안</GreenLabel>
-          <GreenText>{detail.adviceText}</GreenText>
-          {/* 서버가 기록을 분석해 써주는 문장 (aiCoachInsight) */}
-          {detail.aiInsight && <GreenText>{detail.aiInsight}</GreenText>}
-        </GreenCard>
-      )}
-
-      <SectionDivider />
-
-      <DayJumpCard>
-        <DayJumpHint>하루하루의 건강기록을 확인해보세요</DayJumpHint>
-        <DayJumpRow>
-          {detail.condition.map((item, index) => (
-            <DayButton
-              key={item.day}
-              type="button"
-              onClick={() =>
-                navigate(`/home/today-report/${toDateParam(dayDates[index])}`, {
-                  // 일지에서 뒤로 가면 홈이 아니라 이 주간 리포트로 돌아오게 한다.
-                  state: { person, from: `/home/weekly-report/${weekId}` },
-                })
-              }
-            >
-              <StarWrap>
-                <StarIcon src={starIcon} alt="" />
-                <DayButtonLabel>{item.day}</DayButtonLabel>
-              </StarWrap>
-              <DayButtonDate>
-                {dayDates[index].getMonth() + 1}/{dayDates[index].getDate()}
-              </DayButtonDate>
-            </DayButton>
-          ))}
-        </DayJumpRow>
-      </DayJumpCard>
-
-      {!isMine && (
-        <>
           <SectionDivider />
-          <JournalCta
-            title={`이제 ${partnerLabel}와 안부를 나눠볼까요?`}
-            message={detail.contactMessage}
-            onCall={handleCall}
-            onSendLetter={() => navigate('/home', { state: { openLetterbox: 'compose' } })}
-          />
-        </>
-      )}
 
-      {askingPhone && (
-        <PhoneNumberPopup
-          name={personLabel}
-          onSaved={(phone) => {
-            setAskingPhone(false);
-            callPhone(phone);
-          }}
-          onClose={() => setAskingPhone(false)}
-        />
-      )}
-    </Page>
+          <DayJumpCard>
+            <DayJumpHint>하루하루의 건강기록을 확인해보세요</DayJumpHint>
+            <DayJumpRow>
+              {detail.condition.map((item, index) => (
+                <DayButton
+                  key={item.day}
+                  type="button"
+                  onClick={() => openDay(dayDates[index])}
+                >
+                  <StarWrap>
+                    <StarIcon src={starIcon} alt="" />
+                    <DayButtonLabel>{item.day}</DayButtonLabel>
+                  </StarWrap>
+                  <DayButtonDate>
+                    {dayDates[index].getMonth() + 1}/{dayDates[index].getDate()}
+                  </DayButtonDate>
+                </DayButton>
+              ))}
+            </DayJumpRow>
+          </DayJumpCard>
+
+          {!isMine && (
+            <>
+              <SectionDivider />
+              <JournalCta
+                title={`이제 ${partnerLabel}와 안부를 나눠볼까요?`}
+                message={detail.contactMessage}
+                onCall={handleCall}
+                onSendLetter={() => navigate('/home', { state: { openLetterbox: 'compose' } })}
+              />
+            </>
+          )}
+
+        </PageScrollArea>
+
+        {futureDate && (
+          <PopupBackdrop onClick={() => setFutureDate(null)}>
+            <PopupCard $center $gap={16} $padTop={36} onClick={(event) => event.stopPropagation()}>
+              <PopupInnerBorder />
+              <PopupTitle $center $size={22}>
+                아직 오지 않은 날이에요
+              </PopupTitle>
+              <PopupMessage>
+                {futureDate.getMonth() + 1}월 {futureDate.getDate()}일의 기록은
+                <br />
+                그 날이 되면 볼 수 있어요.
+              </PopupMessage>
+              <PopupPrimaryButton type="button" onClick={() => setFutureDate(null)}>
+                알겠어요
+              </PopupPrimaryButton>
+            </PopupCard>
+          </PopupBackdrop>
+        )}
+
+        {askingPhone && (
+          <PhoneNumberPopup
+            name={personLabel}
+            onSaved={(phone) => {
+              setAskingPhone(false);
+              callPhone(phone);
+            }}
+            onClose={() => setAskingPhone(false)}
+          />
+        )}
+      </PageContent>
+    </PageFrame>
   );
 }
 

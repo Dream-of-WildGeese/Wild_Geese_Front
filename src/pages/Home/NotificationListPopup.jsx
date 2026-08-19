@@ -1,11 +1,9 @@
 import styled from 'styled-components';
-import sunIcon from '../../../assets/journal/sun.png';
-import moonIcon from '../../../assets/journal/moon.png';
-import pillIcon from '../../../assets/journal/pill.png';
-import weeklyIcon from '../../../assets/popup/weekly-report.png';
-import envelopeIcon from '../../../assets/letterbox/envelope-box.png';
-import { getNotifications, readNotification } from '../../../api/notification';
-import { useApi, useApiAction } from '../../../hooks/useApi';
+import sunIcon from '../../assets/journal/sun.png';
+import moonIcon from '../../assets/journal/moon.png';
+import pillIcon from '../../assets/journal/pill.png';
+import weeklyIcon from '../../assets/popup/weekly-report.png';
+import envelopeIcon from '../../assets/letterbox/envelope-box.png';
 import {
   PopupBackdrop,
   PopupCard,
@@ -14,7 +12,7 @@ import {
   PopupTitle,
   PopupSubtitle,
   PopupPrimaryButton,
-} from '../../../components/PopupShell';
+} from '../../components/PopupShell';
 
 // 서버가 보낸 알림 목록. 종류별로 앱에서 쓰던 아이콘을 그대로 붙인다.
 const TYPE_ICONS = {
@@ -126,6 +124,32 @@ const UnreadDot = styled.span`
   margin-top: 6px;
 `;
 
+// 부제목과 '모두 읽음'을 한 줄에 놓는다. 목록과 하단 닫기 버튼은 그대로 둔다.
+const SubtitleRow = styled.div`
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+`;
+
+const ReadAllButton = styled.button`
+  flex-shrink: 0;
+  padding: 5px 10px;
+  border-radius: 8px;
+  border: 1px solid rgba(74, 58, 47, 0.35);
+  background: rgba(255, 255, 255, 0.7);
+
+  color: #8c8172;
+  font-family: 'Noto Sans KR';
+  font-size: 13px;
+  font-weight: 700;
+
+  &:disabled {
+    opacity: 0.5;
+  }
+`;
+
 const StatusText = styled.p`
   margin: 24px 0;
   width: 100%;
@@ -135,22 +159,24 @@ const StatusText = styled.p`
   font-size: 15px;
 `;
 
-function NotificationListPopup({ onClose }) {
-  const { data, loading, error, refetch } = useApi(getNotifications, {
-    args: [{ page: 0, size: 30 }],
-  });
-  const { execute: markRead } = useApiAction(readNotification);
-
-  // 최신 알림이 위로 오도록 정렬한다. (서버는 정렬 없이 내려준다)
-  const notifications = [...(data?.content ?? [])].sort(
-    (a, b) => new Date(b.scheduledAt) - new Date(a.scheduledAt),
-  );
+// 목록과 읽음 처리는 홈이 들고 있다. 여기서 따로 불러오면 상단 종 배지의
+// 개수와 목록이 어긋난다.
+function NotificationListPopup({
+  notifications,
+  loading,
+  error,
+  onRead,
+  onReadAll,
+  onSelect,
+  onClose,
+  readingAll = false,
+}) {
   const unreadCount = notifications.filter((item) => !item.read).length;
 
-  const handleRead = async (notification) => {
-    if (notification.read) return;
-    const { ok } = await markRead(notification.notificationId);
-    if (ok) refetch();
+  // 누르면 읽음으로 바꾸고, 그 알림이 가리키는 화면으로 옮겨간다.
+  const handleSelect = (notification) => {
+    if (!notification.read) onRead(notification.notificationId);
+    onSelect(notification);
   };
 
   return (
@@ -164,9 +190,16 @@ function NotificationListPopup({ onClose }) {
         <PopupTitle $center $size={24}>
           알림
         </PopupTitle>
-        <PopupSubtitle $center>
-          {unreadCount > 0 ? `읽지 않은 알림이 ${unreadCount}건 있어요` : '모두 확인했어요'}
-        </PopupSubtitle>
+        <SubtitleRow>
+          <PopupSubtitle $center>
+            {unreadCount > 0 ? `읽지 않은 알림이 ${unreadCount}건 있어요` : '모두 확인했어요'}
+          </PopupSubtitle>
+          {unreadCount > 0 && (
+            <ReadAllButton type="button" disabled={readingAll} onClick={onReadAll}>
+              {readingAll ? '처리 중...' : '모두 읽음'}
+            </ReadAllButton>
+          )}
+        </SubtitleRow>
 
         {loading && <StatusText>불러오는 중이에요...</StatusText>}
         {error && <StatusText>{error.message}</StatusText>}
@@ -180,7 +213,7 @@ function NotificationListPopup({ onClose }) {
               key={item.notificationId}
               type="button"
               $unread={!item.read}
-              onClick={() => handleRead(item)}
+              onClick={() => handleSelect(item)}
             >
               <ItemIcon src={TYPE_ICONS[item.type] ?? sunIcon} alt="" />
               <TextCol>

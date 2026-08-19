@@ -206,10 +206,15 @@ const PaperPlaneImage = styled.img`
 `;
 
 // 안 읽은 편지 개수. 종이비행기가 아니라 우체통 오른쪽 위에 붙는다.
+//
+// 그림 파일(320x320)에서 우체통이 실제로 차지하는 부분은 가운데 202x221뿐이라,
+// 130px 버튼 기준으로는 x 24~106 / y 16~106에만 그려진다. 버튼 모서리(0,0)에
+// 맞춰 두면 빨간 우체통에서 오른쪽으로 24px, 위로 16px 떨어져 허공에 뜬다.
+// 그림이 실제로 시작하는 자리에 맞춰서 우체통 어깨에 걸치게 둔다.
 const Badge = styled.span`
   position: absolute;
-  top: -6px;
-  right: -6px;
+  top: 10px;
+  right: 18px;
 
   min-width: 22px;
   height: 22px;
@@ -230,7 +235,7 @@ const Badge = styled.span`
   line-height: 1;
 `;
 
-function HomeCharacterStage({ onMailboxClick, unreadLetterCount = 0, showMailbox = true }) {
+function HomeCharacterStage({ onMailboxClick, unreadLetterCount = 0 }) {
   const hasUnread = unreadLetterCount > 0;
   const currentUserId = getUserId();
   const { data: familyData } = useApi(getMyFamily);
@@ -267,23 +272,18 @@ function HomeCharacterStage({ onMailboxClick, unreadLetterCount = 0, showMailbox
       <MascotButton type="button" aria-label="온담이에게 말 걸기" onClick={handleMascotClick}>
         <Mascot src={mascotImage} alt="" />
       </MascotButton>
-      {/* 설정의 '우편 보기'를 끄면 우체통과 종이비행기를 함께 감춘다 */}
-      {showMailbox && (
-        <>
-          <MailboxButton
-            type="button"
-            aria-label={hasUnread ? `안 읽은 편지 ${unreadLetterCount}통 보기` : '우체통 열기'}
-            onClick={onMailboxClick}
-          >
-            <MailboxImage src={mailboxImg} alt="" $pulse={hasUnread} />
-            {hasUnread && <Badge>{unreadLetterCount > 99 ? '99+' : unreadLetterCount}</Badge>}
-          </MailboxButton>
+      <MailboxButton
+        type="button"
+        aria-label={hasUnread ? `안 읽은 편지 ${unreadLetterCount}통 보기` : '우체통 열기'}
+        onClick={onMailboxClick}
+      >
+        <MailboxImage src={mailboxImg} alt="" $pulse={hasUnread} />
+        {hasUnread && <Badge>{unreadLetterCount > 99 ? '99+' : unreadLetterCount}</Badge>}
+      </MailboxButton>
 
-          <PaperPlaneButton type="button" aria-label="우체통 열기" onClick={onMailboxClick}>
-            <PaperPlaneImage src={paperplaneImg} alt="" />
-          </PaperPlaneButton>
-        </>
-      )}
+      <PaperPlaneButton type="button" aria-label="우체통 열기" onClick={onMailboxClick}>
+        <PaperPlaneImage src={paperplaneImg} alt="" />
+      </PaperPlaneButton>
     </StageLayer>
   );
 }

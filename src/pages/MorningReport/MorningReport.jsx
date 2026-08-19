@@ -116,16 +116,31 @@ const Page = styled.div`
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 20px;
   width: 100%;
   height: 100%;
-  overflow-y: auto;
   padding: 20px 20px 24px;
   background: ${({ theme }) => theme.colors.reportBg};
   box-sizing: border-box;
+`;
 
-  /* 다른 화면들과 맞춰 스크롤바를 숨긴다. 폰 프레임 안이라 막대가 보이면 눈에 띈다. */
+// 헤더(뒤로가기·연월)와 구분선은 위에 붙어 있고, 기록 카드만 스크롤된다.
+const ScrollArea = styled.div`
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  overflow-y: auto;
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+
   scrollbar-width: none;
+
+  /* 넘치는 만큼은 스크롤로 보여준다. 안에 든 카드를 눌러 줄이지 않는다. */
+  > * {
+    flex-shrink: 0;
+  }
 
   &::-webkit-scrollbar {
     display: none;
@@ -135,6 +150,7 @@ const Page = styled.div`
 const Divider = styled.div`
   flex-shrink: 0;
   width: 100%;
+  margin: 20px 0;
   height: 2px;
   border-radius: 2px;
   background: #d8c4a8;
@@ -215,22 +231,25 @@ function MorningReport() {
       />
       <MorningReportToast key={toast?.id} message={toast?.message} />
       <Divider />
-      {loading ? (
-        <EmptyState>기록을 불러오는 중이에요...</EmptyState>
-      ) : error ? (
-        <EmptyState>{error.message}</EmptyState>
-      ) : entriesForMonth.length === 0 ? (
-        <EmptyState>이 달에는 아직 쌓인 기록이 없어요.</EmptyState>
-      ) : (
-        entriesForMonth.map((entry) => (
-          <MorningJournalCard
-            key={entry.id}
-            date={entry.date}
-            question={entry.question}
-            answers={entry.answers}
-          />
-        ))
-      )}
+
+      <ScrollArea>
+        {loading ? (
+          <EmptyState>기록을 불러오는 중이에요...</EmptyState>
+        ) : error ? (
+          <EmptyState>{error.message}</EmptyState>
+        ) : entriesForMonth.length === 0 ? (
+          <EmptyState>이 달에는 아직 쌓인 기록이 없어요.</EmptyState>
+        ) : (
+          entriesForMonth.map((entry) => (
+            <MorningJournalCard
+              key={entry.id}
+              date={entry.date}
+              question={entry.question}
+              answers={entry.answers}
+            />
+          ))
+        )}
+      </ScrollArea>
 
       {isPickerOpen && (
         <MorningReportDatePicker
