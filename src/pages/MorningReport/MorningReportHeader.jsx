@@ -50,9 +50,10 @@ const MonthNav = styled.div`
 // 누르는 곳이 화면 구석이라 눈에 잘 안 띄었다.
 const YearLabel = styled.button`
   padding: 0 8px;
-  font-family: 'Jua', sans-serif;
-  font-size: 46px;
-  color: #4a3a2f;
+  font-family: 'Noto Sans KR', sans-serif;
+  font-weight: 700;
+  font-size: 30px;
+  color: #a79c8e;
   line-height: 1.1;
 `;
 
@@ -74,7 +75,7 @@ const MonthArrow = styled.button`
 const MonthLabel = styled.button`
   padding: 0 8px;
   font-family: 'Jua', sans-serif;
-  font-size: 34px;
+  font-size: 46px;
   color: #4a3a2f;
   line-height: 1.1;
 `;

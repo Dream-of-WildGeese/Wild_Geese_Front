@@ -10,8 +10,11 @@ import {
   getTodayQuestion,
   submitMorningAnswer,
   transcribeMorningAnswer,
+  sendAnswerReaction,
 } from '../../../../api/morning';
 import { useApi, useApiAction } from '../../../../hooks/useApi';
+import { useFamilyRelation } from '../../../../hooks/useFamilyRelation';
+import { getUserId } from '../../../../api/client';
 import { useVoiceRecorder } from '../../../../hooks/useVoiceRecorder';
 import {
   PopupBackdrop,
@@ -113,44 +116,53 @@ const HintText = styled.p`
   font-size: 16px;
 `;
 
+// Figma 525:1251 — 내 답변은 살구색, 가족 답변은 노란색 카드로 구분한다.
 const AnswerCard = styled.div`
   width: 100%;
   padding: 16px;
+  box-sizing: border-box;
 
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 8px;
 
-  border-radius: 10px;
-  border: 1px solid #d8cbb8;
-  background: #fffbf1;
+  border-radius: 14px;
+  border: 1px solid ${({ $mine }) => ($mine ? '#e6a794' : '#eedda8')};
+  background: ${({ $mine }) => ($mine ? '#fbeae5' : '#fbf0d2')};
 `;
 
 const Badge = styled.span`
   align-self: flex-start;
   padding: 4px 10px;
   border-radius: 20px;
-  background: ${({ $mine }) => ($mine ? '#edf3d5' : '#f6ebc7')};
-  color: ${({ $mine }) => ($mine ? '#576b1a' : '#8a6b3e')};
+  background: ${({ $mine }) => ($mine ? '#e6a794' : '#e8cd73')};
+  color: #fff;
   font-family: 'Noto Sans KR';
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 700;
+  white-space: nowrap;
 `;
 
 const AnswerText = styled.p`
   margin: 0;
+  width: 100%;
   padding: 12px 14px;
+  box-sizing: border-box;
+
   border-radius: 10px;
   background: #fff;
-  border: 1px solid #e8dcc4;
+  border: 1.5px solid
+    ${({ $mine }) => ($mine ? 'rgba(230, 167, 148, 0.9)' : 'rgba(238, 221, 168, 0.9)')};
 
   color: #4a3a2f;
   font-family: 'Noto Sans KR';
-  font-size: 15px;
+  font-size: 17px;
   line-height: 1.5;
+  word-break: keep-all;
 `;
 
 const ReactionRow = styled.div`
+  width: 100%;
   display: flex;
   gap: 10px;
   align-items: center;
@@ -161,9 +173,22 @@ const ReactionButton = styled.button`
   width: 50px;
   height: 50px;
   border-radius: 25px;
-  padding: 3px;
-  border: 2px solid ${({ $active }) => ($active ? '#cbd879' : 'transparent')};
-  background: ${({ $active }) => ($active ? '#edf3d5' : 'transparent')};
+  padding: 0;
+  border: 2px solid ${({ $active }) => ($active ? '#e8cd73' : 'transparent')};
+  background: transparent;
+`;
+
+// 되돌아가 고칠 수 있다는 게 눈에 띄도록, 흐린 회색 글자 대신 본문과 같은 진한 갈색에
+// 테두리도 '닫기' 버튼과 같은 굵기로 맞춘다.
+const RetryButton = styled(PopupSecondaryButton)`
+  border: 1.5px solid rgba(74, 58, 47, 0.55);
+  color: #4a3a2f;
+  cursor: pointer;
+  transition: background 0.15s ease;
+
+  &:hover {
+    background: #f6ebc7;
+  }
 `;
 
 const EmptyAnswerBox = styled.div`
@@ -189,7 +214,11 @@ function DayQuestionPopup({ onClose }) {
   const [voiceText, setVoiceText] = useState(null);
 
   const { data: question, loading, error, refetch } = useApi(getTodayQuestion);
+  // 이름(봉미선) 대신 호칭(엄마·아빠·딸·아들)으로 부른다.
+  const { partnerLabel } = useFamilyRelation();
   const { execute: submitAnswer, loading: submitting } = useApiAction(submitMorningAnswer);
+  const { execute: sendReaction, loading: sendingReaction } = useApiAction(sendAnswerReaction);
+  const [reactionError, setReactionError] = useState(null);
 
   // 답변을 보내면 질문을 다시 불러오는데, 그 사이 data가 잠깐 비어서
   // 질문이 사라진 것처럼 보였다. 마지막으로 받은 질문을 남겨둔다.
@@ -204,9 +233,27 @@ function DayQuestionPopup({ onClose }) {
     if (step !== null || loading) return;
     setStep(myAnswer ? 'result' : 'question');
   }, [step, loading, myAnswer]);
-  const partnerAnswer = question?.familyAnswers?.[0] ?? null;
+  // 서버가 familyAnswers에 내 답변까지 같이 담아 보낸다. 그대로 쓰면 내 답변이
+  // '가족 답변'으로 한 번 더 나오고, 반응도 나에게 보내는 것처럼 보인다.
+  const myUserId = getUserId();
+  const partnerAnswer =
+    (question?.familyAnswers ?? []).find(
+      (item) => String(item.userId) !== String(myUserId),
+    ) ?? null;
 
   const [submitError, setSubmitError] = useState(null);
+
+  // 반응은 가족이 남긴 답변에 단다. 서버가 성공으로 답한 뒤에야 '보냈어요' 화면을 띄운다.
+  const handleReaction = async (reaction) => {
+    if (!partnerAnswer || sendingReaction) return;
+
+    const { ok, error: failed } = await sendReaction(partnerAnswer.answerId, reaction.key);
+    if (!ok) {
+      setReactionError(failed);
+      return;
+    }
+    setSentReaction(reaction.key);
+  };
 
   const handleSubmit = async () => {
     const trimmed = answer.trim();
@@ -270,22 +317,22 @@ function DayQuestionPopup({ onClose }) {
   if (step === 'result') {
     return (
       <PopupBackdrop onClick={onClose}>
-        <PopupCard $gap={16} onClick={(event) => event.stopPropagation()}>
+        <PopupCard $center $gap={16} $padTop={44} onClick={(event) => event.stopPropagation()}>
           <PopupInnerBorder />
-          <PopupTitle $center $size={22}>
+          <PopupTitle $center $size={24}>
             답변 확인하기
           </PopupTitle>
 
-          <AnswerCard>
+          <AnswerCard $mine>
             <Badge $mine>내 답변</Badge>
             {/* 방금 쓴 답을 먼저 보여준다. myAnswer를 앞에 두면 다시 답해도
                 서버 응답이 도착할 때까지 옛 답이 그대로 보인다. */}
-            <AnswerText>{answer || myAnswer}</AnswerText>
+            <AnswerText $mine>{answer || myAnswer}</AnswerText>
           </AnswerCard>
 
           {partnerAnswer ? (
             <AnswerCard>
-              <Badge>{partnerAnswer.name} 답변</Badge>
+              <Badge>{partnerLabel} 답변</Badge>
               <AnswerText>{partnerAnswer.textValue}</AnswerText>
               {/* ver01: 반응 아이콘이 상대 답변 카드 안에 들어간다 */}
               <ReactionRow>
@@ -295,7 +342,8 @@ function DayQuestionPopup({ onClose }) {
                     type="button"
                     aria-label={reaction.label}
                     $active={sentReaction === reaction.key}
-                    onClick={() => setSentReaction(reaction.key)}
+                    disabled={sendingReaction}
+                    onClick={() => handleReaction(reaction)}
                   >
                     <PopupIcon $size={44} src={reaction.icon} alt="" />
                   </ReactionButton>
@@ -311,7 +359,7 @@ function DayQuestionPopup({ onClose }) {
           )}
 
           <PopupButtonRow>
-            <PopupSecondaryButton
+            <RetryButton
               type="button"
               onClick={() => {
                 setAnswer(myAnswer);
@@ -321,7 +369,7 @@ function DayQuestionPopup({ onClose }) {
               }}
             >
               다시 답하기
-            </PopupSecondaryButton>
+            </RetryButton>
             <PopupPrimaryButton type="button" onClick={onClose}>
               닫기
             </PopupPrimaryButton>
@@ -332,9 +380,24 @@ function DayQuestionPopup({ onClose }) {
         {sentReaction && (
           <ReactionSentPopup
             reaction={REACTIONS.find((item) => item.key === sentReaction)}
-            partnerName={partnerAnswer?.name}
+            partnerName={partnerLabel}
             onClose={() => setSentReaction(null)}
           />
+        )}
+
+        {reactionError && (
+          <PopupBackdrop onClick={() => setReactionError(null)}>
+            <PopupCard $center $gap={16} $padTop={36} onClick={(event) => event.stopPropagation()}>
+              <PopupInnerBorder />
+              <PopupTitle $center $size={22}>
+                반응을 보내지 못했어요
+              </PopupTitle>
+              <ErrorText>{reactionError.message}</ErrorText>
+              <PopupPrimaryButton type="button" onClick={() => setReactionError(null)}>
+                다시 해볼게요
+              </PopupPrimaryButton>
+            </PopupCard>
+          </PopupBackdrop>
         )}
       </PopupBackdrop>
     );
