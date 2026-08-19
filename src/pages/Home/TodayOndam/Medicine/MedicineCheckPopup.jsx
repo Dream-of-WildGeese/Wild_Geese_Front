@@ -118,6 +118,16 @@ const MedLabel = styled.p`
   word-break: keep-all;
 `;
 
+// 하루에 두 번 이상 먹는 약은 이름만 적으면 그 약을 다 먹은 것처럼 보인다.
+// 이름 아래에 몇 시 것인지 작게 붙인다.
+const DoseTime = styled.span`
+  display: block;
+  margin-top: 2px;
+  color: #8c8780;
+  font-size: 13px;
+  font-weight: 500;
+`;
+
 const CompleteNote = styled.p`
   margin: 0;
   text-align: center;
@@ -167,6 +177,10 @@ function MedicineCheckPopup({ onClose }) {
   const [step, setStep] = useState('checklist'); // checklist | complete | edit
   const [checks, setChecks] = useState({});
 
+  // '기록 수정'은 하루치를 통째로 고친다. 고치고 돌아왔는데 완료 화면이 지금
+  // 시간대만 보여주면, 방금 뺀 체크가 안 지워진 것처럼 보인다. 그때는 하루 전체를 본다.
+  const [editedWholeDay, setEditedWholeDay] = useState(false);
+
   // 두 팝업이 같은 로더를 쓴다. 여기서 목록을 따로 만들면 기록 수정 화면과 어긋난다.
   const { data, loading, error, refetch } = useApi(loadTodayMedications);
   const { data: todayMeals } = useApi(getMealLogs, { args: [toDateString()] });
@@ -176,9 +190,15 @@ function MedicineCheckPopup({ onClose }) {
   const slotLabel = getSlotLabel(new Date().getHours());
 
   // 지금 시간대에 먹을 약만 보여준다. 없으면 오늘 먹을 약 전체를 보여준다.
+  const allRows = flattenAll(data?.items ?? []);
   const slotRows = flattenSlot(data?.items ?? [], slotLabel);
   const isAllDay = slotRows.length === 0;
-  const medRows = isAllDay ? flattenAll(data?.items ?? []) : slotRows;
+  const medRows = isAllDay ? allRows : slotRows;
+
+  // 하루에 몇 번 먹는 약인지. 두 번 이상이면 꽃 옆에 시각을 함께 적는다.
+  const dosesToday = new Map(
+    (data?.items ?? []).map((item) => [item.medicationId, item.schedules.length]),
+  );
 
   // 같은 약이 여러 번이면 어느 시간대인지 붙여준다. 안 그러면 같은 이름의 줄이
   // 여러 개 보여서 무엇을 체크한 건지 알 수 없다.
@@ -231,6 +251,7 @@ function MedicineCheckPopup({ onClose }) {
         onDone={async () => {
           // 수정한 내용을 완료 화면이 바로 보여주도록 기록을 다시 읽는다.
           await refetch();
+          setEditedWholeDay(true);
           setStep('complete');
         }}
       />
@@ -240,20 +261,24 @@ function MedicineCheckPopup({ onClose }) {
   if (step === 'complete') {
     // 완료 화면은 화면 상태가 아니라 다시 읽은 기록을 기준으로 그린다.
     // 그래야 '기록 수정'에서 바꾼 내용이 곧바로 반영된다.
-    const done = medRows.filter((med) => med.taken);
-    const remaining = medRows.length - done.length;
-    const allTaken = medRows.length > 0 && remaining === 0;
+    const rows = editedWholeDay ? allRows : medRows;
+    const done = rows.filter((med) => med.taken);
+    const remaining = rows.length - done.length;
+    const allTaken = rows.length > 0 && remaining === 0;
+
+    // 하루 전체를 보고 있으면 '아침'처럼 시간대를 붙이면 안 된다.
+    const scopeLabel = editedWholeDay || isAllDay ? '오늘' : slotLabel;
 
     // 약을 다 챙겼을 때만 칭찬한다. 남았으면 몇 개가 남았는지 알려준다.
     const title = allTaken
-      ? `${slotLabel} 약 잘 챙겨 드셨네요!`
+      ? `${scopeLabel} 약 잘 챙겨 드셨네요!`
       : done.length === 0
-        ? `${slotLabel} 약을 아직 안 드셨어요`
-        : `${slotLabel} 약이 조금 남았어요`;
+        ? `${scopeLabel} 약을 아직 안 드셨어요`
+        : `${scopeLabel} 약이 조금 남았어요`;
 
     const note = allTaken
       ? '오늘도 잊지 않고 챙기셨어요'
-      : `${medRows.length}개 중 ${done.length}개 드셨어요. ${remaining}개 남았어요!`;
+      : `${rows.length}개 중 ${done.length}개 드셨어요. ${remaining}개 남았어요!`;
 
     return (
       <PopupBackdrop onClick={onClose}>
@@ -264,14 +289,17 @@ function MedicineCheckPopup({ onClose }) {
           </PopupTitle>
 
           <CircleRow>
-            {medRows.map((med, index) => (
+            {rows.map((med, index) => (
               <MedIconWrap key={med.scheduleId}>
                 <PopupIcon
                   $size={64}
                   src={med.taken ? MED_FLOWERS[index % MED_FLOWERS.length] : medEmpty}
                   alt=""
                 />
-                <MedLabel $taken={med.taken}>{med.name}</MedLabel>
+                <MedLabel $taken={med.taken}>
+                  {med.name}
+                  {dosesToday.get(med.medicationId) > 1 && <DoseTime>{med.timeLabel}</DoseTime>}
+                </MedLabel>
               </MedIconWrap>
             ))}
           </CircleRow>

@@ -407,11 +407,10 @@ function MedicineEdit() {
         </PageScrollArea>
 
         <PageFooter>
-          <SaveButton
-            type="button"
-            onClick={handleSave}
-            disabled={!name.trim() || finalTimes.length === 0 || days.length === 0}
-          >
+          {/* 버튼을 끄지 않는다. :disabled 겉모습이 켜졌을 때와 같아서,
+              눌리지 않는 건지 저장이 실패한 건지 구분할 수 없었다.
+              늘 누를 수 있게 두고, 빠진 것이 있으면 눌렀을 때 알려준다. */}
+          <SaveButton type="button" onClick={handleSave}>
             저장하기
           </SaveButton>
         </PageFooter>

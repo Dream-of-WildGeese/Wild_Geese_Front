@@ -34,6 +34,7 @@ const AddMedication = () => {
 
   // 이미 골라둔 시각을 또 넣으려 할 때 알려줄 시각
   const [duplicateTime, setDuplicateTime] = useState(null);
+  const [missing, setMissing] = useState(null);
 
   const [period, setPeriod] = useState('오전');
   const [hour, setHour] = useState('');
@@ -134,18 +135,18 @@ const AddMedication = () => {
   const handleSave = async () => {
     // 예전에는 조건에 안 맞으면 아무 반응 없이 끝나서, 왜 저장이 안 되는지 알 수 없었다.
     if (!name.trim()) {
-      alert('약 이름을 적어주세요.');
+      setMissing('약 이름을 적어주세요');
       return;
     }
     if (finalTimes.length === 0) {
-      alert('복용하는 시간을 하나 이상 골라주세요.');
+      setMissing('복용하는 시간을 하나 이상 골라주세요');
       return;
     }
 
     // 이름이 겹치면 복약 화면에서 어느 약을 체크한 건지 구분할 수 없다.
     const existingNames = (medications ?? []).map(toMedicationView).map((med) => med.name);
     if (isDuplicateName(name, existingNames)) {
-      alert('같은 이름의 약이 이미 있어요.');
+      setMissing('같은 이름의 약이 이미 있어요');
       return;
     }
 
@@ -159,7 +160,7 @@ const AddMedication = () => {
       toMedicationRequest({ name, times: finalTimes, days }),
     );
     if (!ok) {
-      alert(error.message);
+      setMissing(error.message);
       return;
     }
     navigate(-1);
@@ -272,11 +273,26 @@ const AddMedication = () => {
         </ScrollArea>
 
         <ButtonArea>
-          <SaveButton onClick={handleSave} disabled={!name.trim() || finalTimes.length === 0}>
+          <SaveButton onClick={handleSave}>
             저장하기
           </SaveButton>
         </ButtonArea>
       </Content>
+
+      {missing && (
+        <PopupBackdrop onClick={() => setMissing(null)}>
+          <PopupCard $center $gap={16} $padTop={36} onClick={(event) => event.stopPropagation()}>
+            <PopupInnerBorder />
+            <PopupTitle $center $size={22}>
+              다시 확인해주세요
+            </PopupTitle>
+            <PopupMessage>{missing}</PopupMessage>
+            <PopupPrimaryButton type="button" onClick={() => setMissing(null)}>
+              알겠어요
+            </PopupPrimaryButton>
+          </PopupCard>
+        </PopupBackdrop>
+      )}
 
       {duplicateTime && (
         <PopupBackdrop onClick={() => setDuplicateTime(null)}>
