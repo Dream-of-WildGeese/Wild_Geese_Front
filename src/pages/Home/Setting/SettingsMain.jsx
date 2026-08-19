@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
+import backIcon from '../../../assets/settings/back-icon.png';
 import { useAppData } from '../../../store/AppDataContext';
 import { clearUserId } from '../../../api/client/userId';
 import {
@@ -41,55 +42,69 @@ const Page = styled.div`
 `;
 
 const Content = styled.div`
-  padding: 16px 20px 30px;
+  padding: 20px 20px 30px;
 `;
 
 const Header = styled.div`
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  padding-bottom: 12px;
-  border-bottom: 1.3px solid rgba(74,58,47,.25);
 `;
 
 const BackButton = styled.button`
-  width: 20px;
-  font-size: 22px;
-  color: #000;
-  line-height: 1;
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+  }
 `;
 
 const Title = styled.p`
+  flex: 1;
   margin: 0;
-  font-size: 18px;
-  font-weight: 500;
-  color: #000;
+  text-align: center;
+  color: #4a3a2f;
+  font-family: Jua;
+  font-size: 32px;
 `;
 
 const HeaderSpacer = styled.div`
-  width: 20px;
+  width: 40px;
+`;
+
+const TitleDivider = styled.div`
+  height: 0;
+  margin: 16px 0 20px;
+  border-top: 2px dashed rgba(74, 58, 47, 0.4);
 `;
 
 const SectionLabel = styled.p`
-  margin: 16px 0 8px;
-  font-size: 13px;
-  font-weight: 500;
-  color: #8c8780;
+  margin: 0 0 8px;
+  color: #a79c8e;
+  font-family: 'Noto Sans KR';
+  font-size: 14px;
+  font-weight: 700;
 
-  &:first-of-type {
-    margin-top: 16px;
+  &:not(:first-of-type) {
+    margin-top: 24px;
   }
+`;
+
+const Card = styled.div`
+  border-radius: 18px;
+  border: 1.3px solid rgba(74, 58, 47, 0.4);
+  background: rgba(255, 255, 255, 0.55);
+  padding: 0 20px;
 `;
 
 const Row = styled.div`
   display: flex;
   align-items: center;
   justify-content: space-between;
-  height: 52px;
-  padding: 0 16px;
-  border-radius: 12px;
-  background: #F8F5EE;
-  margin-bottom: 8px;
+  min-height: 52px;
 `;
 
 const ClickableRow = styled(Row).attrs({ as: 'button' })`
@@ -98,49 +113,70 @@ const ClickableRow = styled(Row).attrs({ as: 'button' })`
 `;
 
 const RowLabel = styled.span`
-  font-size: 15px;
-  color: ${({ $danger }) => ($danger ? '#cc4d4d' : '#000')};
+  color: ${({ $danger }) => ($danger ? '#c1594a' : '#4a3a2f')};
+  font-family: 'Noto Sans KR';
+  font-size: 16px;
+  font-weight: 700;
 `;
 
 const RowValue = styled.span`
-  font-size: 14px;
-  color: #8c8780;
+  color: #a79c8e;
+  font-family: 'Noto Sans KR';
+  font-size: 15px;
+  font-weight: 700;
 `;
 
 const Chevron = styled.span`
+  margin-left: 4px;
   font-size: 18px;
-  color: ${({ $danger }) => ($danger ? '#cc4d4d' : '#8c8780')};
+  color: ${({ $danger }) => ($danger ? '#c1594a' : '#a79c8e')};
 `;
 
-const ToggleRow = styled.div`
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  height: 44px;
-  padding: 0 16px;
-  border-radius: 12px;
-  background: #F8F5EE;
-  margin-bottom: 8px;
+const RowDivider = styled.div`
+  height: 1px;
+  background: rgba(74, 58, 47, 0.12);
 `;
+
+const ToggleRow = styled(Row)``;
 
 const ToggleTrack = styled.button`
   width: 44px;
   height: 24px;
   border-radius: 12px;
   position: relative;
-  background: ${({ $on }) => ($on ? '#e8734a' : '#d9d4cc')};
+  flex-shrink: 0;
+  background: ${({ $on }) => ($on ? '#dbe4a1' : '#e5ded0')};
+  border: 1px solid ${({ $on }) => ($on ? 'rgba(74,58,47,0.35)' : 'rgba(74,58,47,0.2)')};
   transition: background 0.15s ease;
 `;
 
 const ToggleThumb = styled.span`
   position: absolute;
-  top: 2px;
-  left: ${({ $on }) => ($on ? '22px' : '2px')};
+  top: 1px;
+  left: ${({ $on }) => ($on ? '21px' : '1px')};
   width: 20px;
   height: 20px;
   border-radius: 10px;
-  background: #FFF8ED;
+  background: #fff;
+  border: 1px solid rgba(74, 58, 47, 0.25);
   transition: left 0.15s ease;
+`;
+
+const AccountButton = styled.button`
+  width: 100%;
+  height: 36px;
+  margin-bottom: 12px;
+  border-radius: 18px;
+  border: 1.3px solid rgba(74, 58, 47, 0.4);
+  background: transparent;
+
+  color: ${({ $tone }) => ($tone === 'withdraw' ? '#c1594a' : '#d97d65')};
+  font-family: Jua;
+  font-size: 14px;
+
+  &:last-child {
+    margin-bottom: 0;
+  }
 `;
 
 const PushErrorText = styled.p`
@@ -171,7 +207,7 @@ const NOTIFICATION_ROWS = [
   { key: 'eveningEnabled', label: '저녁 건강 체크 알림' },
   { key: 'medicationEnabled', label: '복약 알림' },
   { key: 'familyReactionEnabled', label: '가족 답변/반응 알림' },
-  { key: 'reportEnabled', label: '주간 리포트 알림' },
+  { key: 'reportEnabled', label: '가족의 주간리포트 생성 알림' },
 ];
 
 function SettingsMain() {
@@ -304,100 +340,109 @@ function SettingsMain() {
       <Content>
         <Header>
           <BackButton type="button" aria-label="뒤로가기" onClick={() => navigate('/home')}>
-            ‹
+            <img src={backIcon} alt="" />
           </BackButton>
           <Title>설정</Title>
           <HeaderSpacer />
         </Header>
+        <TitleDivider />
 
         <SectionLabel>내 정보</SectionLabel>
-        <Row>
-          <RowLabel>이름</RowLabel>
-          <RowValue>{me?.name || data.profile.name || '이름을 등록해주세요'}</RowValue>
-        </Row>
-        <Row>
-          <RowLabel>역할</RowLabel>
-          <RowValue>{ROLE_LABEL[data.profile.role] || '미설정'}</RowValue>
-        </Row>
-        <ClickableRow type="button" onClick={() => navigate('/home/settings/profile')}>
-          <RowLabel>프로필 수정하기</RowLabel>
-          <Chevron>›</Chevron>
-        </ClickableRow>
+        <Card>
+          <Row>
+            <RowLabel>이름</RowLabel>
+            <RowValue>{me?.name || data.profile.name || '이름을 등록해주세요'}</RowValue>
+          </Row>
+          <RowDivider />
+          <Row>
+            <RowLabel>역할</RowLabel>
+            <RowValue>{ROLE_LABEL[data.profile.role] || '미설정'}</RowValue>
+          </Row>
+          <RowDivider />
+          <ClickableRow type="button" onClick={() => navigate('/home/settings/profile')}>
+            <RowLabel>프로필 수정하기</RowLabel>
+            <Chevron>›</Chevron>
+          </ClickableRow>
+        </Card>
 
         <SectionLabel>알림 시간</SectionLabel>
-        <ClickableRow
-          type="button"
-          disabled={!setting}
-          onClick={() => setTimeEditor('morningTime')}
-        >
-          <RowLabel>아침 연결 질문</RowLabel>
-          <RowValue>
-            {setting ? formatAlarmTime(setting.morningTime) : '불러오는 중...'}
-            <Chevron> ›</Chevron>
-          </RowValue>
-        </ClickableRow>
-        <ClickableRow
-          type="button"
-          disabled={!setting}
-          onClick={() => setTimeEditor('eveningTime')}
-        >
-          <RowLabel>저녁 건강 체크</RowLabel>
-          <RowValue>
-            {setting ? formatAlarmTime(setting.eveningTime) : '불러오는 중...'}
-            <Chevron> ›</Chevron>
-          </RowValue>
-        </ClickableRow>
+        <Card>
+          <ClickableRow
+            type="button"
+            disabled={!setting}
+            onClick={() => setTimeEditor('morningTime')}
+          >
+            <RowLabel>아침 연결 질문</RowLabel>
+            <RowValue>{setting ? formatAlarmTime(setting.morningTime) : '불러오는 중...'}</RowValue>
+          </ClickableRow>
+          <RowDivider />
+          <ClickableRow
+            type="button"
+            disabled={!setting}
+            onClick={() => setTimeEditor('eveningTime')}
+          >
+            <RowLabel>저녁 건강 체크</RowLabel>
+            <RowValue>{setting ? formatAlarmTime(setting.eveningTime) : '불러오는 중...'}</RowValue>
+          </ClickableRow>
+        </Card>
 
         <SectionLabel>푸시 알림</SectionLabel>
-        {NOTIFICATION_ROWS.map((row) => (
-          <ToggleRow key={row.key}>
-            <RowLabel>{row.label}</RowLabel>
+        <Card>
+          {NOTIFICATION_ROWS.map((row, index) => (
+            <div key={row.key}>
+              {index > 0 && <RowDivider />}
+              <ToggleRow>
+                <RowLabel>{row.label}</RowLabel>
+                <ToggleTrack
+                  type="button"
+                  $on={Boolean(setting?.[row.key])}
+                  onClick={() => handleToggle(row.key)}
+                  aria-pressed={Boolean(setting?.[row.key])}
+                  disabled={!setting}
+                >
+                  <ToggleThumb $on={Boolean(setting?.[row.key])} />
+                </ToggleTrack>
+              </ToggleRow>
+            </div>
+          ))}
+
+          <RowDivider />
+          {/* 서버 알림 설정에 편지 항목이 없어서 이 토글만 기기에 저장된다 */}
+          <ToggleRow>
+            <RowLabel>우편 보기</RowLabel>
             <ToggleTrack
               type="button"
-              $on={Boolean(setting?.[row.key])}
-              onClick={() => handleToggle(row.key)}
-              aria-pressed={Boolean(setting?.[row.key])}
-              disabled={!setting}
+              $on={showMailbox}
+              onClick={toggleMailbox}
+              aria-pressed={showMailbox}
             >
-              <ToggleThumb $on={Boolean(setting?.[row.key])} />
+              <ToggleThumb $on={showMailbox} />
             </ToggleTrack>
           </ToggleRow>
-        ))}
 
-        {/* 서버 알림 설정에 편지 항목이 없어서 이 토글만 기기에 저장된다 */}
-        <ToggleRow>
-          <RowLabel>우편 보기</RowLabel>
-          <ToggleTrack
-            type="button"
-            $on={showMailbox}
-            onClick={toggleMailbox}
-            aria-pressed={showMailbox}
-          >
-            <ToggleThumb $on={showMailbox} />
-          </ToggleTrack>
-        </ToggleRow>
-
-        <ClickableRow type="button" onClick={() => setPopup('notifications')}>
-          <RowLabel>받은 알림 보기</RowLabel>
-          <Chevron>›</Chevron>
-        </ClickableRow>
+          <RowDivider />
+          <ClickableRow type="button" onClick={() => setPopup('notifications')}>
+            <RowLabel>받은 알림 보기</RowLabel>
+            <Chevron>›</Chevron>
+          </ClickableRow>
+        </Card>
 
         <SectionLabel>가족 연결</SectionLabel>
-        <Row>
-          <RowLabel>연결된 가족</RowLabel>
-          {/* 가족 구성원 조회는 userId와 email만 내려줘서 이름 대신 email을 보여준다 */}
-          <RowValue>{partner ? partner.email : '아직 연결된 가족이 없어요'}</RowValue>
-        </Row>
+        <Card>
+          <Row>
+            <RowLabel>연결된 가족</RowLabel>
+            {/* 가족 구성원 조회는 userId와 email만 내려줘서 이름 대신 email을 보여준다 */}
+            <RowValue>{partner ? partner.email : '아직 연결된 가족이 없어요'}</RowValue>
+          </Row>
+        </Card>
 
         <SectionLabel>계정</SectionLabel>
-        <ClickableRow type="button" onClick={() => setPopup('logout')}>
-          <RowLabel>로그아웃</RowLabel>
-          <Chevron>›</Chevron>
-        </ClickableRow>
-        <ClickableRow type="button" onClick={() => setPopup('withdraw')}>
-          <RowLabel $danger>탈퇴하기</RowLabel>
-          <Chevron $danger>›</Chevron>
-        </ClickableRow>
+        <AccountButton type="button" onClick={() => setPopup('logout')}>
+          로그아웃
+        </AccountButton>
+        <AccountButton type="button" $tone="withdraw" onClick={() => setPopup('withdraw')}>
+          탈퇴하기
+        </AccountButton>
       </Content>
 
       {popup === 'notifications' && <NotificationListPopup onClose={() => setPopup(null)} />}
