@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useState } from 'react';
 import styled, { keyframes } from 'styled-components';
 import PopupPortal from '../../../../components/PopupPortal';
-import faceGood from '../../../../assets/evening/face-good.png';
-import faceNormal from '../../../../assets/evening/face-normal.png';
-import faceBad from '../../../../assets/evening/face-bad.png';
+import faceGood from '../../../../assets/evening/face-good.svg';
+import faceNormal from '../../../../assets/evening/face-normal.svg';
+import faceBad from '../../../../assets/evening/face-bad.svg';
 import {
   getTodayEveningQuestions,
   submitEveningAnswers,

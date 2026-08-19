@@ -5,8 +5,8 @@ import family from '../../assets/onboarding/family.svg';
 import pinkFlower from '../../assets/onboarding/pinkflower.svg';
 import yellowFlower from '../../assets/onboarding/yellowflower.svg';
 import leafLeft from '../../assets/onboarding/leaf-left.svg';
-import leafRight from '../../assets/onboarding/leaf.svg';
-
+import leafRight from '../../assets/onboarding/leafmin.svg';
+import leafIconmin from '../../assets/onboarding/leaf.svg';
 import leafIcon from '../../assets/onboarding/leaf.svg';
 import moonIcon from '../../assets/onboarding/moon.svg';
 import medIcon from '../../assets/onboarding/med.svg';
@@ -23,7 +23,7 @@ const Intro = () => {
           <FlowerPink src={pinkFlower} alt="" />
           <LeafTop src={leafRight} alt="" />
           <FlowerYellow src={yellowFlower} alt="" />
-          <LeafLeft src={leafLeft} alt="" />
+          <LeafIconmin src={leafLeft} alt="" />
 
           <LogoImage src={logo} alt="온담" />
 
@@ -149,7 +149,7 @@ const FlowerYellow = styled.img`
   height: 50px;
 `;
 
-const LeafLeft = styled.img`
+const LeafIconmin = styled.img`
   position: absolute;
   top: 80px;
   left: 45px;
