@@ -31,16 +31,18 @@ const Nav = styled.div`
   height: 90px;
   display: flex;
   align-items: center;
-  gap: 2px;
   border-radius: 10px;
   background: rgba(74, 58, 47, 0.15);
 `;
 
+// 칸을 정확히 1/3씩 나누면 '오늘의 건강일지'가 들어갈 폭이 안 나온다.
+// 각자 글자 길이만큼 자리를 잡은 뒤 남는 폭을 똑같이 나눠 갖게 한다.
+// (양옆 두 이름의 길이가 같아서 결과는 좌우 대칭이 된다)
 const NavItem = styled.button`
-  flex: 1;
+  flex: 1 1 auto;
   min-width: 0;
   height: 82px;
-  padding: 0 2px;
+  padding: 0;
 
   display: flex;
   flex-direction: column;
@@ -65,10 +67,9 @@ const NavIcon = styled.img`
   pointer-events: none;
 `;
 
-// '오늘의 건강일지'가 일곱 글자라 18px에서는 칸을 넘쳐 옆 항목을 밀어냈다.
 const NavLabel = styled.span`
   font-family: 'Jua', sans-serif;
-  font-size: 15px;
+  font-size: 18px;
   line-height: 1.2;
   color: #4a3a2f;
   white-space: nowrap;
