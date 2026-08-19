@@ -11,7 +11,7 @@ import {
   transcribeEveningAnswer,
 } from '../../../../api/evening';
 import { useApi, useApiAction } from '../../../../hooks/useApi';
-import { useVoiceRecorder } from '../../../../hooks/useVoiceRecorder';
+import { useVoiceRecorder, voiceButtonLabel } from '../../../../hooks/useVoiceRecorder';
 import {
   PopupBackdrop,
   PopupCard,
@@ -336,7 +336,7 @@ function EveningCheckPopup({ onClose, onCompleted, onAlreadyDone, forceEdit = fa
     [question?.questionId],
   );
   const appendTranscript = useCallback(
-    (text) => setNote((prev) => (prev ? `${prev} ${text}` : text)),
+    (text) => setNote(text),
     [],
   );
   const voice = useVoiceRecorder(transcribe, appendTranscript);
@@ -439,13 +439,7 @@ function EveningCheckPopup({ onClose, onCompleted, onAlreadyDone, forceEdit = fa
               >
                 <MicIcon src={micIcon} alt="" $recording={voice.recording} />
                 <VoiceLabel>
-                  {!voice.supported
-                    ? '이 브라우저는 녹음을 지원하지 않아요'
-                    : voice.busy
-                      ? '옮겨 적는 중이에요...'
-                      : voice.recording
-                        ? '듣고 있어요. 다 말씀하시면 눌러주세요'
-                        : '눌러서 말해보세요'}
+                  {voiceButtonLabel(voice)}
                 </VoiceLabel>
               </VoiceButton>
               <NoteInput

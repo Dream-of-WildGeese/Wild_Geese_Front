@@ -115,3 +115,13 @@ export function useVoiceRecorder(transcribe, onTranscript) {
 
   return { recording, busy, error, supported, start, stop, toggle, clearError };
 }
+
+// 음성 버튼에 뭐라고 적을지. 아침 질문·저녁 체크·편지 쓰기 세 곳이 저마다 다른 말을
+// 쓰고 있었다('눌러서 말하기' / '눌러서 말해보세요' / '음성으로 적기'). 같은 동작인데
+// 화면마다 말이 달라서, 어디서는 멈추는 법을 알려주고 어디서는 안 알려줬다.
+// 셋이 같은 말을 쓰도록 여기 한 군데서 정한다.
+export const voiceButtonLabel = (voice) => {
+  if (!voice.supported) return '이 브라우저는 녹음을 지원하지 않아요';
+  if (voice.busy) return '옮겨 적는 중이에요...';
+  return voice.recording ? '듣고 있어요. 다 말씀하시면 눌러주세요' : '눌러서 말해보세요';
+};

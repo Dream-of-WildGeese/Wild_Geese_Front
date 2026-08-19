@@ -6,7 +6,7 @@ import heartIcon from '../../../assets/letterbox/heart.svg';
 // 마이크는 오늘의 질문·저녁 체크 팝업과 같은 그림을 쓴다.
 import micIcon from '../../../assets/popup/mic.png';
 import { transcribeVoiceLetter } from '../../../api/letter';
-import { useVoiceRecorder } from '../../../hooks/useVoiceRecorder';
+import { useVoiceRecorder, voiceButtonLabel } from '../../../hooks/useVoiceRecorder';
 import {
   PopupCard,
   PopupInnerBorder,
@@ -255,13 +255,7 @@ function LetterCompose({ onBack, onSend, sending, recipientName }) {
         >
           <MicIcon src={micIcon} alt="" />
           <VoiceLabel $recording={voice.recording}>
-            {!voice.supported
-              ? '음성 미지원'
-              : voice.busy
-                ? '옮겨 적는 중...'
-                : voice.recording
-                  ? '눌러서 멈추기'
-                  : '음성으로 적기'}
+            {voiceButtonLabel(voice)}
           </VoiceLabel>
         </VoiceButton>
       </InputGroup>
