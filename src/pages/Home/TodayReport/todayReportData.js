@@ -57,7 +57,10 @@ const latestAnsweredAt = (items) =>
 // 전부 챙겼을 때만 꽃이 피게 한다. (기록 수정 팝업과 같은 규칙)
 const buildMedicationEntry = (medicationLog, medications) => {
   const logs = medicationLog?.medications ?? [];
-  if (logs.length === 0) return null;
+  // 기록이 아직 없어도 카드 자체는 보여주고 안은 비워둔다.
+  if (logs.length === 0) {
+    return { type: 'medication', time: '복약', medications: [], hasMissed: false, note: '' };
+  }
 
   const medicationBySchedule = new Map();
   medications.forEach((medication) => {
@@ -98,26 +101,20 @@ const buildMedicationEntry = (medicationLog, medications) => {
   };
 };
 
+// 아직 답하지 않은 항목도 카드 자체는 항상 보여주고, 안 채워진 부분만 빈칸으로 둔다.
+// (예전엔 기록이 없으면 카드가 통째로 안 보여서 오늘 뭘 안 했는지도 알기 어려웠다)
 const buildTimeline = ({ dailyLog, question, medicationLog, medications }) => {
-  const timeline = [];
-
-  if (dailyLog?.morningAnswer?.textValue) {
-    timeline.push({
-      type: 'question',
-      time: formatTimeLabel('아침', dailyLog.morningAnswer.answeredAt),
-      question: question?.content ?? '오늘의 질문',
-      answer: dailyLog.morningAnswer.textValue,
-    });
-  }
-
-  const medicationEntry = buildMedicationEntry(medicationLog, medications);
-  if (medicationEntry) {
-    timeline.push(medicationEntry);
-  }
-
   const eveningAnswers = dailyLog?.eveningAnswers ?? [];
-  if (eveningAnswers.length > 0) {
-    timeline.push({
+
+  return [
+    {
+      type: 'question',
+      time: formatTimeLabel('아침', dailyLog?.morningAnswer?.answeredAt),
+      question: question?.content ?? '오늘의 질문',
+      answer: dailyLog?.morningAnswer?.textValue ?? '',
+    },
+    buildMedicationEntry(medicationLog, medications),
+    {
       type: 'healthcheck',
       time: formatTimeLabel('저녁', latestAnsweredAt(eveningAnswers)),
       // 아이콘은 화면 쪽에서 metricType으로 고른다. 컨디션은 choiceValue(1~3)로
@@ -129,10 +126,8 @@ const buildTimeline = ({ dailyLog, question, medicationLog, medications }) => {
         text: answer.textValue || answer.choiceValue || '',
         choiceValue: answer.choiceValue ?? null,
       })),
-    });
-  }
-
-  return timeline;
+    },
+  ];
 };
 
 // 화면 상단 요약 칩 3개. 컨디션은 저녁 건강체크의 CONDITION 답변을 그대로 쓴다.
