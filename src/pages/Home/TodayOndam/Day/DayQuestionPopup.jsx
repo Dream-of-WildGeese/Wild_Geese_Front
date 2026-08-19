@@ -1,11 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import styled from 'styled-components';
-import micIcon from '../../../../assets/popup/mic.png';
-import likeIcon from '../../../../assets/reaction/like.png';
-import cheerIcon from '../../../../assets/reaction/cheer.png';
-import funnyIcon from '../../../../assets/reaction/funny.png';
-import bestIcon from '../../../../assets/reaction/best.png';
-import congratsIcon from '../../../../assets/reaction/congrats.png';
+import micIcon from '../../../../assets/popup/mic.svg';
+import likeIcon from '../../../../assets/reaction/like.svg';
+import cheerIcon from '../../../../assets/reaction/cheer.svg';
+import funnyIcon from '../../../../assets/reaction/funny.svg';
+import bestIcon from '../../../../assets/reaction/best.svg';
+import congratsIcon from '../../../../assets/reaction/congrats.svg';
 import {
   getTodayQuestion,
   submitMorningAnswer,
