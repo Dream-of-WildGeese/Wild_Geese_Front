@@ -395,7 +395,7 @@ const HealthCheck = () => {
             type="button"
             onClick={() => setShowAddModal(true)}
           >
-            + 검진 일정 추가하기
+            검진 일정 추가하기
           </AddButton>
         </AddButtonArea>
 

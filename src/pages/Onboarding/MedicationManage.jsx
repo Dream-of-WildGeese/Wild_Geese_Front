@@ -60,7 +60,7 @@ const MedicationManage = () => {
           
         </ScrollArea>
         <AddButton onClick={() => navigate('/onboarding/medication/add')}>
-            + 새 약 추가하기
+            새 약 추가하기
           </AddButton>
 
         <ButtonArea>

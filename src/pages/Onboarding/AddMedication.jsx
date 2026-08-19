@@ -86,22 +86,29 @@ const AddMedication = () => {
     setMinute(val);
   };
   
+  // 직접 적어둔 시·분을 시간 라벨로 바꾼다. 비어 있거나 잘못된 값이면 null.
+  // '+' 버튼과 '저장하기'가 같은 규칙을 쓰도록 따로 떼어놨다.
+  const pendingManualTime = () => {
+    if (!hour.trim() || !minute.trim()) return null;
+
+    const numHour = Number(hour);
+    const numMinute = Number(minute);
+    if (numHour < 1 || numHour > 12 || numMinute < 0 || numMinute > 59) return null;
+
+    return toTimeLabel(period, numHour, numMinute);
+  };
+
   const handleAddManualTime = () => {
     if (!hour.trim() || !minute.trim()) {
       alert('시와 분을 모두 입력해주세요.');
       return;
     }
 
-    const numHour = Number(hour);
-    const numMinute = Number(minute);
-
-    // 시(1~12), 분(0~59) 범위 검증 팝업
-    if (numHour < 1 || numHour > 12 || numMinute < 0 || numMinute > 59) {
+    const label = pendingManualTime();
+    if (!label) {
       alert('유효하지 않은 시간이에요. (시: 1~12, 분: 0~59)');
       return;
     }
-
-    const label = toTimeLabel(period, numHour, numMinute);
 
     if (includesTime(times, label)) {
       setDuplicateTime(label);
@@ -116,8 +123,24 @@ const AddMedication = () => {
 
   
 
+  // 시·분을 적어두고 '+'를 안 누른 채 저장하면 그 시간이 그냥 사라졌다.
+  // 적어둔 값이 멀쩡하면 저장할 때 함께 담고, 저장 버튼도 이 값을 기준으로 켠다.
+  const pendingTime = pendingManualTime();
+  const finalTimes =
+    pendingTime && !includesTime(times, pendingTime)
+      ? sortTimeLabels([...times, pendingTime])
+      : times;
+
   const handleSave = async () => {
-    if (!name.trim() || times.length === 0) return;
+    // 예전에는 조건에 안 맞으면 아무 반응 없이 끝나서, 왜 저장이 안 되는지 알 수 없었다.
+    if (!name.trim()) {
+      alert('약 이름을 적어주세요.');
+      return;
+    }
+    if (finalTimes.length === 0) {
+      alert('복용하는 시간을 하나 이상 골라주세요.');
+      return;
+    }
 
     // 이름이 겹치면 복약 화면에서 어느 약을 체크한 건지 구분할 수 없다.
     const existingNames = (medications ?? []).map(toMedicationView).map((med) => med.name);
@@ -133,7 +156,7 @@ const AddMedication = () => {
       : repeat.map((label) => DAY_LABEL_TO_VALUE[label]).filter(Boolean);
 
     const { ok, error } = await addMedication(
-      toMedicationRequest({ name, times: sortTimeLabels(times), days }),
+      toMedicationRequest({ name, times: finalTimes, days }),
     );
     if (!ok) {
       alert(error.message);
@@ -249,7 +272,7 @@ const AddMedication = () => {
         </ScrollArea>
 
         <ButtonArea>
-          <SaveButton onClick={handleSave} disabled={!name.trim() || times.length === 0}>
+          <SaveButton onClick={handleSave} disabled={!name.trim() || finalTimes.length === 0}>
             저장하기
           </SaveButton>
         </ButtonArea>

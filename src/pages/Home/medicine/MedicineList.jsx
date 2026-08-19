@@ -249,7 +249,7 @@ function MedicineList() {
 
         <PageFooter>
           <AddButton type="button" onClick={() => navigate('/onboarding/medication/add')}>
-            + 새 약 추가하기
+            새 약 추가하기
           </AddButton>
         </PageFooter>
       </PageContent>

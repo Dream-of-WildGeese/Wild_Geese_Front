@@ -276,8 +276,28 @@ function MedicineEdit() {
       prev.includes(value) ? prev.filter((day) => day !== value) : [...prev, value],
     );
 
+  // 시·분을 적어두고 '+'를 안 누른 채 저장하면 그 시간이 그냥 사라졌다.
+  // 적어둔 값이 멀쩡하면 저장할 때 함께 담고, 저장 버튼도 이 값을 기준으로 켠다.
+  const pendingTime = isValidTime(hour, minute) ? toTimeLabel(period, hour, minute) : null;
+  const finalTimes =
+    pendingTime && !includesTime(times, pendingTime)
+      ? sortTimeLabels([...times, pendingTime])
+      : times;
+
   const handleSave = async () => {
-    if (!name.trim() || times.length === 0 || days.length === 0) return;
+    // 예전에는 조건에 안 맞으면 아무 반응 없이 끝나서, 왜 저장이 안 되는지 알 수 없었다.
+    if (!name.trim()) {
+      setMissing('약 이름을 적어주세요');
+      return;
+    }
+    if (finalTimes.length === 0) {
+      setMissing('복용하는 시간을 하나 이상 골라주세요');
+      return;
+    }
+    if (days.length === 0) {
+      setMissing('드시는 요일을 하나 이상 골라주세요');
+      return;
+    }
 
     // 이름이 겹치면 복약 화면에서 어느 약을 체크한 건지 구분할 수 없다.
     // 지금 고치는 약 자신은 제외하고 본다.
@@ -289,7 +309,7 @@ function MedicineEdit() {
 
     const { ok } = await saveMedication(
       medication.id,
-      toMedicationRequest({ name, times: sortTimeLabels(times), days }),
+      toMedicationRequest({ name, times: finalTimes, days }),
     );
     if (ok) {
       navigate('/home/medicine');
@@ -390,7 +410,7 @@ function MedicineEdit() {
           <SaveButton
             type="button"
             onClick={handleSave}
-            disabled={!name.trim() || times.length === 0 || days.length === 0}
+            disabled={!name.trim() || finalTimes.length === 0 || days.length === 0}
           >
             저장하기
           </SaveButton>
