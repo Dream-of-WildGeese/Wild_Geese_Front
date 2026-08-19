@@ -191,14 +191,17 @@ function SettingsMain() {
     (member) => String(member.userId) !== String(myUserId),
   );
 
-  // 토글/시간 모두 먼저 화면에 반영하고, 저장에 실패하면 이전 값으로 되돌린다.
-  const applyChange = async (patch) => {
+  // 토글/시간 모두 먼저 화면에 반영한다.
+  // revertOnFail(기본 true)이면 저장 실패 시 이전 값으로 되돌린다. 푸시 알림 토글은
+  // 기기별로 구독/저장이 실패할 수 있어도 "켜고 싶다"는 의사가 화면에서 취소되면
+  // 안 되기 때문에 false로 넘겨서 실패해도 켜진 채로 둔다.
+  const applyChange = async (patch, { revertOnFail = true } = {}) => {
     if (!setting) return;
     const next = { ...setting, ...patch };
     setSetting(next);
     const { ok, error } = await saveSetting(next);
     if (!ok) {
-      setSetting(setting);
+      if (revertOnFail) setSetting(setting);
       alert(error.message);
     }
   };
@@ -241,7 +244,7 @@ function SettingsMain() {
       }
     }
 
-    await applyChange({ [key]: nextValue });
+    await applyChange({ [key]: nextValue }, { revertOnFail: false });
 
     // 전부 껐으면 서버와 브라우저 양쪽 구독을 함께 지운다.
     if (!anyEnabled) {
