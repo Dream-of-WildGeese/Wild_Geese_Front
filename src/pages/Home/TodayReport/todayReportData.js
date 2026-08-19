@@ -3,10 +3,11 @@ import { getMedications, getMedicationLogs } from '../../../api/medication';
 import { getMorningHistory } from '../../../api/morning';
 import { getMyFamily } from '../../../api/family';
 import { getUserId } from '../../../api/client';
-import { toDateString } from '../../../utils/medication';
+import { toDateString, timeToLabel, activeSchedules } from '../../../utils/medication';
 import { getRelationLabel } from '../../../utils/family';
 import { getWeekStart } from '../WeeklyReport/weeklyReportData';
 import { getMockDailyReport } from '../../../mock/dailyReport';
+import { getMockSteps, buildStepsMessage } from '../../../mock/steps';
 
 const WEEKDAY_LABELS = ['일', '월', '화', '수', '목', '금', '토'];
 
@@ -51,40 +52,48 @@ const latestAnsweredAt = (items) =>
     return parseServerDate(item.answeredAt) > parseServerDate(latest) ? item.answeredAt : latest;
   }, null);
 
-// 서버는 복약 기록을 scheduleId 단위로 준다. 하루 여러 번 먹는 약은 스케줄마다
-// 로그가 따로 오는데, scheduleId 그대로 나열하면 같은 약 이름이 여러 번 찍히고
-// 한 번만 먹어도 꽃이 핀 것처럼 보인다. 약 단위로 묶어서, 그 약의 스케줄을
-// 전부 챙겼을 때만 꽃이 피게 한다. (기록 수정 팝업과 같은 규칙)
+// 한 번 먹을 때마다 꽃 하나로 센다. 약 체크 팝업의 완료 화면과 같은 단위라
+// 상단 요약의 '1/3'과 꽃 개수가 언제나 맞아떨어진다.
+// (예전에는 약 단위로 묶어서, 하루 두 번 먹는 약을 한 번만 먹어도 꽃이 통째로
+//  비어 보였고 요약 숫자와도 어긋났다)
 const buildMedicationEntry = (medicationLog, medications) => {
   const logs = medicationLog?.medications ?? [];
   // 기록이 아직 없어도 카드 자체는 보여주고 안은 비워둔다.
   if (logs.length === 0) {
-    return { type: 'medication', time: '복약', medications: [], hasMissed: false, note: '' };
+    return { type: 'medication', time: '복약', medications: [], note: '' };
   }
 
-  const medicationBySchedule = new Map();
+  // 꺼진(예전) 스케줄은 빼고 지금 쓰는 것만 이름·시각을 찾을 수 있게 담는다.
+  const scheduleInfo = new Map();
   medications.forEach((medication) => {
-    (medication.schedules ?? []).forEach((schedule) => {
-      medicationBySchedule.set(schedule.scheduleId, medication);
+    activeSchedules(medication.schedules).forEach((schedule) => {
+      scheduleInfo.set(schedule.scheduleId, {
+        name: medication.name,
+        timeLabel: timeToLabel(schedule.scheduledTime),
+      });
     });
   });
 
-  const groups = new Map();
-  logs.forEach((log) => {
-    const medication = medicationBySchedule.get(log.scheduleId);
-    const key = medication?.medicationId ?? log.scheduleId;
-    if (!groups.has(key)) {
-      groups.set(key, { name: medication?.name ?? '복용약', total: 0, taken: 0 });
-    }
-    const group = groups.get(key);
-    group.total += 1;
-    if (log.status === 'TAKEN') group.taken += 1;
+  const rows = logs.map((log, index) => {
+    const info = scheduleInfo.get(log.scheduleId);
+    return {
+      key: log.scheduleId ?? `row-${index}`,
+      name: info?.name ?? '복용약',
+      timeLabel: info?.timeLabel ?? '',
+      taken: log.status === 'TAKEN',
+      ...MEDICATION_COLORS[index % MEDICATION_COLORS.length],
+    };
   });
 
-  const items = [...groups.values()].map((group, index) => ({
-    name: group.name,
-    taken: group.taken === group.total,
-    ...MEDICATION_COLORS[index % MEDICATION_COLORS.length],
+  // 같은 약을 하루에 여러 번 먹으면 이름만으론 어느 것인지 알 수 없어서 시각을 붙인다.
+  const nameCounts = rows.reduce((acc, row) => {
+    acc[row.name] = (acc[row.name] ?? 0) + 1;
+    return acc;
+  }, {});
+
+  const items = rows.map((row) => ({
+    ...row,
+    label: nameCounts[row.name] > 1 && row.timeLabel ? `${row.name} ${row.timeLabel}` : row.name,
   }));
 
   const notTaken = items.filter((item) => !item.taken);
@@ -92,11 +101,9 @@ const buildMedicationEntry = (medicationLog, medications) => {
     type: 'medication',
     time: '복약',
     medications: items,
-    // 안 챙긴 약이 있으면 카드 제목 옆에 느낌표 아이콘을 띄운다.
-    hasMissed: notTaken.length > 0,
     note:
       notTaken.length > 0
-        ? `${notTaken.map((item) => item.name).join(', ')}은 아직 기록되지 않았어요`
+        ? `${notTaken.length}번은 아직 기록되지 않았어요`
         : '오늘 복약을 모두 챙기셨어요',
   };
 };
@@ -130,17 +137,30 @@ const buildTimeline = ({ dailyLog, question, medicationLog, medications }) => {
   ];
 };
 
-// 화면 상단 요약 칩 3개. 컨디션은 저녁 건강체크의 CONDITION 답변을 그대로 쓴다.
-const buildSummary = (dailyLog, medicationLog) => {
+// 상단 요약 칩의 컨디션 표기. 저녁 건강체크 선택지 점수(3~1)를 세 글자로 줄인다.
+const CONDITION_SHORT = { 3: '좋음', 2: '보통', 1: '나쁨' };
+
+// 저녁 건강체크 답변 중 원하는 지표 하나를 꺼낸다.
+// 서버가 metricType을 안 실어줄 때가 있어서, 없으면 질문 순서로 짚는다.
+const findEveningAnswer = (dailyLog, metric) => {
   const answers = dailyLog?.eveningAnswers ?? [];
-  // metricType이 없으면 첫 번째 답변이 컨디션이다(질문 순서 고정).
-  const condition = answers.find((answer) => answer.metricType === 'CONDITION') ?? answers[0];
+  if (answers.length === 0) return null;
+  return (
+    answers.find((answer) => answer.metricType === metric) ??
+    answers[EVENING_ORDER.indexOf(metric)] ??
+    null
+  );
+};
+
+const scoreOf = (answer) => (answer?.choiceValue != null ? Number(answer.choiceValue) : null);
+
+// 화면 상단 요약 칩 3개.
+const buildSummary = (dailyLog, medicationLog) => {
+  const score = scoreOf(findEveningAnswer(dailyLog, 'CONDITION'));
   return {
     questionStatus: dailyLog?.morningAnswered ? '완료' : '아직',
     medication: medicationLog ? `${medicationLog.takenCount}/${medicationLog.totalCount}` : '-',
-    condition: condition?.textValue || condition?.choiceValue || '-',
-    // 칩에 글자 대신 표정을 띄우려면 선택지 점수(1~3)가 필요하다.
-    conditionScore: condition?.choiceValue != null ? Number(condition.choiceValue) : null,
+    condition: score != null ? (CONDITION_SHORT[Math.round(score)] ?? '-') : '-',
   };
 };
 
@@ -184,21 +204,44 @@ export async function loadTodayReport(person, dateString = null) {
     if (mock) return mock;
   }
 
-  const [dailyLog, medicationLog, medications, history] = await Promise.all([
+  // 걸음 수는 서버에 없어서 날짜로 정하는데, '어제보다 N보' 문장을 만들려면
+  // 전날의 활동량 점수도 필요하다. 그래서 전날 일지도 함께 읽는다.
+  const previousDate = new Date(date);
+  previousDate.setDate(previousDate.getDate() - 1);
+  const previousRecordDate = toDateString(previousDate);
+
+  const [dailyLog, medicationLog, medications, history, previousLog] = await Promise.all([
     isMe
       ? getDailyLog(recordDate).catch(() => null)
       : getFamilyDailyLog(partner.userId, recordDate).catch(() => null),
     isMe ? getMedicationLogs(recordDate).catch(() => null) : null,
     isMe ? getMedications().catch(() => []) : [],
     getMorningHistory({ from: recordDate, to: recordDate }).catch(() => []),
+    isMe
+      ? getDailyLog(previousRecordDate).catch(() => null)
+      : getFamilyDailyLog(partner.userId, previousRecordDate).catch(() => null),
   ]);
 
   const personLabel = isMe ? '나' : getRelationLabel(partner);
+
+  const stepCount = getMockSteps(recordDate, scoreOf(findEveningAnswer(dailyLog, 'ACTIVITY')));
+  const previousStepCount = getMockSteps(
+    previousRecordDate,
+    scoreOf(findEveningAnswer(previousLog, 'ACTIVITY')),
+  );
 
   return {
     personLabel,
     dateLabel: formatDateLabel(date),
     summary: buildSummary(dailyLog, medicationLog),
+    steps: {
+      count: stepCount,
+      message: buildStepsMessage(
+        stepCount,
+        previousStepCount,
+        recordDate === toDateString(new Date()),
+      ),
+    },
     aiComment: dailyLog?.summaryText ?? '',
     // 타임라인 아래에 한 번 더 붙는 저녁 코멘트. 서버가 별도 필드를 주면 그때 채운다.
     eveningComment: '',

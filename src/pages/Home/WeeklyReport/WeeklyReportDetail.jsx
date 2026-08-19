@@ -3,9 +3,6 @@ import { useNavigate, useLocation, useParams } from 'react-router-dom';
 import styled from 'styled-components';
 import aiIcon from '../../../assets/weekly/ai.png';
 import leafIcon from '../../../assets/weekly/leaf.png';
-import faceGood from '../../../assets/weekly/face-good.png';
-import faceNormal from '../../../assets/weekly/face-normal.png';
-import faceBad from '../../../assets/weekly/face-bad.png';
 import mealIcon from '../../../assets/weekly/meal.png';
 import walkIcon from '../../../assets/weekly/walk.png';
 import flowerIcon from '../../../assets/weekly/flower.png';
@@ -17,6 +14,14 @@ import { useFamilyRelation } from '../../../hooks/useFamilyRelation';
 import PhoneNumberPopup from '../../../components/PhoneNumberPopup';
 import { callPhone, getFamilyPhone } from '../../../utils/call';
 import JournalCta from '../TodayReport/JournalCta';
+import { toDateString } from '../../../utils/medication';
+import {
+  PopupBackdrop,
+  PopupCard,
+  PopupInnerBorder,
+  PopupTitle,
+  PopupPrimaryButton,
+} from '../../../components/PopupShell';
 import {
   PageFrame,
   PageContent,
@@ -31,14 +36,12 @@ import {
 // Figma 1201:1144 — 주간 리포트 상세.
 // 서버는 지표를 저녁 건강체크 선택지 점수(1~3)로만 주고, 3이 가장 좋은 상태다.
 const SCORE_MAX = 3;
-const FACE_BY_SCORE = { 3: faceGood, 2: faceNormal, 1: faceBad };
 
 // 컨디션 링과 수면 막대가 같은 3색을 쓴다.
 const SCORE_COLOR = { 3: '#8fae4a', 2: '#e8cd73', 1: '#e6a794' };
 // 활동은 수면과 구분되도록 초록 계열 안에서만 진하기를 달리한다.
 const ACTIVITY_COLOR = { 3: '#8fae4a', 2: '#acc379', 1: '#d0ddb2' };
 
-const scoreFace = (score) => FACE_BY_SCORE[Math.round(score)] ?? faceNormal;
 const scoreColor = (score) => SCORE_COLOR[Math.round(score)] ?? '#d9d4cc';
 const activityColor = (score) => ACTIVITY_COLOR[Math.round(score)] ?? '#d9d4cc';
 const barHeight = (score, max) => (score ? (score / SCORE_MAX) * max : 4);
@@ -182,12 +185,13 @@ const DayLabel = styled.span`
   font-size: 11px;
 `;
 
-// 표정 아이콘 자체에 이미 점수별 색 링이 그려져 있어서 따로 감싸지 않고
-// 칸 크기만큼 꽉 채운다.
-const FaceIcon = styled.img`
+// 컨디션은 표정 그림 대신 점수 색만 칠한 동그라미로 보여준다.
+const ConditionDot = styled.span`
   width: ${({ $size }) => $size}px;
   height: ${({ $size }) => $size}px;
-  object-fit: contain;
+  border-radius: 50%;
+  background: ${({ $color }) => $color};
+  border: 1.5px solid rgba(74, 58, 47, 0.2);
 `;
 
 const IconWrap = styled.div`
@@ -249,6 +253,16 @@ const LegendSwatch = styled.span`
   flex-shrink: 0;
   border-radius: 2px;
   background: ${({ $color }) => $color};
+`;
+
+// 컨디션 범례도 그래프와 같은 색 동그라미로 맞춘다.
+const LegendDot = styled.span`
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: ${({ $color }) => $color};
+  border: 1.5px solid rgba(74, 58, 47, 0.2);
 `;
 
 const LegendLabel = styled.span`
@@ -354,6 +368,17 @@ const DayButtonDate = styled.span`
   white-space: nowrap;
 `;
 
+const PopupMessage = styled.p`
+  margin: 0;
+  width: 100%;
+  text-align: center;
+  color: #6b6661;
+  font-family: 'Noto Sans KR', sans-serif;
+  font-size: 16px;
+  line-height: 1.5;
+  word-break: keep-all;
+`;
+
 const StatusText = styled.p`
   margin: 40px 0 0;
   text-align: center;
@@ -384,6 +409,8 @@ function WeeklyReportDetail() {
   const { partnerLabel } = useFamilyRelation();
   // 훅은 조기 반환보다 앞에 있어야 해서 여기에 둔다.
   const [askingPhone, setAskingPhone] = useState(false);
+  // 아직 오지 않은 날의 일지를 열려고 할 때 알려줄 날짜
+  const [futureDate, setFutureDate] = useState(null);
 
   const week = data?.week;
   const detail = data?.detail;
@@ -425,8 +452,21 @@ function WeeklyReportDetail() {
     date.setDate(date.getDate() + index);
     return date;
   });
-  const toDateParam = (date) =>
-    `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+  const todayString = toDateString(new Date());
+
+  // 이번 주 리포트에서는 아직 지나지 않은 요일도 함께 보인다.
+  // 그 날을 누르면 빈 일지가 열려서 기록이 사라진 것처럼 보이므로, 미리 막고 알려준다.
+  const openDay = (date) => {
+    const dateParam = toDateString(date);
+    if (dateParam > todayString) {
+      setFutureDate(date);
+      return;
+    }
+    navigate(`/home/today-report/${dateParam}`, {
+      // 일지에서 뒤로 가면 홈이 아니라 이 주간 리포트로 돌아오게 한다.
+      state: { person, from: `/home/weekly-report/${weekId}` },
+    });
+  };
 
   return (
     <PageFrame>
@@ -439,15 +479,19 @@ function WeeklyReportDetail() {
         <PageDivider />
 
         <PageScrollArea $gap={20}>
-          <GreenCard>
-            <AiIcon src={aiIcon} alt="" />
-            {/* 아직 한 주가 안 끝난 주는 '한마디' 대신 진행 중이라는 걸 알린다 */}
-            <GreenLabel>{detail.inProgress ? '아직 쌓이는 중이에요' : '이번 주 한마디'}</GreenLabel>
-            <Headline>“{detail.headline}”</Headline>
-            {detail.headlineDesc && <GreenText>{detail.headlineDesc}</GreenText>}
-          </GreenCard>
+          {/* 한 주가 다 차야 한마디를 만든다. 쌓이는 중인 주는 카드 자체를 띄우지 않는다. */}
+          {!detail.inProgress && detail.headline && (
+            <>
+              <GreenCard>
+                <AiIcon src={aiIcon} alt="" />
+                <GreenLabel>이번 주 한마디</GreenLabel>
+                <Headline>“{detail.headline}”</Headline>
+                {detail.headlineDesc && <GreenText>{detail.headlineDesc}</GreenText>}
+              </GreenCard>
 
-          <SectionDivider />
+              <SectionDivider />
+            </>
+          )}
 
           <MetricCard>
             <MetricHead>
@@ -460,7 +504,7 @@ function WeeklyReportDetail() {
                   <DayCol key={item.day}>
                     {/* 아직 답하지 않은 날은 빈 원으로 둔다. 표정을 채우면 기록한 것처럼 보인다 */}
                     {item.score ? (
-                      <FaceIcon $size={40} src={scoreFace(item.score)} alt="" />
+                      <ConditionDot $size={40} $color={scoreColor(item.score)} />
                     ) : (
                       <IconWrap>
                         <EmptyCircle src={emptyCircleIcon} alt="" />
@@ -473,13 +517,13 @@ function WeeklyReportDetail() {
               <Legend>
                 {CONDITION_LEGEND.map((item) => (
                   <LegendItem key={item.score}>
-                    <FaceIcon $size={22} src={scoreFace(item.score)} alt="" />
+                    <LegendDot $color={SCORE_COLOR[item.score]} />
                     <LegendLabel>{item.label}</LegendLabel>
                   </LegendItem>
                 ))}
               </Legend>
             </InnerGroup>
-            <MetricNote>{detail.conditionNote}</MetricNote>
+            {detail.conditionNote && <MetricNote>{detail.conditionNote}</MetricNote>}
           </MetricCard>
 
           <MetricCard>
@@ -505,7 +549,7 @@ function WeeklyReportDetail() {
                 ))}
               </Legend>
             </InnerGroup>
-            <MetricNote>{detail.sleepNote}</MetricNote>
+            {detail.sleepNote && <MetricNote>{detail.sleepNote}</MetricNote>}
           </MetricCard>
 
           <MetricCard>
@@ -530,7 +574,7 @@ function WeeklyReportDetail() {
                 ))}
               </DayRow>
             </InnerGroup>
-            <MetricNote>{detail.mealNote}</MetricNote>
+            {detail.mealNote && <MetricNote>{detail.mealNote}</MetricNote>}
           </MetricCard>
 
           <MetricCard>
@@ -549,7 +593,7 @@ function WeeklyReportDetail() {
                 ))}
               </DayRow>
             </InnerGroup>
-            <MetricNote>{detail.stepsNote}</MetricNote>
+            {detail.stepsNote && <MetricNote>{detail.stepsNote}</MetricNote>}
           </MetricCard>
 
           <MetricCard>
@@ -573,7 +617,7 @@ function WeeklyReportDetail() {
                 ))}
               </DayRow>
             </InnerGroup>
-            <MetricNote>{detail.medsNote}</MetricNote>
+            {detail.medsNote && <MetricNote>{detail.medsNote}</MetricNote>}
           </MetricCard>
 
           {detail.adviceText && (
@@ -595,12 +639,7 @@ function WeeklyReportDetail() {
                 <DayButton
                   key={item.day}
                   type="button"
-                  onClick={() =>
-                    navigate(`/home/today-report/${toDateParam(dayDates[index])}`, {
-                      // 일지에서 뒤로 가면 홈이 아니라 이 주간 리포트로 돌아오게 한다.
-                      state: { person, from: `/home/weekly-report/${weekId}` },
-                    })
-                  }
+                  onClick={() => openDay(dayDates[index])}
                 >
                   <StarWrap>
                     <StarIcon src={starIcon} alt="" />
@@ -627,6 +666,25 @@ function WeeklyReportDetail() {
           )}
 
         </PageScrollArea>
+
+        {futureDate && (
+          <PopupBackdrop onClick={() => setFutureDate(null)}>
+            <PopupCard $center $gap={16} $padTop={36} onClick={(event) => event.stopPropagation()}>
+              <PopupInnerBorder />
+              <PopupTitle $center $size={22}>
+                아직 오지 않은 날이에요
+              </PopupTitle>
+              <PopupMessage>
+                {futureDate.getMonth() + 1}월 {futureDate.getDate()}일의 기록은
+                <br />
+                그 날이 되면 볼 수 있어요.
+              </PopupMessage>
+              <PopupPrimaryButton type="button" onClick={() => setFutureDate(null)}>
+                알겠어요
+              </PopupPrimaryButton>
+            </PopupCard>
+          </PopupBackdrop>
+        )}
 
         {askingPhone && (
           <PhoneNumberPopup

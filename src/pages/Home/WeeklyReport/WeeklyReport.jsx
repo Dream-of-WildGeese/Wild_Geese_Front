@@ -1,9 +1,8 @@
-import { useMemo, useRef, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
 import cloudIcon from '../../../assets/weekly/cloud.png';
 import checkIcon from '../../../assets/weekly/check.png';
-import pencilIcon from '../../../assets/weekly/pencil.png';
 import { loadWeeklyList } from './weeklyReportData';
 import { useApi } from '../../../hooks/useApi';
 import { useFamilyRelation } from '../../../hooks/useFamilyRelation';
@@ -121,26 +120,6 @@ const WeekLabel = styled.span`
   white-space: nowrap;
 `;
 
-// 체크 아이콘 폭만큼 들여써서 주차 이름 아래에 맞춘다.
-const DateRow = styled.div`
-  display: flex;
-  align-items: center;
-  padding-left: 36px;
-`;
-
-const DateChip = styled.span`
-  padding: 4px 10px;
-  border-radius: 10px;
-  border: 1px solid rgba(74, 58, 47, 0.35);
-  background: rgba(255, 255, 255, 0.8);
-
-  font-family: 'Noto Sans KR';
-  font-size: 13px;
-  font-weight: 700;
-  color: #4a3a2f;
-  white-space: nowrap;
-`;
-
 // 이번 주는 아직 쌓이는 중이라 색을 달리해서 완성된 주와 구분한다.
 const Badge = styled.span`
   flex-shrink: 0;
@@ -156,23 +135,13 @@ const Badge = styled.span`
   white-space: nowrap;
 `;
 
-// 폭을 고정하고 왼쪽 정렬해야, 한 줄평 길이가 주마다 달라도 연필 아이콘이
-// 항상 같은 자리에 온다(Figma는 오른쪽 정렬이라 짧은 한 줄평일수록 연필이
-// 오락가락해서, 아이콘 기준으로 어긋나 보였다).
+// 한 줄평은 연필 없이 오른쪽에 붙인다.
 const EditLabel = styled.div`
   display: flex;
   align-items: center;
-  justify-content: flex-start;
-  gap: 6px;
+  justify-content: flex-end;
   width: 167px;
   flex-shrink: 0;
-`;
-
-const PencilIcon = styled.img`
-  width: 22px;
-  height: 22px;
-  flex-shrink: 0;
-  object-fit: contain;
 `;
 
 // 한 줄평이 길면 넘치는 만큼 말줄임으로 자른다.
@@ -182,46 +151,17 @@ const EditText = styled.span`
   font-size: 16px;
   font-weight: 700;
   color: #3f5a1b;
-  text-align: left;
+  text-align: right;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 `;
 
-const MonthJumpRow = styled.div`
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-`;
-
-const MonthChip = styled.button`
-  padding: 8px 16px;
-  border-radius: 18px;
-  white-space: nowrap;
-
-  font-family: 'Noto Sans KR';
-  font-size: 15px;
-  font-weight: ${({ $active }) => ($active ? 700 : 500)};
-
-  border: 1px solid ${({ $active }) => ($active ? 'rgba(74, 58, 47, 0.25)' : '#e5e0d9')};
-  background: ${({ $active }) => ($active ? '#f6ebc7' : '#fcf8ea')};
-  color: ${({ $active }) => ($active ? '#4a3a2f' : '#a79c8e')};
-`;
-
-const MonthSection = styled.div`
+// 월별 탭 없이 주차가 위에서 아래로 그냥 쌓인다.
+const WeekList = styled.div`
   display: flex;
   flex-direction: column;
   gap: 12px;
-  scroll-margin-top: 16px;
-`;
-
-const MonthLabel = styled.p`
-  margin: 0;
-  width: 100%;
-  font-family: 'Noto Sans KR';
-  font-size: 15px;
-  font-weight: 700;
-  color: #a79c8e;
 `;
 
 const StatusText = styled.p`
@@ -240,35 +180,12 @@ function WeeklyReport() {
   const { partnerLabel } = useFamilyRelation();
 
   const currentWeek = data?.current ?? null;
-  const pastWeeks = useMemo(() => data?.past ?? [], [data]);
 
-  // 최신 주가 위로 오도록 monthKey 내림차순으로 정렬한다.
-  // 월 숫자로 정렬하면 12월 다음에 1월이 오는 연말 구간에서 순서가 뒤집힌다.
-  const months = useMemo(() => {
-    const seen = new Map();
-    pastWeeks.forEach((week) => {
-      if (!seen.has(week.monthKey)) seen.set(week.monthKey, week);
-    });
-    return [...seen.values()].sort((a, b) => b.monthKey - a.monthKey);
-  }, [pastWeeks]);
-
-  const [monthKey, setMonthKey] = useState(null);
-  const activeMonthKey = monthKey ?? months[0]?.monthKey ?? null;
-
-  const weeksByMonth = useMemo(() => {
-    const map = new Map();
-    pastWeeks.forEach((week) => {
-      if (!map.has(week.monthKey)) map.set(week.monthKey, []);
-      map.get(week.monthKey).push(week);
-    });
-    return map;
-  }, [pastWeeks]);
-
-  const sectionRefs = useRef({});
-  const jumpToMonth = (key) => {
-    setMonthKey(key);
-    sectionRefs.current[key]?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  };
+  // 월별 탭을 없앴다. 최근 주가 위로 오도록 한 줄로 쌓기만 한다.
+  const pastWeeks = useMemo(
+    () => [...(data?.past ?? [])].sort((a, b) => b.id.localeCompare(a.id)),
+    [data],
+  );
 
   const openWeek = (weekId) =>
     navigate(`/home/weekly-report/${weekId}`, { state: { person } });
@@ -282,7 +199,7 @@ function WeeklyReport() {
           <PageCaption>
             {person === 'me'
               ? '매주 일요일에 새로운 리포트가 만들어져요!'
-              : `${partnerLabel}의 리포트도 매주 일요일에 만들어져요!`}
+              : `매주 일요일에 ${partnerLabel}의 리포트도 만들어져요!`}
           </PageCaption>
         </PageHeader>
         <PageDivider />
@@ -325,9 +242,6 @@ function WeeklyReport() {
                     <CheckIcon src={checkIcon} alt="" />
                     <WeekLabel>{currentWeek.label}</WeekLabel>
                   </TitleLine>
-                  <DateRow>
-                    <DateChip>{currentWeek.range}</DateChip>
-                  </DateRow>
                 </ContentCol>
                 <Badge $progress={currentWeek.inProgress}>
                   {currentWeek.inProgress ? '입력 중' : '이번 주'}
@@ -336,53 +250,29 @@ function WeeklyReport() {
             </ThisWeekCard>
           )}
 
-          {months.length > 0 && (
+          {pastWeeks.length > 0 && (
             <>
               <SectionDivider />
-              <MonthJumpRow>
-                {months.map((month) => (
-                  <MonthChip
-                    key={month.monthKey}
-                    type="button"
-                    $active={activeMonthKey === month.monthKey}
-                    onClick={() => jumpToMonth(month.monthKey)}
-                  >
-                    {month.monthLabel}
-                  </MonthChip>
-              ))}
-              </MonthJumpRow>
+              <WeekList>
+                {pastWeeks.map((week) => (
+                  <WeekRow key={week.id} type="button" onClick={() => openWeek(week.id)}>
+                    <ContentCol>
+                      <TitleLine>
+                        <CheckIcon src={checkIcon} alt="" />
+                        <WeekLabel>{week.label}</WeekLabel>
+                      </TitleLine>
+                    </ContentCol>
+                    {/* 한 주가 다 차지 않은 리포트는 한 줄평이 없다 */}
+                    {week.comment && (
+                      <EditLabel>
+                        <EditText>{week.comment}</EditText>
+                      </EditLabel>
+                    )}
+                  </WeekRow>
+                ))}
+              </WeekList>
             </>
           )}
-
-          {months.map((month, index) => (
-            <MonthSection
-              key={month.monthKey}
-              ref={(node) => {
-                sectionRefs.current[month.monthKey] = node;
-              }}
-            >
-              {/* 맨 위 구간은 월 칩이 이미 어느 달인지 보여줘서 제목을 생략한다. */}
-              {index > 0 && <MonthLabel>{month.monthLabel}</MonthLabel>}
-
-              {weeksByMonth.get(month.monthKey).map((week) => (
-                <WeekRow key={week.id} type="button" onClick={() => openWeek(week.id)}>
-                  <ContentCol>
-                    <TitleLine>
-                      <CheckIcon src={checkIcon} alt="" />
-                      <WeekLabel>{week.label}</WeekLabel>
-                    </TitleLine>
-                    <DateRow>
-                      <DateChip>{week.range}</DateChip>
-                    </DateRow>
-                  </ContentCol>
-                  <EditLabel>
-                    <PencilIcon src={pencilIcon} alt="" />
-                    <EditText>{week.comment}</EditText>
-                  </EditLabel>
-                </WeekRow>
-              ))}
-            </MonthSection>
-          ))}
         </PageScrollArea>
       </PageContent>
     </PageFrame>

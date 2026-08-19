@@ -4,7 +4,6 @@ import styled from 'styled-components';
 import aiIcon from '../../../assets/journal/ai.png';
 import sunIcon from '../../../assets/journal/sun.png';
 import pillIcon from '../../../assets/journal/pill.png';
-import exclaimIcon from '../../../assets/journal/exclaim.png';
 import moonIcon from '../../../assets/journal/moon.png';
 import flowerA from '../../../assets/journal/flower-a.png';
 import flowerB from '../../../assets/journal/flower-b.png';
@@ -14,9 +13,7 @@ import mSleep from '../../../assets/journal/m-sleep.png';
 import mMeal from '../../../assets/journal/m-meal.png';
 import mActivity from '../../../assets/journal/m-activity.png';
 import mBody from '../../../assets/journal/m-body.png';
-import faceGood from '../../../assets/weekly/face-good.png';
-import faceNormal from '../../../assets/weekly/face-normal.png';
-import faceBad from '../../../assets/weekly/face-bad.png';
+import stepsIcon from '../../../assets/weekly/check.png';
 import { loadTodayReport } from './todayReportData';
 import { useApi } from '../../../hooks/useApi';
 import { useFamilyRelation } from '../../../hooks/useFamilyRelation';
@@ -51,9 +48,8 @@ const METRIC_ICONS = {
 };
 const ENTRY_ICONS = { question: sunIcon, medication: pillIcon, healthcheck: moonIcon };
 const ENTRY_TITLES = { question: '오늘의 질문', medication: '복약 체크', healthcheck: '건강 체크' };
-
-// 상단 요약 칩의 컨디션은 글자 대신 점수(3=좋음~1=아쉬움)에 맞는 표정 이모지를 띄운다.
-const CONDITION_FACE = { 3: faceGood, 2: faceNormal, 1: faceBad };
+// 카드 왼쪽 레일 옆에 붙는 시간대 이름 (Figma 907:1774)
+const ENTRY_STAGES = { question: '아침', medication: '복약', healthcheck: '저녁' };
 
 const PersonToggle = styled.div`
   display: flex;
@@ -64,16 +60,16 @@ const PersonToggle = styled.div`
   background: #f8f5ee;
 `;
 
-// 나는 살구색, 가족은 노란색 계열로 토글 색이 다르다.
+// 예전에는 '나'는 살구색, '가족'은 노란색으로 사람마다 색이 달라서 어느 쪽을 고른
+// 건지 알기 어려웠다. 주간 리포트와 같게, 고른 쪽만 살구색으로 채운다.
 const ToggleTab = styled.button`
   flex: 1;
   height: 48px;
   border-radius: 12px;
 
-  border: 2px solid ${({ $mine }) => ($mine ? '#e6a794' : 'rgba(232, 205, 115, 0.7)')};
-  background: ${({ $active, $mine }) =>
-    $active ? ($mine ? '#fbe3d0' : '#f7edc8') : 'transparent'};
-  color: ${({ $mine }) => ($mine ? '#c97158' : '#b9862e')};
+  border: 2px solid ${({ $active }) => ($active ? '#e6a794' : 'rgba(232, 205, 115, 0.7)')};
+  background: ${({ $active }) => ($active ? 'rgba(230, 167, 148, 0.5)' : 'transparent')};
+  color: ${({ $active }) => ($active ? '#c97158' : '#b9862e')};
 
   font-family: 'Noto Sans KR';
   font-size: 17px;
@@ -110,13 +106,6 @@ const ChipValue = styled.span`
   font-family: 'Noto Sans KR';
   font-size: 20px;
   font-weight: 700;
-`;
-
-// 컨디션 칩만 글자 대신 이모지(표정 아이콘)를 띄운다.
-const ChipFace = styled.img`
-  width: 40px;
-  height: 40px;
-  object-fit: contain;
 `;
 
 const InfoCard = styled.div`
@@ -162,10 +151,49 @@ const InfoText = styled.p`
   line-height: 1.4;
 `;
 
+// Figma 907:1801 — 온담 한마디보다 한 톤 진한 연두로 채워서 눈에 먼저 들어오게 한다.
+const StepCard = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px;
+  border-radius: 14px;
+
+  border: 1.5px solid rgba(124, 154, 58, 0.7);
+  background: #cbd879;
+`;
+
+const StepLabel = styled.p`
+  margin: 0;
+  color: #3f5a1b;
+  font-family: 'Noto Sans KR';
+  font-size: 16px;
+  font-weight: 700;
+`;
+
+const StepText = styled.p`
+  margin: 0;
+  color: #3f3320;
+  font-family: 'Noto Sans KR';
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 1.4;
+  word-break: keep-all;
+`;
+
 const SectionDivider = styled.div`
   width: 100%;
   height: 2px;
   background: rgba(74, 58, 47, 0.25);
+`;
+
+// 카드 위에 붙는 시간대 이름
+const StageLabel = styled.p`
+  margin: 0;
+  color: #a79c8e;
+  font-family: 'Noto Sans KR';
+  font-size: 16px;
+  font-weight: 500;
 `;
 
 const TimelineEntry = styled.div`
@@ -188,7 +216,8 @@ const Rail = styled.div`
     width: 10px;
     height: 10px;
     border-radius: 5px;
-    background: #c9bda8;
+    /* Figma Rail의 초록 동그라미 */
+    background: #cbd879;
   }
 
   &::after {
@@ -256,12 +285,6 @@ const CardTitle = styled.p`
   font-weight: 700;
 `;
 
-const ExclaimIcon = styled.img`
-  width: 30px;
-  height: 30px;
-  object-fit: contain;
-`;
-
 const QuestionRow = styled.div`
   display: flex;
   align-items: center;
@@ -291,7 +314,7 @@ const MedCircleRow = styled.div`
 `;
 
 const MedIconWrap = styled.div`
-  width: 56px;
+  width: 76px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -305,11 +328,14 @@ const MedIcon = styled.img`
 `;
 
 const MedName = styled.span`
+  max-width: 100%;
+  text-align: center;
   color: ${({ $taken }) => ($taken ? '#2e2117' : '#8c8780')};
   font-family: 'Noto Sans KR';
   font-size: 14px;
   font-weight: 700;
-  white-space: nowrap;
+  line-height: 1.3;
+  word-break: keep-all;
 `;
 
 const SentenceLine = styled.div`
@@ -413,13 +439,13 @@ function TodayReport() {
       return (
         <MedCircleRow>
           {entry.medications.map((med, index) => (
-            <MedIconWrap key={med.name}>
+            <MedIconWrap key={med.key ?? med.scheduleId ?? med.name}>
               <MedIcon
                 $taken={med.taken}
                 src={med.taken ? MED_FLOWERS[index % MED_FLOWERS.length] : medEmpty}
                 alt=""
               />
-              <MedName $taken={med.taken}>{med.name}</MedName>
+              <MedName $taken={med.taken}>{med.label ?? med.name}</MedName>
             </MedIconWrap>
           ))}
         </MedCircleRow>
@@ -477,26 +503,31 @@ function TodayReport() {
                 </SummaryChip>
                 <SummaryChip>
                   <ChipLabel>컨디션</ChipLabel>
-                  {/* 저녁 체크 전이라 점수가 없으면 이모지 대신 '-'를 보여준다 */}
-                  {report.summary.conditionScore ? (
-                    <ChipFace
-                      src={CONDITION_FACE[Math.round(report.summary.conditionScore)] ?? faceNormal}
-                      alt={report.summary.condition}
-                    />
-                  ) : (
-                    <ChipValue>-</ChipValue>
-                  )}
+                  {/* 표정 그림 대신 좋음·보통·나쁨 세 글자로 적는다 */}
+                  <ChipValue>{report.summary.condition}</ChipValue>
                 </SummaryChip>
               </SummaryChips>
 
-              {report.aiComment && (
-                <InfoCard>
-                  <InfoIcon src={aiIcon} alt="" />
+              {/* 온담 한마디는 서버가 기록을 보고 만들어 준다.
+                  아직 안 만들어졌으면 자리를 비우지 않고 언제 채워지는지 알려준다. */}
+              <InfoCard>
+                <InfoIcon src={aiIcon} alt="" />
+                <InfoTextCol>
+                  <InfoLabel>온담 한마디</InfoLabel>
+                  <InfoText>
+                    {report.aiComment || '저녁 건강 체크를 마치면 온담이 한마디 남겨드려요.'}
+                  </InfoText>
+                </InfoTextCol>
+              </InfoCard>
+
+              {report.steps?.message && (
+                <StepCard>
+                  <InfoIcon src={stepsIcon} alt="" />
                   <InfoTextCol>
-                    <InfoLabel>온담 한마디</InfoLabel>
-                    <InfoText>{report.aiComment}</InfoText>
+                    <StepLabel>오늘의 걸음수</StepLabel>
+                    <StepText>{report.steps.message}</StepText>
                   </InfoTextCol>
-                </InfoCard>
+                </StepCard>
               )}
 
               <SectionDivider />
@@ -506,6 +537,7 @@ function TodayReport() {
                 <TimelineEntry key={entry.type}>
                   <Rail />
                   <EntryContent>
+                    <StageLabel>{ENTRY_STAGES[entry.type]}</StageLabel>
                     <EntryCard>
                       <CardHead>
                         <CardHeadIcon src={ENTRY_ICONS[entry.type]} alt="" />
@@ -515,9 +547,6 @@ function TodayReport() {
                           <EditButton type="button" onClick={() => setEditing(entry.type)}>
                             수정
                           </EditButton>
-                        )}
-                        {entry.type === 'medication' && entry.hasMissed && (
-                          <ExclaimIcon src={exclaimIcon} alt="" />
                         )}
                       </CardHead>
                       {renderEntryBody(entry)}
