@@ -7,7 +7,6 @@ import { useApiAction } from '../../hooks/useApi';
 import { useLocation } from 'react-router-dom';
 import { useAppData } from '../../store/AppDataContext';
 import { getDemoPartner, getPartnerRelation } from '../../demo/accounts';
-import back from '../../assets/onboarding/back.svg';
 import heart from '../../assets/onboarding/heart.svg';
 
 const InviteCode = () => {
@@ -78,9 +77,6 @@ const InviteCode = () => {
   return (
     <Page>
       <Content>
-        <BackButton onClick={() => navigate('/onboarding/step-guide')}>
-          <BackIcon src={back} alt="뒤로가기" />
-        </BackButton>
         <Header>
           <Title>가족 연결</Title>
         </Header>
@@ -187,33 +183,6 @@ const Header = styled.div`
   align-items: center;
   justify-content: center;
 `;
-
-const BackButton = styled.button`
-  position: absolute;
-  top: 35px;
-  left: 24px;
-  z-index: 10;
-
-  width: 40px;
-  height: 40px;
-
-  padding: 0;
-  border: none;
-  background: transparent;
-  cursor: pointer;
-
-  display: flex;
-  align-items: center;
-  justify-content: center;
-`;
-
-const BackIcon = styled.img`
-  width: 40px;
-  height: 40px;
-  object-fit: contain;
-`;
-
-
 
 const Title = styled.h1`
   margin: 0;

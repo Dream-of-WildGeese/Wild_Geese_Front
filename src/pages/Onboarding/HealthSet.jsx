@@ -1,7 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import styled from 'styled-components';
-import back from '../../assets/onboarding/back.svg';
 import { useAppData } from '../../store/AppDataContext';
 import { getMe, updateHealthProfile, getHealthProfile } from '../../api/user';
 import { getMedications } from '../../api/medication';
@@ -233,10 +232,6 @@ const HealthSet = () => {
   return (
     <Page>
       <Content>
-        <BackButton onClick={() => navigate('/onboarding/complete/1', { state: { role } })}>
-          <BackIcon src={back} alt="뒤로가기" />
-        </BackButton>
-
         <Header>
           <Title>건강 프로필</Title>
         </Header>
@@ -464,27 +459,6 @@ const Header = styled.div`
   display: flex;
   align-items: center;
   justify-content: center;
-  height: 40px;
-`;
-
-const BackButton = styled.button`
-  position: absolute;
-  top: 35px;
-  left: 24px;
-  z-index: 10;
-  width: 40px;
-  height: 40px;
-  padding: 0;
-  border: none;
-  background: transparent;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-`;
-
-const BackIcon = styled.img`
-  width: 40px;
   height: 40px;
 `;
 

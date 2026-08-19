@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
 import pinkFlower from '../../assets/onboarding/pinkflower.svg';
 import yellowFlower from '../../assets/onboarding/yellowflower.svg';
-import back from '../../assets/onboarding/back.svg';
 import { useAppData } from '../../store/AppDataContext';
 import { setUserId } from '../../api/client';
 import { getDemoAccount } from '../../demo/accounts';
@@ -24,9 +23,6 @@ const UserType = () => {
   return (
     <Page>
       <Content>
-        <BackButton onClick={() => navigate('/')}>
-          <BackIcon src={back} alt="뒤로가기" />
-        </BackButton>
         <Header>
           <Title>당신은 누구신가요?</Title>
           <Description>
@@ -89,30 +85,6 @@ const Content = styled.div`
 
   display: flex;
   flex-direction: column;
-`;
-const BackButton = styled.button`
-  position: absolute;
-  top: 35px;
-  left: 24px;
-  z-index: 10;
-
-  width: 40px;
-  height: 40px;
-
-  padding: 0;
-  border: none;
-  background: transparent;
-  cursor: pointer;
-
-  display: flex;
-  align-items: center;
-  justify-content: center;
-`;
-
-const BackIcon = styled.img`
-  width: 40px;
-  height: 40px;
-  object-fit: contain;
 `;
 const Header = styled.div`
   text-align: center;

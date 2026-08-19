@@ -1,7 +1,6 @@
 import React from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
-import back from '../../assets/onboarding/back.svg';
 import heart from '../../assets/onboarding/heart.svg';
 import arrow from '../../assets/onboarding/arrow.svg';
 
@@ -13,9 +12,6 @@ const StepGuide = () => {
   return (
     <Page>
       <Content>
-        <BackButton onClick={() => navigate('/onboarding/UserType')}>
-          <BackIcon src={back} alt="뒤로가기" />
-        </BackButton>
         <Title>온담에 오신 걸 <br />진심으로 환영해요</Title>
 
         <Description>
@@ -97,32 +93,6 @@ const Content = styled.div`
   display: flex;
   flex-direction: column;
 `;
-
-const BackButton = styled.button`
-  position: absolute;
-  top: 35px;
-  left: 24px;
-  z-index: 10;
-
-  width: 40px;
-  height: 40px;
-
-  padding: 0;
-  border: none;
-  background: transparent;
-  cursor: pointer;
-
-  display: flex;
-  align-items: center;
-  justify-content: center;
-`;
-
-const BackIcon = styled.img`
-  width: 40px;
-  height: 40px;
-  object-fit: contain;
-`;
-
 
 const Title = styled.h1`
   margin: 0;

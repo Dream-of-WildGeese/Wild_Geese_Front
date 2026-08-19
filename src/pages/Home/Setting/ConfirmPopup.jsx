@@ -1,8 +1,7 @@
 import styled from 'styled-components';
-import logoutDaughter from '../../../assets/character/logout-daughter.png';
 import logoutSon from '../../../assets/character/logout-son.svg';
 import withdrawDaughter from '../../../assets/character/withdraw-daughter.png';
-import withdrawSon from '../../../assets/character/withdraw-son.png';
+
 import {
   PopupBackdrop,
   PopupCard,
@@ -15,8 +14,8 @@ import {
 // Figma 29 / 30: 로그아웃·탈퇴 확인. 각각 딸/아들 캐릭터 버전이 따로 있어서
 // 건강 프로필의 성별로 그림을 고른다(성별 미설정이면 딸 그림을 기본으로 쓴다).
 const CHARACTERS = {
-  logout: { FEMALE: logoutDaughter, MALE: logoutSon },
-  withdraw: { FEMALE: withdrawDaughter, MALE: withdrawSon },
+  logout: { FEMALE: withdrawDaughter, MALE: logoutSon },
+  withdraw: { FEMALE: withdrawDaughter, MALE: logoutSon },
 };
 
 const Character = styled.img`

@@ -3,7 +3,6 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import styled from 'styled-components';
 import alarmSun from '../../assets/onboarding/alarm-sun.svg';
 import alarmMoon from '../../assets/onboarding/alarm-moon.svg';
-import back from '../../assets/onboarding/back.svg';
 import heart from '../../assets/onboarding/heart.svg';
 import clock from '../../assets/onboarding/clock.svg';
 import { useAppData } from '../../store/AppDataContext';
@@ -57,10 +56,6 @@ const AlarmTime = () => {
   return (
     <Page>
       <Content>
-        <BackButton onClick={() => navigate('/onboarding/complete/2', { state: { role } })}>
-          <BackIcon src={back} alt="뒤로가기" />
-        </BackButton>
-
         <Header>
           <Title>알림 시간 설정</Title>
         </Header>
@@ -200,27 +195,6 @@ const Content = styled.div`
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
-`;
-
-const BackButton = styled.button`
-  position: absolute;
-  top: 35px;
-  left: 24px;
-  z-index: 10;
-  width: 40px;
-  height: 40px;
-  border: none;
-  padding: 0;
-  background: transparent;
-  cursor: pointer;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-`;
-
-const BackIcon = styled.img`
-  width: 40px;
-  height: 40px;
 `;
 
 const Header = styled.div`

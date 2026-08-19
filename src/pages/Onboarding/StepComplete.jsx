@@ -4,7 +4,6 @@ import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { completeOnboarding } from '../../api/user';
 import { useApiAction } from '../../hooks/useApi';
 import { useAppData } from '../../store/AppDataContext';
-import back from '../../assets/onboarding/back.svg';
 import sprout from '../../assets/onboarding/sprout.svg';
 import completeFlower from '../../assets/onboarding/complete-flower.svg';
 import completeFlower2 from '../../assets/onboarding/complete-flower2.svg';
@@ -30,7 +29,6 @@ const StepComplete = () => {
     icon: sprout,
     buttonText: '계속하기',
     next: '/onboarding/health-set',
-    back: '/onboarding/invite',
   },
   2: {
     badge: '2단계 완료 2/3',
@@ -39,7 +37,6 @@ const StepComplete = () => {
     icon: completeFlower,
     buttonText: '알림 시간 설정하러 가기',
     next: '/onboarding/alarm',
-    back: '/onboarding/health-set',
   },
   3: {
     badge: '3단계 완료 3/3',
@@ -48,7 +45,6 @@ const StepComplete = () => {
     icon: completeFlower2,
     buttonText: `시작하기`,
     next: '/home',
-    back: '/onboarding/alarm',
   },
 };
 
@@ -70,10 +66,6 @@ const StepComplete = () => {
   return (
     <Page>
       <Content>
-      <BackButton onClick={() => navigate(current.back, { state: { role } })}>
-        <BackIcon src={back} alt="뒤로가기" />
-      </BackButton>
-
       <StepBadge>{current.badge}</StepBadge>
 
       <CompleteContent>
@@ -117,31 +109,6 @@ const Content = styled.div`
   display: flex;
   flex-direction: column;
 `;
-
-const BackButton = styled.button`
-  position: absolute;
-  top: 35px;
-  left: 24px;
-  z-index: 10;
-
-  width: 40px;
-  height: 40px;
-
-  padding: 0;
-  border: none;
-  background: transparent;
-  cursor: pointer;
-
-  display: flex;
-  align-items: center;
-  justify-content: center;
-`;
-
-const BackIcon = styled.img`
-  width: 40px;
-  height: 40px;
-`;
-
 
 const StepBadge = styled.div`
   position: absolute;
