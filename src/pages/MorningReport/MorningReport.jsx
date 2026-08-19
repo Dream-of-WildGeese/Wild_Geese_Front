@@ -61,13 +61,13 @@ async function loadMonthJournal({ from, to }) {
 
       const answers = [];
       if (myText) {
-        answers.push({ id: 'me', name: '나', avatar: avatarCheering, text: myText });
+        answers.push({ id: 'me', name: '나', avatar: getMascotImage(me), text: myText });
       }
       if (partnerText) {
         answers.push({
           id: 'family',
           name: getRelationLabel(partner),
-          avatar: avatarHeartHug,
+          avatar: getMascotImage(partner),
           text: partnerText,
         });
       }
