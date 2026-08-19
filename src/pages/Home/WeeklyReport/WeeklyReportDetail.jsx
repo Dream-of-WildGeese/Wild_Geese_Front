@@ -404,12 +404,13 @@ const StarIcon = styled.img`
   object-fit: contain;
 `;
 
-// 요일 글자는 별 그림 한가운데에 얹는다.
+// 요일 글자는 별 그림 한가운데에 얹는다. 별 몸통(뾰족한 꼭짓점 안쪽)이
+// 생각보다 좁아서, 15px로는 글자가 꼭짓점 밖으로 삐져나왔다.
 const DayButtonLabel = styled.span`
   position: relative;
   color: #4a3a2f;
   font-family: Jua;
-  font-size: 15px;
+  font-size: 11px;
   line-height: 1;
 `;
 
