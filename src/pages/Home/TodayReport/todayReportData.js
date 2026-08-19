@@ -1,10 +1,11 @@
 import { getDailyLog, getFamilyDailyLog } from '../../../api/daily';
 import { getMedications, getMedicationLogs } from '../../../api/medication';
-import { getMorningHistory } from '../../../api/morning';
+import { getMorningHistory, getTodayQuestion } from '../../../api/morning';
 import { getMyFamily } from '../../../api/family';
 import { getUserId } from '../../../api/client';
 import { toDateString, timeToLabel, activeSchedules } from '../../../utils/medication';
 import { getRelationLabel } from '../../../utils/family';
+import { findMyLatestAnswer } from '../../../utils/morningAnswer';
 import { getWeekStart } from '../WeeklyReport/weeklyReportData';
 import { getMockDailyReport } from '../../../mock/dailyReport';
 import { getMockSteps, buildStepsMessage } from '../../../mock/steps';
@@ -110,7 +111,7 @@ const buildMedicationEntry = (medicationLog, medications) => {
 
 // 아직 답하지 않은 항목도 카드 자체는 항상 보여주고, 안 채워진 부분만 빈칸으로 둔다.
 // (예전엔 기록이 없으면 카드가 통째로 안 보여서 오늘 뭘 안 했는지도 알기 어려웠다)
-const buildTimeline = ({ dailyLog, question, medicationLog, medications }) => {
+const buildTimeline = ({ dailyLog, question, morningAnswer, medicationLog, medications }) => {
   const eveningAnswers = dailyLog?.eveningAnswers ?? [];
 
   return [
@@ -118,7 +119,9 @@ const buildTimeline = ({ dailyLog, question, medicationLog, medications }) => {
       type: 'question',
       time: formatTimeLabel('아침', dailyLog?.morningAnswer?.answeredAt),
       question: question?.content ?? '오늘의 질문',
-      answer: dailyLog?.morningAnswer?.textValue ?? '',
+      // /daily의 morningAnswer는 그 날 '맨 처음' 답이라, 고쳐 쓴 답이 반영되지 않는다.
+      // 오늘 것은 아침 질문 응답에서 마지막 답을 골라 쓴다.
+      answer: morningAnswer ?? dailyLog?.morningAnswer?.textValue ?? '',
     },
     buildMedicationEntry(medicationLog, medications),
     {
@@ -210,7 +213,10 @@ export async function loadTodayReport(person, dateString = null) {
   previousDate.setDate(previousDate.getDate() - 1);
   const previousRecordDate = toDateString(previousDate);
 
-  const [dailyLog, medicationLog, medications, history, previousLog] = await Promise.all([
+  const isToday = recordDate === toDateString(new Date());
+
+  const [dailyLog, medicationLog, medications, history, previousLog, todayQuestion] =
+    await Promise.all([
     isMe
       ? getDailyLog(recordDate).catch(() => null)
       : getFamilyDailyLog(partner.userId, recordDate).catch(() => null),
@@ -220,7 +226,9 @@ export async function loadTodayReport(person, dateString = null) {
     isMe
       ? getDailyLog(previousRecordDate).catch(() => null)
       : getFamilyDailyLog(partner.userId, previousRecordDate).catch(() => null),
-  ]);
+    // 오늘 내 일지일 때만, 마지막으로 고쳐 쓴 아침 답변을 확인한다.
+    isMe && isToday ? getTodayQuestion().catch(() => null) : null,
+    ]);
 
   const personLabel = isMe ? '나' : getRelationLabel(partner);
 
@@ -236,11 +244,7 @@ export async function loadTodayReport(person, dateString = null) {
     summary: buildSummary(dailyLog, medicationLog),
     steps: {
       count: stepCount,
-      message: buildStepsMessage(
-        stepCount,
-        previousStepCount,
-        recordDate === toDateString(new Date()),
-      ),
+      message: buildStepsMessage(stepCount, previousStepCount, isToday),
     },
     aiComment: dailyLog?.summaryText ?? '',
     // 타임라인 아래에 한 번 더 붙는 저녁 코멘트. 서버가 별도 필드를 주면 그때 채운다.
@@ -248,6 +252,7 @@ export async function loadTodayReport(person, dateString = null) {
     timeline: buildTimeline({
       dailyLog,
       question: (history ?? [])[0],
+      morningAnswer: findMyLatestAnswer(todayQuestion?.familyAnswers, myUserId)?.textValue,
       medicationLog,
       medications: medications ?? [],
     }),
