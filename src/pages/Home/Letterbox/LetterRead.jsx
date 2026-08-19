@@ -99,7 +99,7 @@ const Body = styled.p`
   }
 `;
 
-function LetterRead({ letter, onReply, onClose }) {
+function LetterRead({ letter, senderLabel, onReply, onClose }) {
   return (
     <Wrapper onClick={(event) => event.stopPropagation()}>
       <PaperCard>
@@ -109,7 +109,8 @@ function LetterRead({ letter, onReply, onClose }) {
         </CloseButton>
 
         <HeadRow>
-          <SenderName>{letter.sender}</SenderName>
+          {/* 가족 정보가 아직 안 왔을 때만 편지에 적힌 이름을 대신 쓴다 */}
+          <SenderName>{senderLabel || letter.sender}</SenderName>
           <DateText>{letter.fullDate || letter.date}</DateText>
         </HeadRow>
         <Divider />
@@ -118,7 +119,7 @@ function LetterRead({ letter, onReply, onClose }) {
 
       <PopupPrimaryButton type="button" onClick={onReply} style={{ height: 52, borderRadius: 12 }}>
         {/* 누구에게 답하는지 보이면 훨씬 분명하다 */}
-        {letter.sender ? `${letter.sender}에게 답장하기` : '답장하기'}
+        {senderLabel || letter.sender ? `${senderLabel || letter.sender}에게 답장하기` : '답장하기'}
       </PopupPrimaryButton>
     </Wrapper>
   );

@@ -140,7 +140,7 @@ const Preview = styled.p`
   -webkit-box-orient: vertical;
 `;
 
-function LetterboxList({ letters, onSelectLetter, onWrite, onClose }) {
+function LetterboxList({ letters, senderLabel, onSelectLetter, onWrite, onClose }) {
   return (
     <PopupCard $center $gap={16} $padTop={32} onClick={(event) => event.stopPropagation()}>
       <PopupInnerBorder />
@@ -162,7 +162,8 @@ function LetterboxList({ letters, onSelectLetter, onWrite, onClose }) {
             </Avatar>
             <TextCol>
               <HeadRow>
-                <SenderName>{letter.sender}</SenderName>
+                {/* 가족 정보가 아직 안 왔을 때만 편지에 적힌 이름을 대신 쓴다 */}
+                <SenderName>{senderLabel || letter.sender}</SenderName>
                 {!letter.read && <UnreadDot />}
                 <DateText>{letter.date}</DateText>
               </HeadRow>
