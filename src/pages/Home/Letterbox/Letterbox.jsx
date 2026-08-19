@@ -80,12 +80,8 @@ function Letterbox({ letters, loading, onMarkRead, onSent, onClose, initialStep 
     setStep('sent');
   };
 
-  const handleArrivedOpen = () => {
-    const firstUnread = letters.find((letter) => !letter.read);
-    if (firstUnread) openLetter(firstUnread);
-  };
-
-  const backToList = () => setStep(letters.length === 0 ? 'empty' : 'list');
+  // 편지함(목록)으로 간다. 편지가 하나도 없으면 빈 편지함 화면으로.
+  const showLetterList = () => setStep(letters.length === 0 ? 'empty' : 'list');
 
   return (
     <PopupPortal>
@@ -94,7 +90,7 @@ function Letterbox({ letters, loading, onMarkRead, onSent, onClose, initialStep 
           {step === 'arrived' && (
             <LetterArrived
               unreadCount={unreadCount}
-              onOpen={handleArrivedOpen}
+              onOpen={showLetterList}
               onClose={onClose}
             />
           )}
@@ -115,12 +111,12 @@ function Letterbox({ letters, loading, onMarkRead, onSent, onClose, initialStep 
               letter={selectedLetter}
               senderLabel={partnerLabel}
               onReply={() => setStep('compose')}
-              onClose={backToList}
+              onClose={showLetterList}
             />
           )}
           {step === 'compose' && (
             <LetterCompose
-              onBack={backToList}
+              onBack={showLetterList}
               onSend={handleSend}
               sending={sending}
               recipientName={partnerLabel}
