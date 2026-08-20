@@ -35,7 +35,7 @@ const BubbleText = styled.p`
 
 function HomeCtaBanner({ onClick }) {
   return (
-    <Banner type="button" aria-label="오늘의 건강 질문" onClick={onClick}>
+    <Banner type="button" aria-label="오늘의 건강 질문" onClick={onClick} data-tour="cta">
       <BubbleImage src={speechBubble} alt="" />
       <BubbleText>오늘의 온담을 시작해보세요!</BubbleText>
     </Banner>

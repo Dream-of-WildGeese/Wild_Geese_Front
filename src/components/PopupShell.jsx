@@ -3,7 +3,8 @@ import PopupPortal from './PopupPortal';
 
 // Figma 팝업(13~35)이 전부 공유하는 카드 틀.
 // 크림색 카드 + 안쪽 점선 테두리 + 연두색 CTA가 기본 형태다.
-const BackdropBase = styled.div`
+// data-popup은 시작 가이드가 '지금 팝업이 열려 있는지' 알아보는 데 쓴다.
+const BackdropBase = styled.div.attrs({ 'data-popup': 'true' })`
   /* Layout(폰 프레임)이 기준이 되도록 absolute를 쓴다. fixed면 브라우저 창 가운데에 뜬다. */
   position: absolute;
   inset: 0;

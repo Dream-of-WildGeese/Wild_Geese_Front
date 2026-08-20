@@ -9,6 +9,7 @@ import Home from './pages/Home/Home';
 import MorningReport from './pages/MorningReport/MorningReport';
 
 import Layout from './components/Layout';
+import TourGate from './components/Tour/TourGate';
 
 import Intro from './pages/Onboarding/Intro';
 import UserType from './pages/Onboarding/UserType';
@@ -65,6 +66,9 @@ function App() {
 
               <Route path='/morning-report' element={<MorningReport />} />
             </Routes>
+            {/* 처음 들어온 사람에게 온담을 한 바퀴 보여준다.
+                여러 화면을 오가므로 프레임 안에 한 번만 걸어둔다. */}
+            <TourGate />
           </Layout>
         </BrowserRouter>
       </AppDataProvider>
