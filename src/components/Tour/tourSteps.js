@@ -66,8 +66,13 @@ export const TOUR_STEPS = [
   {
     id: 'ai',
     anchor: 'ai-comment',
-    target: 'ai-comment',
+    // 온담 한마디와 뒤로가기를 함께 밝힌다. 어디를 눌러야 이어지는지 글로만
+    // 적어두면 찾지 못한다.
+    targets: ['ai-comment', 'page-back'],
     advance: 'gone',
+    // 뒤로가기 버튼은 화면 왼쪽 위에 있어서 어두운 판에 덮인다.
+    // '뒤로가기로 돌아가라'고 해놓고 그 버튼을 막으면 여기서 갇힌다.
+    passthrough: true,
     title: '온담이 하루를 읽고 한마디 남겨요',
     body: '쌓인 기록을 보고 오늘이 어땠는지 짚어드려요.',
     hint: '뒤로가기로 홈에 돌아가면 마무리할게요',
@@ -82,16 +87,21 @@ export const TOUR_STEPS = [
     dim: 0.42,
     map: true,
     title: '온담에는 이런 것들이 있어요',
-    body: '위에는 내 건강과 알림, 아래에는 지난 질문과 주간 리포트가 있어요.',
+    body: '이 가이드는 설정 > 도움말에서 언제든 다시 볼 수 있어요.',
     action: '시작하기',
   },
 ];
 
 // 마지막 '지도' 단계에서 붙는 이름표.
-// 하단 툴바는 이미 제 이름을 달고 있어서 여기 넣지 않는다. 이름이 두 번 겹친다.
+//
+// 하단 툴바도 제 이름을 달고 있지만 '우리의 추억'처럼 뜻이 바로 잡히지 않는 말이라,
+// 무엇을 보는 곳인지 한마디씩 얹는다.
 export const MAP_LABELS = [
   { target: 'top-health', text: '내 건강', side: 'below' },
   { target: 'top-bell', text: '알림', side: 'below' },
   { target: 'top-settings', text: '설정', side: 'below' },
   { target: 'mailbox', text: '가족에게 편지', side: 'above' },
+  { target: 'nav-questions', text: '지난 질문과 답', side: 'above' },
+  { target: 'nav-journal', text: '오늘 기록', side: 'above' },
+  { target: 'nav-weekly', text: '한 주 요약', side: 'above' },
 ];

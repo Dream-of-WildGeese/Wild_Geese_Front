@@ -7,6 +7,7 @@ import { markTourSeen } from '../../utils/tour';
 
 // 밝히는 자리 둘레에 두는 여백. 딱 맞게 뚫으면 답답해 보인다.
 const PAD = 8;
+const MASK_ID = 'ondam-tour-holes';
 const DEFAULT_DIM = 0.62;
 
 const frameEl = () => document.getElementById(APP_FRAME_ID);
@@ -32,6 +33,9 @@ const rectOf = (el) => {
     height: Math.round(r.height),
   };
 };
+
+// 한 단계가 여러 곳을 밝힐 수 있다. target 하나만 적어도 되고, targets로 여러 개를 적어도 된다.
+const targetsOf = (step) => step?.targets ?? (step?.target ? [step.target] : []);
 
 const sameRect = (a, b) =>
   (!a && !b) ||
@@ -61,12 +65,21 @@ const Root = styled.div`
   pointer-events: none;
 `;
 
-// 어두운 판은 '보이게' 하는 동시에 '막는' 일도 한다.
-// box-shadow로 바깥을 덮는 방법은 그림자가 클릭 판정을 안 받아서,
-// 어두워 보이는 곳을 눌러도 밑의 진짜 버튼이 눌린다. 그래서 판을 직접 깐다.
+// 어둡게 하는 일과 막는 일을 나눴다.
+//
+// 예전에는 어두운 판 네 조각이 둘 다 맡았는데, 그러면 구멍을 하나밖에 못 뚫는다.
+// 온담 한마디와 뒤로가기처럼 떨어진 두 곳을 함께 밝힐 수가 없었다.
+// 어둡게 하는 건 구멍을 여러 개 팔 수 있는 마스크가 맡고,
+// 막는 건 아래의 투명한 판이 맡는다.
+const Dim = styled.svg`
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+`;
+
+// 클릭을 막는 판. 눈에는 안 보이고 가로막기만 한다.
 const Panel = styled.div`
   position: absolute;
-  background: rgba(28, 20, 14, ${({ $dim }) => $dim});
   pointer-events: auto;
 `;
 
@@ -193,7 +206,7 @@ const MapLabel = styled.span`
 
 function TourOverlay({ onClose }) {
   const [index, setIndex] = useState(0);
-  const [rect, setRect] = useState(null);
+  const [rects, setRects] = useState([]);
   const [labels, setLabels] = useState([]);
   const [waiting, setWaiting] = useState(false);
   const [frame, setFrame] = useState({ width: 402, height: 874 });
@@ -251,8 +264,14 @@ function TourOverlay({ onClose }) {
         );
       }
 
-      const nextRect = step.target ? rectOf(findTarget(step.target)) : null;
-      setRect((prev) => (sameRect(prev, nextRect) ? prev : nextRect));
+      const nextRects = targetsOf(step)
+        .map((name) => rectOf(findTarget(name)))
+        .filter(Boolean);
+      setRects((prev) =>
+        prev.length === nextRects.length && prev.every((item, i) => sameRect(item, nextRects[i]))
+          ? prev
+          : nextRects,
+      );
 
       const nextLabels = step.map
         ? MAP_LABELS.map((label) => ({ ...label, rect: rectOf(findTarget(label.target)) })).filter(
@@ -280,12 +299,12 @@ function TourOverlay({ onClose }) {
   // 폰 프레임(874px)이 노트북 화면보다 커서 아래쪽이 잘린다. 하단 툴바처럼
   // 프레임 밑에 있는 자리를 밝히면 구멍이 화면 밖에 뚫린다. 그 자리가 보이게 옮긴다.
   useEffect(() => {
-    const current = TOUR_STEPS[index];
-    if (!current?.target) return undefined;
+    const first = targetsOf(TOUR_STEPS[index])[0];
+    if (!first) return undefined;
 
     let tries = 0;
     const timer = setInterval(() => {
-      const el = findTarget(current.target);
+      const el = findTarget(first);
       tries += 1;
       if (el) {
         el.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
@@ -317,17 +336,15 @@ function TourOverlay({ onClose }) {
   const dim = step.dim ?? DEFAULT_DIM;
   const clickAnywhere = step.advance === 'any';
   const onPanelClick = clickAnywhere ? goNext : undefined;
-  // passthrough인 단계는 어둡게만 하고 클릭은 밑으로 흘려보낸다.
-  const panelStyle = step.passthrough ? { pointerEvents: 'none' } : null;
 
-  const hole = rect
-    ? {
-        top: rect.top - PAD,
-        left: rect.left - PAD,
-        width: rect.width + PAD * 2,
-        height: rect.height + PAD * 2,
-      }
-    : null;
+  const holes = rects.map((item) => ({
+    top: item.top - PAD,
+    left: item.left - PAD,
+    width: item.width + PAD * 2,
+    height: item.height + PAD * 2,
+  }));
+  // 말풍선 자리와 클릭 막기는 첫 번째 구멍을 기준으로 잡는다.
+  const hole = holes[0] ?? null;
 
   // 구멍 아래에 자리가 있으면 아래, 없으면 위. 둘 다 좁으면(구멍이 화면을
   // 거의 다 차지하는 팝업 같은 때) 아래쪽에 겹쳐 둔다. 안 그러면 말풍선이
@@ -341,7 +358,8 @@ function TourOverlay({ onClose }) {
       if (hole.top >= NEEDED) return { bottom: frame.height - hole.top + 14 };
       return { bottom: 16 };
     }
-    if (step.place === 'bottom') return { bottom: 120 };
+    // 하단 툴바 위에 이름표가 붙으므로 그만큼 더 띄운다.
+    if (step.place === 'bottom') return { bottom: 175 };
     if (step.place === 'top') return { top: 120 };
     return { top: '50%', transform: 'translateY(-50%)' };
   })();
@@ -349,19 +367,58 @@ function TourOverlay({ onClose }) {
   return (
     <PopupPortal>
       <Root>
-        {hole ? (
-          <>
-            {/* 구멍 자리만 비우고 나머지를 네 조각으로 덮는다.
-                구멍에는 판이 없으니 그 안의 진짜 버튼이 그대로 눌린다. */}
-            <Panel $dim={dim} onClick={onPanelClick} style={{ ...panelStyle, top: 0, left: 0, right: 0, height: Math.max(hole.top, 0) }} />
-            <Panel $dim={dim} onClick={onPanelClick} style={{ ...panelStyle, top: hole.top + hole.height, left: 0, right: 0, bottom: 0 }} />
-            <Panel $dim={dim} onClick={onPanelClick} style={{ ...panelStyle, top: hole.top, left: 0, width: Math.max(hole.left, 0), height: hole.height }} />
-            <Panel $dim={dim} onClick={onPanelClick} style={{ ...panelStyle, top: hole.top, left: hole.left + hole.width, right: 0, height: hole.height }} />
-            <Ring style={{ top: hole.top, left: hole.left, width: hole.width, height: hole.height }} />
-          </>
-        ) : (
-          <Panel $dim={dim} onClick={onPanelClick} style={{ ...panelStyle, inset: 0 }} />
-        )}
+        {/* 어둡게 하는 일. 구멍을 여러 개 파도 한 장으로 그려진다. */}
+        <Dim
+          width={frame.width}
+          height={frame.height}
+          viewBox={`0 0 ${frame.width} ${frame.height}`}
+        >
+          <defs>
+            <mask id={MASK_ID}>
+              <rect x="0" y="0" width={frame.width} height={frame.height} fill="#fff" />
+              {holes.map((item) => (
+                <rect
+                  key={`${item.top}-${item.left}`}
+                  x={item.left}
+                  y={item.top}
+                  width={item.width}
+                  height={item.height}
+                  rx="14"
+                  fill="#000"
+                />
+              ))}
+            </mask>
+          </defs>
+          <rect
+            x="0"
+            y="0"
+            width={frame.width}
+            height={frame.height}
+            fill={`rgba(28, 20, 14, ${dim})`}
+            mask={`url(#${MASK_ID})`}
+          />
+        </Dim>
+
+        {/* 막는 일. 통과 단계에서는 아예 깔지 않는다.
+            구멍 자리만 비우고 나머지를 네 조각으로 덮어서, 구멍 안의 진짜 버튼만 눌린다. */}
+        {!step.passthrough &&
+          (hole ? (
+            <>
+              <Panel onClick={onPanelClick} style={{ top: 0, left: 0, right: 0, height: Math.max(hole.top, 0) }} />
+              <Panel onClick={onPanelClick} style={{ top: hole.top + hole.height, left: 0, right: 0, bottom: 0 }} />
+              <Panel onClick={onPanelClick} style={{ top: hole.top, left: 0, width: Math.max(hole.left, 0), height: hole.height }} />
+              <Panel onClick={onPanelClick} style={{ top: hole.top, left: hole.left + hole.width, right: 0, height: hole.height }} />
+            </>
+          ) : (
+            <Panel onClick={onPanelClick} style={{ inset: 0 }} />
+          ))}
+
+        {holes.map((item) => (
+          <Ring
+            key={`${item.top}-${item.left}`}
+            style={{ top: item.top, left: item.left, width: item.width, height: item.height }}
+          />
+        ))}
 
         {labels.map((label) => (
           <MapLabel

@@ -56,7 +56,7 @@ const BackIconImage = styled.img`
 
 export function PageBack({ onClick, label = '뒤로가기' }) {
   return (
-    <BackButton type="button" aria-label={label} onClick={onClick}>
+    <BackButton type="button" aria-label={label} onClick={onClick} data-tour="page-back">
       <BackIconImage src={backIcon} alt="" />
     </BackButton>
   );
