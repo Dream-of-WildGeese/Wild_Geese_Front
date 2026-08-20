@@ -84,9 +84,15 @@ const Chevron = styled.span`
 function TodayOndamPicker({ onSelect, onClose }) {
   return (
     <PopupBackdrop onClick={onClose}>
-      <PopupCard $center $gap={16} $padTop={30} onClick={(event) => event.stopPropagation()}>
+      <PopupCard
+        $center
+        $gap={16}
+        $padTop={30}
+        onClick={(event) => event.stopPropagation()}
+        data-tour="picker-box"
+      >
         <PopupInnerBorder />
-        <PopupClose type="button" aria-label="닫기" onClick={onClose}>
+        <PopupClose type="button" aria-label="닫기" onClick={onClose} data-tour="picker-close">
           ✕
         </PopupClose>
 
@@ -96,12 +102,7 @@ function TodayOndamPicker({ onSelect, onClose }) {
 
         <OptionList>
           {OPTIONS.map((option) => (
-            <Option
-              key={option.type}
-              type="button"
-              onClick={() => onSelect(option.type)}
-              data-tour={option.type === 'morning' ? 'picker-morning' : undefined}
-            >
+            <Option key={option.type} type="button" onClick={() => onSelect(option.type)}>
               <OptionIcon src={option.icon} alt="" />
               <OptionTextCol>
                 <OptionLabel>{option.label}</OptionLabel>
