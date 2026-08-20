@@ -160,6 +160,9 @@ const OptionText = styled.span`
   font-family: Jua;
   font-size: 60px;
   font-weight: 400;
+  /* line-height: normal은 폰트 자체의 내부 지표를 따라가서, 글자마다(부모/자녀)
+     세로 중앙이 미묘하게 달라 보인다. 고정값으로 묶어서 항상 같게 만든다. */
+  line-height: 1;
 `;
 
 
@@ -174,6 +177,10 @@ const NextButton = styled.button`
   width: 100%;
   height: 56px;
 
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
   border: 1.5px solid rgba(74, 58, 47, 0.55);
   border-radius: 16px;
   background: #CBD879;
@@ -182,6 +189,7 @@ const NextButton = styled.button`
   font-family: Jua;
   font-size: 18px;
   font-weight: 400;
+  line-height: 1;
 
   cursor: pointer;
 `;

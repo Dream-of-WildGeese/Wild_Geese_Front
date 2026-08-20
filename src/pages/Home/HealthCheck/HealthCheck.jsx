@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
 import back from '../../../assets/onboarding/back.png';
@@ -7,6 +7,7 @@ import { useFamilyRelation } from '../../../hooks/useFamilyRelation';
 import { useApi, useApiAction } from '../../../hooks/useApi';
 import { getCheckups, getAllCheckups, deleteCheckup } from '../../../api/checkup';
 import { getMyFamily } from '../../../api/family';
+import { getDailyLog, getFamilyDailyLog } from '../../../api/daily';
 import { getUserId } from '../../../api/client';
 import { useAppData } from '../../../store/AppDataContext';
 import { toDateString } from '../../../utils/medication';
@@ -26,6 +27,19 @@ import {
 
 const WEEKDAYS = ['일', '월', '화', '수', '목', '금', '토'];
 
+const formatFullDate = (dateString) => {
+  if (!dateString) return '';
+  const [year, month, day] = dateString.split('-').map(Number);
+  return `${year}년 ${month}월 ${day}일`;
+};
+
+// 카드 안에서는 한 줄로 붙이면 종류 글자가 잘려서, 연도/월일을 두 줄로 나눠 보여준다.
+const formatYear = (dateString) => {
+  if (!dateString) return '';
+  const [year] = dateString.split('-').map(Number);
+  return `${year}`;
+};
+
 const formatMonthDay = (dateString) => {
   if (!dateString) return '';
   const [, month, day] = dateString.split('-').map(Number);
@@ -40,12 +54,14 @@ const daysBetween = (dateString) => {
   return Math.round((target - today) / 86400000);
 };
 
+// 지난 검진 뱃지용. 'D+30'처럼 날짜 수로만 보여주면 감이 안 와서,
+// 일/개월/년 단위로 알아보기 쉽게 바꾼다.
 const formatRelativeTime = (dateString) => {
   const diff = -daysBetween(dateString);
   if (diff <= 0) return '오늘';
-  if (diff < 7) return `${diff}일 전`;
-  if (diff < 30) return `${Math.floor(diff / 7)}주 전`;
-  return `${Math.floor(diff / 30)}개월 전`;
+  if (diff < 30) return `${diff}일 전`;
+  if (diff < 365) return `${Math.floor(diff / 30)}개월 전`;
+  return `${Math.floor(diff / 365)}년 전`;
 };
 
 const getSubjectWithJosa = (name) => {
@@ -74,7 +90,7 @@ const HealthCheck = () => {
   const [person, setPerson] = useState('me');
   const [showAddModal, setShowAddModal] = useState(false);
   const { partnerLabel } = useFamilyRelation();
-  const { data: appData } = useAppData();
+  const { data: appData, setHealthInsight } = useAppData();
 
   const { data: familyData } = useApi(getMyFamily);
 
@@ -90,6 +106,17 @@ const HealthCheck = () => {
     appData?.family?.userId;
 
   const targetId = person === 'family' ? partnerUserId : undefined;
+  const todayStr = toDateString(new Date());
+
+  // AI 인사이트(doctorQuestions)는 서버가 조회할 때마다 문구를 새로 생성해서, 화면에
+  // 들어올 때마다 멘트가 바뀌는 문제가 있었다. "저녁 건강체크를 완료한 당사자의 인사이트만
+  // 갱신"하기로 해서, 나/가족 각자의 저녁체크 완료 여부를 오늘 날짜로 조회해 신호로 쓴다.
+  const dailyLogArgs = person === 'family' ? [partnerUserId, todayStr] : [todayStr];
+  const { data: relevantDailyLog } = useApi(
+    person === 'family' ? getFamilyDailyLog : getDailyLog,
+    { args: dailyLogArgs, enabled: person !== 'family' || Boolean(partnerUserId) },
+  );
+  const eveningAnsweredToday = (relevantDailyLog?.eveningAnswers ?? []).length > 0;
 
   // doctorQuestions(AI 인사이트)는 아직 /all에 없어서 기존 엔드포인트를 그대로 쓰고,
   // 검진 목록(다가오는/지난/달력)은 전체를 다 내려주는 /checkups/all로 만든다.
@@ -134,7 +161,6 @@ const HealthCheck = () => {
 
   const displayName = person === 'me' ? '나' : partnerLabel || '엄마';
 
-  const todayStr = toDateString(new Date());
   const sortedCheckups = [...(allCheckups ?? [])].sort((a, b) =>
     a.checkupDate.localeCompare(b.checkupDate),
   );
@@ -145,10 +171,26 @@ const HealthCheck = () => {
   // 지난 검진은 최근 것이 위로 오게 내림차순으로 본다.
   const pastList = sortedCheckups
     .filter((item) => item.checkupDate < todayStr)
-    .reverse()
-    .map((item) => ({ ...item, relativeTime: formatRelativeTime(item.checkupDate) }));
+    .reverse();
   const upcoming = upcomingList[0] ?? null;
-  const doctorQuestions = checkupData?.doctorQuestions || [];
+
+  // 캐시가 비어있거나(첫 조회), 오늘 저녁체크를 완료했는데 아직 오늘 날짜로 갱신 안
+  // 된 경우에만 서버가 방금 내려준 새 문구를 받아들이고 캐시에 저장한다. 그 외에는
+  // 서버가 매번 새로 만들어주는 값을 무시하고 캐시된 문구를 그대로 보여준다.
+  const freshDoctorQuestions = checkupData?.doctorQuestions || [];
+  const cachedInsight = appData?.healthInsight?.[person] ?? { questions: [], forDate: '' };
+  const shouldRefreshInsight =
+    cachedInsight.questions.length === 0 ||
+    (eveningAnsweredToday && cachedInsight.forDate !== todayStr);
+
+  useEffect(() => {
+    if (shouldRefreshInsight && freshDoctorQuestions.length > 0) {
+      setHealthInsight(person, { questions: freshDoctorQuestions, forDate: todayStr });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [shouldRefreshInsight, JSON.stringify(freshDoctorQuestions), person, todayStr]);
+
+  const doctorQuestions = shouldRefreshInsight ? freshDoctorQuestions : cachedInsight.questions;
 
   const [currentDate, setCurrentDate] = useState(() => {
     const today = new Date();
@@ -258,16 +300,6 @@ const HealthCheck = () => {
               })}
             </CalendarGrid>
           </CalendarCard>
-
-          {isMonthPickerOpen && (
-            <DatePickerModal
-              value={`${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-01`}
-              title="연/월 선택"
-              onConfirm={handleJumpDate}
-              onClose={() => setIsMonthPickerOpen(false)}
-            />
-          )}
-
           {/* 다음 검진 배너 */}
           {upcoming ? (
             <UpcomingBanner>
@@ -277,7 +309,7 @@ const HealthCheck = () => {
               <UpcomingBannerInnerCard>
                 <UpcomingMetaRow>
                   <MetaLabel>날짜 :</MetaLabel>
-                  <MetaValue>{formatMonthDay(upcoming.checkupDate)}</MetaValue>
+                  <MetaValue>{formatFullDate(upcoming.checkupDate)}</MetaValue>
                 </UpcomingMetaRow>
                 <UpcomingMetaRow>
                   <MetaLabel>위치 :</MetaLabel>
@@ -293,6 +325,17 @@ const HealthCheck = () => {
             <EmptyBanner>예정된 다음 검진 일정이 없어요</EmptyBanner>
           )}
 
+          {isMonthPickerOpen && (
+            <DatePickerModal
+              value={`${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-01`}
+              title="연/월 선택"
+              onConfirm={handleJumpDate}
+              onClose={() => setIsMonthPickerOpen(false)}
+            />
+          )}
+
+          
+
           <SectionDivider />
 
           {/* 다가오는 검진 섹션 — 가장 가까운 것 하나가 아니라 미래 검진 전부를 보여준다 */}
@@ -305,7 +348,10 @@ const HealthCheck = () => {
                     onClick={() => setEditTarget(item)}
                   >
                     <CheckupLeftGroup>
-                      <CheckupDateText>{formatMonthDay(item.checkupDate)}</CheckupDateText>
+                      <DateColumn>
+                        <YearText>{formatYear(item.checkupDate)}</YearText>
+                        <MonthDayText>{formatMonthDay(item.checkupDate)}</MonthDayText>
+                      </DateColumn>
                       <Badge>
                         {item.dDay === 0
                           ? '오늘'
@@ -342,10 +388,23 @@ const HealthCheck = () => {
               pastList.map((item) => (
                 <CheckupCard key={item.checkupId}>
                   <CheckupLeftGroup>
-                    <CheckupDateText>{formatMonthDay(item.checkupDate)}</CheckupDateText>
-                    <Badge>{item.relativeTime || '지난 검진'}</Badge>
+                    <DateColumn>
+                      <YearText>{formatYear(item.checkupDate)}</YearText>
+                      <MonthDayText>{formatMonthDay(item.checkupDate)}</MonthDayText>
+                    </DateColumn>
+                    <Badge>{formatRelativeTime(item.checkupDate)}</Badge>
                     <CheckupTypeText>{item.checkupType}</CheckupTypeText>
                   </CheckupLeftGroup>
+                  <CardRightGroup>
+                    <DeleteIconButton
+                      type="button"
+                      aria-label="삭제"
+                      disabled={deleting}
+                      onClick={() => setDeleteTarget(item.checkupId)}
+                    >
+                      <TrashIcon src={trashBin} alt="삭제" />
+                    </DeleteIconButton>
+                  </CardRightGroup>
                 </CheckupCard>
               ))
             ) : (
@@ -768,23 +827,42 @@ const CheckupLeftGroup = styled.div`
   min-width: 0;
 `;
 
-// 날짜 텍스트의 고정 너비를 지정하여 1자리/2자리 날짜여도 뒤쪽 뱃지 위치가 동일하게 정렬됨
-const CheckupDateText = styled.span`
-  width: 72px;
+// 연도를 옆으로 붙이면 종류 글자가 잘려서, 연도(작게)/월일(크게) 두 줄로 나눈다.
+// 폭을 고정해서 1자리/2자리 날짜여도 뒤쪽 뱃지·종류 위치가 항상 같게 맞춘다.
+const DateColumn = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 56px;
   flex-shrink: 0;
+`;
+
+const YearText = styled.span`
+  color: #A79C8E;
+  font-family: 'Noto Sans KR', sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.3;
+`;
+
+const MonthDayText = styled.span`
   color: #4A3A2F;
   font-family: 'Noto Sans KR', sans-serif;
   font-size: 16px;
   font-weight: 800;
   letter-spacing: -0.5px;
+  line-height: 1.3;
+  white-space: nowrap;
 `;
 
 // 뱃지 너비와 텍스트 정렬을 고정하여 '1주 전', 'D-1', '오늘' 모두 동일한 칸을 차지
+// 양옆에 margin을 줘서 날짜·종류 글자와 더 떨어지게(여백 있게) 한다.
 const Badge = styled.span`
   display: inline-flex;
   align-items: center;
   justify-content: center;
   min-width: 52px;
+  margin: 0 6px;
   padding: 3px 8px;
   border-radius: 999px;
   background: #C4DA85;

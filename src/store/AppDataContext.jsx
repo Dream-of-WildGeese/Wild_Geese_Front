@@ -17,6 +17,13 @@ const DEFAULT_DATA = {
     familyReaction: true,
   },
   family: { connectedName: '', connectedRelation: '' },
+  // 건강검진 화면의 AI 인사이트 캐시. 서버가 조회할 때마다 문구를 새로 생성해서
+  // 저녁 건강체크를 완료했을 때만 갱신되게 프론트에서 붙잡아둔다. 나/가족 인사이트가
+  // 섞이지 않도록 대상별로 따로 저장한다.
+  healthInsight: {
+    me: { questions: [], forDate: '' },
+    family: { questions: [], forDate: '' },
+  },
 };
 
 const loadInitialData = (userId) => {
@@ -33,6 +40,10 @@ const loadInitialData = (userId) => {
       alarms: { ...DEFAULT_DATA.alarms, ...parsed.alarms },
       notifications: { ...DEFAULT_DATA.notifications, ...parsed.notifications },
       family: { ...DEFAULT_DATA.family, ...parsed.family },
+      healthInsight: {
+        me: { ...DEFAULT_DATA.healthInsight.me, ...parsed.healthInsight?.me },
+        family: { ...DEFAULT_DATA.healthInsight.family, ...parsed.healthInsight?.family },
+      },
     };
   } catch {
     return DEFAULT_DATA;
@@ -112,6 +123,15 @@ export function AppDataProvider({ children }) {
         setData((prev) => ({
           ...prev,
           family: { ...prev.family, ...patch },
+        })),
+
+      setHealthInsight: (person, patch) =>
+        setData((prev) => ({
+          ...prev,
+          healthInsight: {
+            ...prev.healthInsight,
+            [person]: { ...prev.healthInsight[person], ...patch },
+          },
         })),
 
       resetAppData: () => setData(DEFAULT_DATA),
