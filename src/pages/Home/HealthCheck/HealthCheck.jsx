@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
-import back from '../../../assets/onboarding/back.svg';
+import back from '../../../assets/onboarding/back.png';
 import AddHealthCheck from './AddHealthCheck';
 import { useFamilyRelation } from '../../../hooks/useFamilyRelation';
 import { useApi, useApiAction } from '../../../hooks/useApi';
@@ -11,8 +11,8 @@ import { getUserId } from '../../../api/client';
 import { useAppData } from '../../../store/AppDataContext';
 import { toDateString } from '../../../utils/medication';
 import aiIcon from '../../../assets/journal/ai.png';
-import trashBin from '../../../assets/trash_bin.svg';
-import pencilIcon from '../../../assets/evening/pencil.svg';
+import trashBin from '../../../assets/trash_bin.png';
+import pencilIcon from '../../../assets/evening/pencil.png';
 import DatePickerModal from '../../../components/DatePickerModal';
 import {
   PopupBackdrop,

@@ -1,5 +1,5 @@
 import styled from 'styled-components';
-import backIcon from '../assets/onboarding/back.svg';
+import backIcon from '../assets/onboarding/back.png';
 
 // 팝업이 아닌 '페이지'가 공유하는 틀. 건강검진 화면(HealthCheck)의 구조를 기준으로 삼았다.
 //

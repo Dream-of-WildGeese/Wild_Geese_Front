@@ -2,7 +2,7 @@ import { useCallback, useRef, useState } from 'react';
 import styled from 'styled-components';
 import letterPaper from '../../../assets/letterbox/letter-paper.png';
 import ruledLines from '../../../assets/letterbox/ruled-lines.svg';
-import heartIcon from '../../../assets/letterbox/heart.svg';
+import heartIcon from '../../../assets/letterbox/heart.png';
 // 마이크는 오늘의 질문·저녁 체크 팝업과 같은 그림을 쓴다.
 import micIcon from '../../../assets/popup/mic.png';
 import { transcribeVoiceLetter } from '../../../api/letter';

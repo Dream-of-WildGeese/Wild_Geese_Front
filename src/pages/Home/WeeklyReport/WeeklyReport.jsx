@@ -1,9 +1,9 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
 import cloudIcon from '../../../assets/weekly/cloud.png';
 import checkIcon from '../../../assets/weekly/check.png';
-import { loadWeeklyList } from './weeklyReportData';
+import { loadWeeklyList, prefetchWeeklyReport } from './weeklyReportData';
 import { useApi } from '../../../hooks/useApi';
 import { useLazyList } from '../../../hooks/useLazyList';
 import { LoadingLine } from '../../../components/Loading';
@@ -203,6 +203,16 @@ function WeeklyReport() {
     hasMore,
     sentinelRef,
   } = useLazyList(pastWeeks, { step: 8, resetKey: person });
+
+  // 상세 리포트는 서버가 AI 문구를 만드느라 3~4초가 걸린다. 목록이 뜬 뒤
+  // 미리 받아두면, 누를 때쯤에는 이미 도착해 있어 기다림이 사라진다.
+  // 가족 리포트는 주차를 지정해 부를 수 없어서 미리 받아둘 것이 없다.
+  const currentWeekId = person === 'me' ? currentWeek?.id : null;
+  const latestPastId = person === 'me' ? pastWeeks[0]?.id : null;
+  useEffect(() => {
+    if (currentWeekId) prefetchWeeklyReport(currentWeekId);
+    if (latestPastId) prefetchWeeklyReport(latestPastId);
+  }, [currentWeekId, latestPastId]);
 
   const openWeek = (weekId) =>
     navigate(`/home/weekly-report/${weekId}`, { state: { person } });
