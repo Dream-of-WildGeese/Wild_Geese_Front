@@ -122,7 +122,9 @@ export const toWeeklyDetail = (report) => {
     // 서버가 기록을 분석해서 써주는 문장. 기록이 적으면 '아직 패턴을 분석할 만큼
     // 기록이 쌓이지 않았어요' 같은 기본 문구가 온다.
     aiInsight: report.aiCoachInsight ?? '',
-    contactMessage: report.weeklyComment ? `"${report.weeklyComment}"` : '"요즘 어떻게 지내세요?"',
+    // AI 문구를 그대로 인용하면 문장이 어색하거나 텅 빌 때가 있었다.
+    // 오늘의 건강일지 CTA와 같이, API에 기대지 않고 항상 같은 고정 문구만 보여준다.
+    contactMessage: '"안부 전화를 걸어볼까요?"',
   };
 };
 
