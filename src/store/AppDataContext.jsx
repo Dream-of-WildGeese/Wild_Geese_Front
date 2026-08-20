@@ -4,10 +4,16 @@ import { getUserId } from '../api/client';
 // 사용자별로 localStorage를 분리해서 저장
 const getStorageKey = (userId) => `ondam.appData.${userId ?? 'guest'}`;
 
+// healthInsight 캐싱 로직에 있던 버그(나/가족 탭 전환 경쟁 상태로 서로 다른 사람의
+// 문구가 섞여 저장됨) 때문에, 배포 전에 이미 브라우저에 잘못된 값이 저장된 사용자가
+// 있을 수 있다. 그 사용자들은 devtools로 직접 지울 수 없으니, 캐시 구조가 바뀔 때마다
+// 이 값을 올려서 예전 버전 캐시는 자동으로 버리고 새로 채우게 한다.
+const HEALTH_INSIGHT_CACHE_VERSION = 1;
+
 const DEFAULT_DATA = {
   profile: { name: '', birth: '', gender: '', role: null },
   interests: [],
-  conditions: [], 
+  conditions: [],
   medications: [],
   alarms: { morning: '08:30', evening: '20:00' },
   notifications: {
@@ -21,6 +27,7 @@ const DEFAULT_DATA = {
   // 저녁 건강체크를 완료했을 때만 갱신되게 프론트에서 붙잡아둔다. 나/가족 인사이트가
   // 섞이지 않도록 대상별로 따로 저장한다.
   healthInsight: {
+    version: HEALTH_INSIGHT_CACHE_VERSION,
     me: { questions: [], forDate: '' },
     family: { questions: [], forDate: '' },
   },
@@ -40,10 +47,15 @@ const loadInitialData = (userId) => {
       alarms: { ...DEFAULT_DATA.alarms, ...parsed.alarms },
       notifications: { ...DEFAULT_DATA.notifications, ...parsed.notifications },
       family: { ...DEFAULT_DATA.family, ...parsed.family },
-      healthInsight: {
-        me: { ...DEFAULT_DATA.healthInsight.me, ...parsed.healthInsight?.me },
-        family: { ...DEFAULT_DATA.healthInsight.family, ...parsed.healthInsight?.family },
-      },
+      // 버전이 다르면(이번 수정 이전에 저장된 캐시 포함) 예전 값은 섞지 않고 그냥 버린다.
+      healthInsight:
+        parsed.healthInsight?.version === HEALTH_INSIGHT_CACHE_VERSION
+          ? {
+              version: HEALTH_INSIGHT_CACHE_VERSION,
+              me: { ...DEFAULT_DATA.healthInsight.me, ...parsed.healthInsight?.me },
+              family: { ...DEFAULT_DATA.healthInsight.family, ...parsed.healthInsight?.family },
+            }
+          : DEFAULT_DATA.healthInsight,
     };
   } catch {
     return DEFAULT_DATA;
