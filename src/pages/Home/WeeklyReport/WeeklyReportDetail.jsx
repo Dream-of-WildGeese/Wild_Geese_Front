@@ -517,7 +517,7 @@ function WeeklyReportDetail() {
                   <DayCol key={item.day}>
                     {/* 아직 답하지 않은 날은 빈 원으로 둔다. 표정을 채우면 기록한 것처럼 보인다 */}
                     {item.score ? (
-                      <ConditionDot $size={34} $color={scoreColor(item.score)} />
+                      <ConditionDot $size={26} $color={scoreColor(item.score)} />
                     ) : (
                       <IconWrap>
                         <EmptyCircle src={emptyCircleIcon} alt="" />

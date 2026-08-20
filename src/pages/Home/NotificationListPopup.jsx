@@ -4,6 +4,7 @@ import moonIcon from '../../assets/journal/moon.png';
 import pillIcon from '../../assets/journal/pill.png';
 import weeklyIcon from '../../assets/popup/weekly-report.png';
 import envelopeIcon from '../../assets/letterbox/envelope-box.png';
+import reactionIcon from '../../assets/reaction/like.png';
 import {
   PopupBackdrop,
   PopupCard,
@@ -23,6 +24,7 @@ const TYPE_ICONS = {
   MEDICATION: pillIcon,
   WEEKLY_REPORT: weeklyIcon,
   LETTER: envelopeIcon,
+  FAMILY_REACTION: reactionIcon,
 };
 
 // "2026-08-17T17:51:33" -> "오늘 오후 5:51" / "8.17 오후 5:51"
