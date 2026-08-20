@@ -54,6 +54,11 @@ const Root = styled.div`
   inset: 0;
   z-index: 1500;
   animation: ${fadeIn} 0.25s ease;
+
+  /* 이 껍데기가 프레임 전체를 덮는다. 클릭을 받게 두면 구멍을 뚫어놔도
+     그 위에서 껍데기가 먼저 가로채서 안의 버튼이 안 눌린다.
+     막는 일은 아래의 어두운 판이 맡고, 껍데기는 통과시킨다. */
+  pointer-events: none;
 `;
 
 // 어두운 판은 '보이게' 하는 동시에 '막는' 일도 한다.
@@ -62,6 +67,7 @@ const Root = styled.div`
 const Panel = styled.div`
   position: absolute;
   background: rgba(28, 20, 14, ${({ $dim }) => $dim});
+  pointer-events: auto;
 `;
 
 // 뚫린 자리 둘레의 테. 클릭은 통과시켜서 진짜 버튼이 눌리게 둔다.
@@ -75,6 +81,7 @@ const Ring = styled.div`
 
 const Bubble = styled.div`
   position: absolute;
+  pointer-events: auto;
   left: 16px;
   right: 16px;
   padding: 18px 18px 16px;
