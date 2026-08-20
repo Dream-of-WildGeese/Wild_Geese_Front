@@ -10,7 +10,7 @@ import trashIcon from '../../../assets/medicine/trash.png';
 import {
   PageFrame,
   PageContent,
-  PageBack,
+  PageClose,
   PageHeader,
   PageTitle,
   PageDivider,
@@ -195,7 +195,7 @@ function MedicineList() {
   return (
     <PageFrame>
       <PageContent>
-        <PageBack onClick={() => navigate('/home')} />
+        <PageClose onClick={() => navigate('/home')} />
         <PageHeader>
           <PageTitle>내 복용약</PageTitle>
         </PageHeader>
