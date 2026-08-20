@@ -24,6 +24,7 @@ import {
   PopupBackdrop,
   PopupCard,
   PopupInnerBorder,
+  PopupClose,
   PopupTitle,
   PopupPrimaryButton,
   PopupSecondaryButton,
@@ -121,6 +122,15 @@ const HintText = styled.p`
 `;
 
 // Figma 525:1251 — 내 답변은 살구색, 가족 답변은 노란색 카드로 구분한다.
+// 닫을 방법이 '완료'와 바깥 누르기뿐이라, 답을 안 쓴 채로는 빠져나가기 어려웠다.
+// 다른 팝업들과 같은 자리(오른쪽 위)에 회색 닫기를 둔다.
+const CloseButton = styled(PopupClose)`
+  position: absolute;
+  top: 18px;
+  right: 20px;
+  font-size: 18px;
+`;
+
 const AnswerCard = styled.div`
   width: 100%;
   padding: 16px;
@@ -322,6 +332,9 @@ function DayQuestionPopup({ onClose }) {
           data-tour="morning-popup"
         >
           <PopupInnerBorder />
+          <CloseButton type="button" aria-label="닫기" onClick={onClose}>
+            ✕
+          </CloseButton>
           <PopupTitle $center $size={24}>
             답변 확인하기
           </PopupTitle>
@@ -415,6 +428,9 @@ function DayQuestionPopup({ onClose }) {
         data-tour="morning-popup"
       >
         <PopupInnerBorder />
+        <CloseButton type="button" aria-label="닫기" onClick={onClose}>
+          ✕
+        </CloseButton>
         <PopupTitle $center $size={30}>
           오늘의 질문
         </PopupTitle>
