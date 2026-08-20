@@ -393,6 +393,7 @@ function SettingsMain() {
         <TimePickerModal
           title={timeEditor === 'morningTime' ? '아침 연결 질문 시간' : '저녁 건강 체크 시간'}
           value={setting?.[timeEditor]}
+          fixedPeriod={timeEditor === 'morningTime' ? '오전' : '오후'}
           onConfirm={handleTimeConfirm}
           onClose={() => setTimeEditor(null)}
         />
