@@ -14,7 +14,7 @@ import navWeeklyIcon from '../../assets/home/nav-weekly.png';
 // 이 값을 넣으면 눈에 보이는 그림이 모두 46x46 안팎이 된다.
 // (예전에는 42 / 56 / 56으로 벌어져서 가운데 것만 커 보였다)
 const NAV_ITEMS = [
-  { key: 'questions', icon: navQuestionIcon, label: '우리의 추억', size: 61 },
+  { key: 'questions', icon: navQuestionIcon, label: '추억 보관함', size: 61 },
   { key: 'journal', icon: navHomeIcon, label: '오늘의 건강일지', size: 58 },
   { key: 'weekly', icon: navWeeklyIcon, label: '주간 이야기', size: 57 },
 ];

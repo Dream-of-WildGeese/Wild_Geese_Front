@@ -93,8 +93,8 @@ const glow = keyframes`
 // 자리마다 여백이 다르게 느껴진다. 모든 링이 정확히 같은 자리에 겹치도록 맞춘다.
 //
 // 한 단계에 자리가 여러 곳이면(팝업 전체 + 닫기 버튼처럼) 그중 첫 번째가
-// 실제로 눌러야 하는 곳이다. 그 자리만 $primary로 두드러지게 하고,
-// 나머지는 '여기 있다'는 정도로만 옅게 보여준다.
+// 실제로 눌러야 하는 곳이다. 그 자리만 굵은 초록 테로 두드러지게 하고,
+// 나머지는 '여기 있다'는 정도로만 옅게 보여준다. 색은 둘 다 초록 계열로 맞춘다.
 const Ring = styled.div`
   position: absolute;
   box-sizing: border-box;
@@ -104,8 +104,8 @@ const Ring = styled.div`
   ${({ $primary }) =>
     $primary
       ? css`
-          border: 3px solid #e8734a;
-          box-shadow: 0 0 0 5px rgba(232, 115, 74, 0.32);
+          border: 3px solid #7c934a;
+          box-shadow: 0 0 0 5px rgba(124, 147, 74, 0.32);
           animation: ${glow} 1.4s ease-in-out infinite;
         `
       : css`
@@ -166,34 +166,6 @@ const FootRow = styled.div`
   gap: 12px;
 `;
 
-const Dots = styled.div`
-  display: flex;
-  gap: 6px;
-`;
-
-// 눌러서 그 단계로 바로 이동할 수 있게 버튼으로 둔다. 점 자체는 6px로 작아서
-// 누르는 자리가 너무 좁지 않도록 여백을 얹어 히트박스를 넉넉히 잡는다.
-const Dot = styled.button`
-  width: 18px;
-  height: 18px;
-  padding: 0;
-  border: none;
-  background: transparent;
-  cursor: pointer;
-
-  display: flex;
-  align-items: center;
-  justify-content: center;
-
-  &::after {
-    content: '';
-    width: 6px;
-    height: 6px;
-    border-radius: 50%;
-    background: ${({ $on }) => ($on ? '#8fae4a' : 'rgba(74, 58, 47, 0.22)')};
-  }
-`;
-
 // 발치의 '다음' 버튼 옆에 두면 매 단계 상호작용(팝업 열기·이동)에 묻혀서 잘
 // 안 보였다. 어느 단계에서든 바로 눈에 띄도록 화면 우측 상단에 고정한다.
 // 반투명 검정 배경은 뒤의 어두운 판과 색이 비슷해 묻혀 보였다. 밝은 배경으로
@@ -226,6 +198,19 @@ const ActionButton = styled.button`
   color: #4a3a2f;
   font-family: Jua;
   font-size: 16px;
+  cursor: pointer;
+`;
+
+// '이전'은 '다음/시작하기'보다 덜 중요한 동작이라 테두리만 있는 옅은 모양으로 둔다.
+const PrevButton = styled.button`
+  padding: 10px 16px;
+  border-radius: 12px;
+  border: 1.5px solid rgba(74, 58, 47, 0.35);
+  background: transparent;
+  color: #6b6661;
+  font-family: 'Noto Sans KR';
+  font-size: 14px;
+  font-weight: 700;
   cursor: pointer;
 `;
 
@@ -387,19 +372,38 @@ function TourOverlay({ onClose }) {
     width: item.width + PAD * 2,
     height: item.height + PAD * 2,
   }));
-  // 말풍선 자리와 클릭 막기는 첫 번째 구멍을 기준으로 잡는다.
+  // 클릭 막기는 '실제로 눌러야 하는' 첫 번째 구멍만 기준으로 잡는다(picker처럼
+  // 팝업 전체 + 닫기 버튼을 함께 밝힐 때, 클릭 통과는 닫기 버튼 자리만 남긴다).
   const hole = holes[0] ?? null;
+
+  // 말풍선 자리는 그 단계가 밝히는 자리 '전부'를 아우르는 사각형을 기준으로 잡는다.
+  // 클릭 통과용 첫 번째 구멍만 기준으로 삼으면(예: picker의 닫기 버튼처럼 작은
+  // 자리), 말풍선이 그 작은 자리 바로 밑에 붙어서 나머지 밝힌 영역(팝업 본문)과
+  // 겹쳐 보인다.
+  const boundsHole =
+    holes.length === 0
+      ? null
+      : {
+          top: Math.min(...holes.map((item) => item.top)),
+          left: Math.min(...holes.map((item) => item.left)),
+          right: Math.max(...holes.map((item) => item.left + item.width)),
+          bottom: Math.max(...holes.map((item) => item.top + item.height)),
+        };
+  const boundsRect = boundsHole && {
+    top: boundsHole.top,
+    height: boundsHole.bottom - boundsHole.top,
+  };
 
   // 구멍 아래에 자리가 있으면 아래, 없으면 위. 둘 다 좁으면(구멍이 화면을
   // 거의 다 차지하는 팝업 같은 때) 아래쪽에 겹쳐 둔다. 안 그러면 말풍선이
   // 화면 밖으로 밀려나 아예 안 보인다.
   const bubblePosition = (() => {
-    if (hole) {
+    if (boundsRect) {
       const NEEDED = 180;
-      if (frame.height - (hole.top + hole.height) >= NEEDED) {
-        return { top: hole.top + hole.height + 14 };
+      if (frame.height - (boundsRect.top + boundsRect.height) >= NEEDED) {
+        return { top: boundsRect.top + boundsRect.height + 14 };
       }
-      if (hole.top >= NEEDED) return { bottom: frame.height - hole.top + 14 };
+      if (boundsRect.top >= NEEDED) return { bottom: frame.height - boundsRect.top + 14 };
       return { bottom: 16 };
     }
     // 하단 툴바 위에 이름표가 붙으므로 그만큼 더 띄운다. 175에서는 설명
@@ -491,23 +495,17 @@ function TourOverlay({ onClose }) {
           <Body>{step.body}</Body>
 
           <FootRow>
-            <Dots>
-              {TOUR_STEPS.map((item, itemIndex) => (
-                <Dot
-                  key={item.id}
-                  type="button"
-                  aria-label={`${itemIndex + 1}단계로 이동`}
-                  $on={itemIndex === index}
-                  onClick={() => setIndex(itemIndex)}
-                />
-              ))}
-            </Dots>
-
-            {step.action && (
-              <ActionButton type="button" onClick={goNext}>
-                {step.action}
-              </ActionButton>
+            {/* 첫 단계는 '시작하기' 하나만 둔다. 그다음부터는 이전/다음으로 오간다. */}
+            {index > 0 ? (
+              <PrevButton type="button" onClick={() => setIndex(index - 1)}>
+                이전
+              </PrevButton>
+            ) : (
+              <span />
             )}
+            <ActionButton type="button" onClick={goNext}>
+              {step.action ?? '다음'}
+            </ActionButton>
           </FootRow>
         </Bubble>
       </Root>
