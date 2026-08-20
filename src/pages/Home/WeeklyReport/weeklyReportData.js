@@ -282,21 +282,21 @@ export const prefetchWeeklyReport = (weekId) => {
 //
 // 목록이 실제로 쓰는 건 '주차 이름'과 '한 줄평' 둘뿐인데, 그 둘은 /weekly/history가
 // 0.2초 만에 통째로 준다. 무거운 조회는 상세 화면으로 미룬다.
+// 이력 목록(주차별 한줄평)을 목록 화면이 쓰는 주차 요약 카드로 바꾼다.
 // 월요일 시작과 일요일 시작이 섞여 오는데, 앱은 월요일 기준이라 월요일 것만 취한다.
 // 안 그러면 6일이 겹치는 주가 나란히 뜬다.
-const buildPastWeeks = (history, thisWeekId) => {
+const toPastSummaries = (history, thisWeekId) => {
   const byDate = new Map(
     (history ?? [])
       .filter((item) => new Date(`${item.weekStartDate}T00:00:00`).getDay() === 1)
       .map((item) => [item.weekStartDate, item]),
   );
 
-  const pastDates = [...byDate.keys()]
+  return [...byDate.keys()]
     .filter((date) => date < thisWeekId)
     .sort((a, b) => b.localeCompare(a))
-    .slice(0, PAST_WEEK_COUNT);
-
-  return pastDates.map((date) => toWeekSummary(byDate.get(date), new Date(`${date}T00:00:00`)));
+    .slice(0, PAST_WEEK_COUNT)
+    .map((date) => toWeekSummary(byDate.get(date), new Date(`${date}T00:00:00`)));
 };
 
 export async function loadWeeklyList(person) {
@@ -310,10 +310,12 @@ export async function loadWeeklyList(person) {
     const partner = await findPartner();
     if (!partner) return { current: null, past: [], partnerOnly: true };
 
+    // 가족 구성원의 지난 주는 한줄평만 온다(자세한 지표는 최신 리포트에서만
+    // 볼 수 있다). 그래도 목록에서 어떤 주였는지, 한 줄평이 뭐였는지는 보여줄 수 있다.
     const history = await getFamilyWeeklyHistory(partner.userId).catch(() => null);
     return {
       current: currentSummary,
-      past: buildPastWeeks(history, thisWeekId),
+      past: toPastSummaries(history, thisWeekId),
       partnerOnly: true,
     };
   }
@@ -321,7 +323,7 @@ export async function loadWeeklyList(person) {
   const history = await getWeeklyHistory().catch(() => null);
   return {
     current: currentSummary,
-    past: buildPastWeeks(history, thisWeekId),
+    past: toPastSummaries(history, thisWeekId),
     partnerOnly: false,
   };
 }

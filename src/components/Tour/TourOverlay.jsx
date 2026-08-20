@@ -44,6 +44,37 @@ const rectOf = (el) => {
 // 한 단계가 여러 곳을 밝힐 수 있다. target 하나만 적어도 되고, targets로 여러 개를 적어도 된다.
 const targetsOf = (step) => step?.targets ?? (step?.target ? [step.target] : []);
 
+// 이름으로 실제 DOM 버튼을 찾아 누른다. '다음/이전'을 눌러도 그 버튼을 직접 누른
+// 것과 완전히 같은 효과가 나야, 화면 상태와 투어 단계가 어긋나지 않는다.
+const clickTarget = (name) => {
+  const el = findTarget(name);
+  if (!el) return false;
+  el.click();
+  return true;
+};
+
+// stepIndex 단계 자신이 열어둔 것(advance가 'gone'인 단계의 팝업/화면)을 닫는다.
+// 'next' 단계는 스스로 무언가를 열어두지 않으므로(다음 단계로 넘어갈 때 눌려야
+// 할 뿐) 여기서는 할 일이 없다.
+const exitStep = (stepIndex) => {
+  const s = TOUR_STEPS[stepIndex];
+  if (s?.advance === 'gone' && s.closeWith && findTarget(s.anchor)) {
+    return clickTarget(s.closeWith);
+  }
+  return false;
+};
+
+// stepIndex 단계로 들어가려면 무엇을 눌러야 하는지는 그 앞 단계가 안다.
+// (advance가 'next'인 단계는 자신의 target을 눌러야 다음 단계가 나타난다.
+//  'gone'/'any' 단계 다음은 따로 누를 것 없이 이미 화면에 있다)
+const enterStep = (stepIndex) => {
+  const prev = TOUR_STEPS[stepIndex - 1];
+  if (prev?.advance === 'next' && prev.target) {
+    return clickTarget(prev.target);
+  }
+  return false;
+};
+
 const sameRect = (a, b) =>
   (!a && !b) ||
   Boolean(a && b && a.top === b.top && a.left === b.left && a.width === b.width && a.height === b.height);
@@ -360,10 +391,36 @@ function TourOverlay({ onClose }) {
     return () => clearInterval(timer);
   }, [index]);
 
+  // '다음'을 눌러도 실제 버튼을 누른 것과 똑같이 동작해야 한다. 화면이 실제로
+  // 바뀌면(팝업이 열리거나, 지금 단계가 닫히면) 위 tick()의 자동 감지가 알아서
+  // 다음 단계로 넘겨준다 — 진짜로 그 버튼을 눌렀을 때와 같은 경로다.
+  // 'any' 단계(자리를 직접 누를 게 없는 환영/지도 화면)만 그냥 넘어간다.
   const goNext = useCallback(() => {
-    if (index + 1 < TOUR_STEPS.length) setIndex(index + 1);
-    else finish();
-  }, [index, finish]);
+    const next = index + 1;
+    if (next >= TOUR_STEPS.length) {
+      finish();
+      return;
+    }
+    if (step.advance === 'any') {
+      setIndex(next);
+      return;
+    }
+    const closed = exitStep(index);
+    const opened = enterStep(next);
+    // 누를 실제 버튼을 못 찾은 드문 경우엔 갇히지 않도록 그냥 넘어간다.
+    if (!closed && !opened) setIndex(next);
+  }, [index, step, finish]);
+
+  // '이전'도 마찬가지로, 지금 단계가 열어둔 것을 실제로 닫고 앞 단계가 있던
+  // 자리를 실제로 다시 열어서(필요하면) 화면과 단계가 어긋나지 않게 한다.
+  // 뒤로 가는 방향은 자동 감지가 없어서 여기서는 직접 단계를 옮긴다.
+  const goPrev = useCallback(() => {
+    if (index === 0) return;
+    const prevIndex = index - 1;
+    exitStep(index);
+    enterStep(prevIndex);
+    setIndex(prevIndex);
+  }, [index]);
 
   // 다 막아놓고 빠져나갈 길까지 없으면 갇힌다. ESC와 뒤로가기는 살려둔다.
   useEffect(() => {
@@ -513,7 +570,7 @@ function TourOverlay({ onClose }) {
           <FootRow>
             {/* 첫 단계는 '시작하기' 하나만 둔다. 그다음부터는 이전/다음으로 오간다. */}
             {index > 0 ? (
-              <PrevButton type="button" onClick={() => setIndex(index - 1)}>
+              <PrevButton type="button" onClick={goPrev}>
                 이전
               </PrevButton>
             ) : (
