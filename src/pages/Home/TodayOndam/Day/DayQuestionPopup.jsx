@@ -314,7 +314,13 @@ function DayQuestionPopup({ onClose }) {
   if (step === 'result') {
     return (
       <PopupBackdrop onClick={onClose}>
-        <PopupCard $center $gap={16} $padTop={44} onClick={(event) => event.stopPropagation()}>
+        <PopupCard
+          $center
+          $gap={16}
+          $padTop={44}
+          onClick={(event) => event.stopPropagation()}
+          data-tour="morning-popup"
+        >
           <PopupInnerBorder />
           <PopupTitle $center $size={24}>
             답변 확인하기
@@ -402,7 +408,12 @@ function DayQuestionPopup({ onClose }) {
 
   return (
     <PopupBackdrop onClick={onClose}>
-      <PopupCard $center $gap={16} onClick={(event) => event.stopPropagation()}>
+      <PopupCard
+        $center
+        $gap={16}
+        onClick={(event) => event.stopPropagation()}
+        data-tour="morning-popup"
+      >
         <PopupInnerBorder />
         <PopupTitle $center $size={30}>
           오늘의 질문
