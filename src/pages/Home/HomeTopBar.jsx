@@ -94,7 +94,7 @@ function HomeTopBar({
           <Badge>{unreadNotificationCount > 99 ? '99+' : unreadNotificationCount}</Badge>
         )}
       </IconButton>
-
+      
       <IconButton type="button" aria-label="설정" onClick={onSettingsClick}>
         <IconBackground src={settingsIconBg} alt="" />
         <IconGlyph src={settingsIcon} alt="" />
