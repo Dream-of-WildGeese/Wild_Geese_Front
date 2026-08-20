@@ -33,12 +33,15 @@ export const TOUR_STEPS = [
   {
     // 아침 질문 팝업까지 직접 열게 하지 않는다. 팝업 전체와 닫기 버튼만
     // 짚어주고, 닫으면(=다른 화면으로 넘어가면) 바로 다음 단계로 간다.
+    // targets의 첫 번째가 실제로 눌리는(클릭이 통과하는) 자리라서, 안의
+    // 항목(아침질문/약/저녁)을 눌러 다른 팝업이 뜨며 깨지지 않도록 닫기
+    // 버튼을 맨 앞에 둔다. 박스 전체 링은 여전히 같이 밝혀서 보여만 준다.
     id: 'picker',
     anchor: 'picker-box',
-    targets: ['picker-box', 'picker-close'],
+    targets: ['picker-close', 'picker-box'],
     advance: 'gone',
     title: '아침엔 질문, 낮엔 약, 저녁엔 기록',
-    body: '하루 세 번이면 충분해요. 눌러서 하나씩 열어볼 수 있어요.',
+    body: '하루 세 번이면 충분해요. 닫으면 다음으로 넘어가요.',
   },
   {
     id: 'journal-nav',

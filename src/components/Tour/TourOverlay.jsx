@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import styled, { keyframes } from 'styled-components';
+import styled, { css, keyframes } from 'styled-components';
 import PopupPortal from '../PopupPortal';
 import { APP_FRAME_ID } from '../Layout';
 import { TOUR_STEPS, MAP_LABELS } from './tourSteps';
@@ -83,13 +83,35 @@ const Panel = styled.div`
   pointer-events: auto;
 `;
 
+const glow = keyframes`
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
+`;
+
 // 뚫린 자리 둘레의 테. 클릭은 통과시켜서 진짜 버튼이 눌리게 둔다.
+// border-box로 안 두면 테두리만큼(2px×2) 실제 뚫린 자리보다 커 보여서
+// 자리마다 여백이 다르게 느껴진다. 모든 링이 정확히 같은 자리에 겹치도록 맞춘다.
+//
+// 한 단계에 자리가 여러 곳이면(팝업 전체 + 닫기 버튼처럼) 그중 첫 번째가
+// 실제로 눌러야 하는 곳이다. 그 자리만 $primary로 두드러지게 하고,
+// 나머지는 '여기 있다'는 정도로만 옅게 보여준다.
 const Ring = styled.div`
   position: absolute;
+  box-sizing: border-box;
   border-radius: 14px;
-  border: 2px solid #cbd879;
-  box-shadow: 0 0 0 4px rgba(203, 216, 121, 0.28);
   pointer-events: none;
+
+  ${({ $primary }) =>
+    $primary
+      ? css`
+          border: 3px solid #e8734a;
+          box-shadow: 0 0 0 5px rgba(232, 115, 74, 0.32);
+          animation: ${glow} 1.4s ease-in-out infinite;
+        `
+      : css`
+          border: 1.5px dashed rgba(203, 216, 121, 0.85);
+          box-shadow: 0 0 0 3px rgba(203, 216, 121, 0.16);
+        `}
 `;
 
 const Bubble = styled.div`
@@ -149,15 +171,33 @@ const Dots = styled.div`
   gap: 6px;
 `;
 
-const Dot = styled.span`
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: ${({ $on }) => ($on ? '#8fae4a' : 'rgba(74, 58, 47, 0.22)')};
+// 눌러서 그 단계로 바로 이동할 수 있게 버튼으로 둔다. 점 자체는 6px로 작아서
+// 누르는 자리가 너무 좁지 않도록 여백을 얹어 히트박스를 넉넉히 잡는다.
+const Dot = styled.button`
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  &::after {
+    content: '';
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: ${({ $on }) => ($on ? '#8fae4a' : 'rgba(74, 58, 47, 0.22)')};
+  }
 `;
 
 // 발치의 '다음' 버튼 옆에 두면 매 단계 상호작용(팝업 열기·이동)에 묻혀서 잘
 // 안 보였다. 어느 단계에서든 바로 눈에 띄도록 화면 우측 상단에 고정한다.
+// 반투명 검정 배경은 뒤의 어두운 판과 색이 비슷해 묻혀 보였다. 밝은 배경으로
+// 확실히 도드라지게 한다.
 const SkipButton = styled.button`
   position: absolute;
   top: 16px;
@@ -167,10 +207,11 @@ const SkipButton = styled.button`
 
   padding: 6px 12px;
   border-radius: 999px;
-  border: 1px solid rgba(255, 255, 255, 0.4);
-  background: rgba(0, 0, 0, 0.25);
+  border: 1px solid rgba(74, 58, 47, 0.35);
+  background: #fffbf1;
+  box-shadow: 0 2px 8px rgba(28, 20, 14, 0.35);
 
-  color: rgba(255, 255, 255, 0.92);
+  color: #4a3a2f;
   font-family: 'Noto Sans KR';
   font-size: 13px;
   font-weight: 600;
@@ -422,9 +463,10 @@ function TourOverlay({ onClose }) {
             <Panel onClick={onPanelClick} style={{ inset: 0 }} />
           ))}
 
-        {holes.map((item) => (
+        {holes.map((item, itemIndex) => (
           <Ring
             key={`${item.top}-${item.left}`}
+            $primary={itemIndex === 0}
             style={{ top: item.top, left: item.left, width: item.width, height: item.height }}
           />
         ))}
@@ -434,9 +476,10 @@ function TourOverlay({ onClose }) {
             key={label.target}
             style={{
               left: label.rect.left + label.rect.width / 2,
+              // 이름표가 아이콘에 거의 붙어 보여서 위/아래 간격을 더 벌린다.
               ...(label.side === 'above'
-                ? { top: Math.max(label.rect.top - 26, 4) }
-                : { top: label.rect.top + label.rect.height + 6 }),
+                ? { top: Math.max(label.rect.top - 34, 4) }
+                : { top: label.rect.top + label.rect.height + 14 }),
             }}
           >
             {label.text}
@@ -450,7 +493,13 @@ function TourOverlay({ onClose }) {
           <FootRow>
             <Dots>
               {TOUR_STEPS.map((item, itemIndex) => (
-                <Dot key={item.id} $on={itemIndex === index} />
+                <Dot
+                  key={item.id}
+                  type="button"
+                  aria-label={`${itemIndex + 1}단계로 이동`}
+                  $on={itemIndex === index}
+                  onClick={() => setIndex(itemIndex)}
+                />
               ))}
             </Dots>
 
