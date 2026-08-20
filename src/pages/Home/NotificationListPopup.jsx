@@ -4,7 +4,11 @@ import moonIcon from '../../assets/journal/moon.png';
 import pillIcon from '../../assets/journal/pill.png';
 import weeklyIcon from '../../assets/popup/weekly-report.png';
 import envelopeIcon from '../../assets/letterbox/envelope-box.png';
-import reactionIcon from '../../assets/reaction/like.png';
+import likeIcon from '../../assets/reaction/like.png';
+import cheerIcon from '../../assets/reaction/cheer.png';
+import funnyIcon from '../../assets/reaction/funny.png';
+import bestIcon from '../../assets/reaction/best.png';
+import congratsIcon from '../../assets/reaction/congrats.png';
 import {
   PopupBackdrop,
   PopupCard,
@@ -24,8 +28,28 @@ const TYPE_ICONS = {
   MEDICATION: pillIcon,
   WEEKLY_REPORT: weeklyIcon,
   LETTER: envelopeIcon,
-  FAMILY_REACTION: reactionIcon,
 };
+
+// 가족 반응 알림은 이 다섯 아이콘 중 하나다.
+const REACTION_ICONS = {
+  LIKE: likeIcon,
+  CHEER: cheerIcon,
+  FUNNY: funnyIcon,
+  BEST: bestIcon,
+  CONGRATS: congratsIcon,
+};
+
+// 알림 목록 API는 어떤 반응인지 따로 알려주지 않는다. content 문장에
+// "OO님이 회원님의 아침 답변에 CHEER 반응을 남겼어요."처럼 반응 이름이
+// 그대로 들어 있어서, 거기서 골라 쓴다. 못 찾으면 좋아요 아이콘으로 대신한다.
+const REACTION_KEY_PATTERN = new RegExp(`\\b(${Object.keys(REACTION_ICONS).join('|')})\\b`);
+const reactionIconOf = (content) => {
+  const key = content?.match(REACTION_KEY_PATTERN)?.[1];
+  return REACTION_ICONS[key] ?? likeIcon;
+};
+
+const iconOf = (item) =>
+  item.type === 'FAMILY_REACTION' ? reactionIconOf(item.content) : (TYPE_ICONS[item.type] ?? sunIcon);
 
 // "2026-08-17T17:51:33" -> "오늘 오후 5:51" / "8.17 오후 5:51"
 const formatSentAt = (isoString, now = new Date()) => {
@@ -231,7 +255,7 @@ function NotificationListPopup({
               $unread={!item.read}
               onClick={() => handleSelect(item)}
             >
-              <ItemIcon src={TYPE_ICONS[item.type] ?? sunIcon} alt="" />
+              <ItemIcon src={iconOf(item)} alt="" />
               <TextCol>
                 <HeadRow>
                   <ItemTitle>{item.title}</ItemTitle>
