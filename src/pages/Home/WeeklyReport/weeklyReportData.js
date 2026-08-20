@@ -199,7 +199,10 @@ async function buildCurrentWeekMetrics(weekStart, days) {
 
 // 이번 주는 서버에 실제 기록이 있으면 그걸 쓰고, 없을 때만 오늘까지 채운 시연용
 // 데이터를 쓴다. 시연 도중 입력한 내용이 목업에 가려지면 안 된다.
-async function resolveCurrentWeek(fetched, role, weekStartDate) {
+//
+// allowMock: 본인 계정은 실제 API 결과만 보여준다(기록이 없으면 빈 채로).
+// 가족 계정은 그 주를 다시 조회할 통로가 없어서 목업으로라도 채운다.
+async function resolveCurrentWeek(fetched, role, weekStartDate, { allowMock = true } = {}) {
   const days = daysFilledThisWeek();
   const weekStart = getWeekStart();
 
@@ -233,6 +236,7 @@ async function resolveCurrentWeek(fetched, role, weekStartDate) {
     };
   }
 
+  if (!allowMock) return fetched;
   return getMockCurrentWeek(role, days, weekStartDate) ?? fetched;
 }
 
@@ -383,19 +387,11 @@ export async function loadWeeklyDetail(weekId, person) {
   const fetched = await reportPromise;
   // 이번 주(weeksAgo 0)는 오늘까지만 채운다. 지난 주는 통째로 채운다.
   const days = weeksAgo === 0 ? daysFilledThisWeek() : 7;
+  // 본인 계정은 목업을 섞지 않는다. 실제 기록이 없으면 있는 그대로 빈 채로 보여준다.
   const report =
-    weeksAgo === 0
-      ? await resolveCurrentWeek(fetched, role, weekId)
-      : (hasRecords(fetched) ? fetched : (mock ?? fetched));
+    weeksAgo === 0 ? await resolveCurrentWeek(fetched, role, weekId, { allowMock: false }) : fetched;
 
-  // 컨디션 등 다른 지표에 실제 기록이 있어 실데이터 경로를 탔을 때, 복약만
-  // 실제 기록이 없어 0으로 비면 대신 채워 넣을 시연용 복약 데이터.
-  const fallbackMedication =
-    weeksAgo === 0
-      ? getMockCurrentWeek(role, days, weekId)?.medication ?? null
-      : mock?.medication ?? null;
-
-  const counted = await withRealMedication(report, start, days, fallbackMedication);
+  const counted = await withRealMedication(report, start, days, null);
 
   return { week: toWeekSummary(counted, start), detail: toWeeklyDetail(counted) };
 }
