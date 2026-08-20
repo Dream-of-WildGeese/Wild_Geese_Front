@@ -32,94 +32,190 @@ import {
   PageFooter,
 } from '../../../components/PageShell';
 
+// '약 추가하기'(AddMedication)와 같은 카드 디자인을 쓴다. 같은 항목을 고르는
+// 화면인데 모양이 다르면 다른 기능처럼 보인다.
+const PRESET_TIMES = ['오전 8:00', '오후 12:00', '오후 6:00', '오후 10:00'];
+const ALL_DAY_VALUES = DAY_OPTIONS.map((day) => day.value);
+
+const InputGroup = styled.div`
+  padding: 16px;
+  border-radius: 18px;
+  border: 1.3px solid rgba(74,58,47,.35);
+  background: rgba(255,255,255,.55);
+
+  &:last-child {
+    padding-bottom: 16px;
+  }
+`;
+
 const Label = styled.p`
-  margin: 20px 0 6px;
-  font-size: 14px;
-  color: #6b6661;
+  margin: 0 0 16px;
+  color: #4a3a2f;
+  font-family: 'Noto Sans KR', sans-serif;
+  font-size: 16px;
+  font-weight: 700;
 `;
 
 const Input = styled.input`
   width: 100%;
-  height: 50px;
-  padding: 0 14px;
-  border-radius: 10px;
-  border: 1.3px solid rgba(74,58,47,.4);
-  font-size: 16px;
-  color: #000;
+  height: 48px;
+  padding: 0 18px;
+  box-sizing: border-box;
+  border-radius: 16px;
+  border: 1.3px solid rgba(74, 58, 47, 0.35);
+  background: rgba(255, 255, 255, 0.75);
+  color: #4a3a2f;
+  font-size: 18px;
+
+  &::placeholder {
+    color: #b7ac9f;
+  }
 `;
 
-const ChipRow = styled.div`
+const TimeWrap = styled.div`
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: 10px;
 `;
 
-const Chip = styled.button`
-  padding: 8px 14px;
-  border-radius: 20px;
-  border: 1px solid ${({ $active }) => ($active ? 'transparent' : '#e5e0d9')};
-  background: ${({ $active }) => ($active ? '#fae5d9' : '#fff')};
-  color: ${({ $active }) => ($active ? '#e8734a' : '#000')};
+const TimeButton = styled.button`
+  height: 44px;
+  padding: 0 18px;
+  border-radius: 22px;
+  border: 1.3px
+    ${({ $active }) => ($active ? 'solid #8A7B3E' : 'dashed rgba(74,58,47,.35)')};
+  background: ${({ $active }) => ($active ? '#F6EBC7' : 'rgba(255, 255, 255, 0.60)')};
   font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
 `;
 
-const CustomTimeRow = styled.div`
-  display: flex;
-  gap: 6px;
-`;
-
-const Select = styled.select`
-  flex: 1;
-  height: 50px;
-  padding: 0 10px;
-  border-radius: 10px;
+const PeriodSelect = styled.select`
+  width: 90px;
+  height: 44px;
+  padding: 0 12px;
+  border-radius: 14px;
   border: 1.3px solid rgba(74,58,47,.4);
-  font-size: 15px;
-  color: #000;
-  background: #FFF8ED;
+  background: rgba(255,255,255,.8);
+  color: #4A3A2F;
+  font-size: 16px;
+  appearance: none;
+  -webkit-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%234A3A2F' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  cursor: pointer;
+`;
+
+const ManualRow = styled.div`
+  display: flex;
+  gap: 8px;
+  align-items: center;
+`;
+
+const SmallInput = styled.input`
+  display: flex;
+  width: 90px;
+  height: 44px;
+  padding: 0 12px;
+  box-sizing: border-box;
+  text-align: center;
+  border-radius: 14px;
+  border: 1.3px solid rgba(74, 58, 47, 0.40);
+  background: rgba(255, 255, 255, 0.80);
+  color: #4a3a2f;
+  font-size: 16px;
+
+  &::placeholder {
+    color: #b7ac9f;
+  }
 `;
 
 const AddTimeButton = styled.button`
-  width: 50px;
-  height: 50px;
-  border-radius: 10px;
-  border: 1.3px solid rgba(74,58,47,.4);
-  font-size: 18px;
-  font-weight: 500;
+  width: 46px;
+  height: 46px;
+  min-width: 46px;
+  min-height: 46px;
+  flex-shrink: 0;
+
+  padding: 0;
+  box-sizing: border-box;
+  border-radius: 50%;
+  border: 1.3px solid rgba(138, 123, 62, 0.9);
+  background: #DDD39A;
+
+  color: #4A3A2F;
+  font-size: 28px;
+  font-weight: 700;
+  line-height: 1;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+
+  & > span, & {
+    padding-bottom: 2px;
+  }
 `;
 
-// '매일'을 먼저 두고, 그 아래에 요일을 따로 고를 수 있게 한다.
-const DailyToggle = styled.button`
-  width: 100%;
-  height: 50px;
-  border-radius: 12px;
+const CustomTimeWrap = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 14px;
+`;
 
-  border: 2px solid ${({ $on }) => ($on ? 'rgba(143, 174, 74, 0.7)' : 'rgba(74, 58, 47, 0.3)')};
-  background: ${({ $on }) => ($on ? '#edf2d4' : '#fffdf6')};
-  color: ${({ $on }) => ($on ? '#5b7a2e' : '#8c8172')};
+const CustomTimeChip = styled.span`
+  display: inline-flex;
+  align-items: center;
+  height: 38px;
+  padding: 0 14px;
+  border-radius: 19px;
+  border: 1.3px solid #8A7B3E;
+  background: #F6EBC7;
+  color: #4A3A2F;
+  font-family: 'Noto Sans KR', sans-serif;
+  font-size: 14px;
+  font-weight: 700;
+`;
 
+const RemoveIcon = styled.button`
+  margin-left: 6px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: #4A3A2F;
   font-size: 16px;
   font-weight: 700;
+  line-height: 1;
+  cursor: pointer;
 `;
 
-const DayRow = styled.div`
-  margin-top: 10px;
+const RepeatWrap = styled.div`
+  display: grid;
+  grid-template-columns: 52px repeat(7, 36px);
+  justify-content: space-between;
+  align-items: center;
+`;
+
+const RepeatChip = styled.button`
+  width: ${({ children }) => (children === '매일' ? '52px' : '36px')};
+  height: 36px;
   display: flex;
-  gap: 6px;
-`;
-
-const DayChip = styled.button`
-  flex: 1;
-  min-width: 0;
-  height: 46px;
-  border-radius: 12px;
-
-  border: 1.5px solid ${({ $on }) => ($on ? 'rgba(232, 205, 115, 0.9)' : 'rgba(74, 58, 47, 0.25)')};
-  background: ${({ $on }) => ($on ? '#f8eed2' : '#fffdf6')};
-  color: ${({ $on }) => ($on ? '#a8761c' : '#a79c8e')};
-
-  font-size: 15px;
+  justify-content: center;
+  align-items: center;
+  border-radius: 18px;
+  border: 1.2px
+    ${({ $active }) => ($active ? 'solid rgba(74,58,47,.55)' : 'dashed rgba(74,58,47,.55)')};
+  background: ${({ $active }) => ($active ? '#F6EBC7' : 'rgba(255, 255, 255, 0.60)')};
+  color: #4A3A2F;
+  font-family: 'Noto Sans KR', sans-serif;
+  font-size: 14px;
   font-weight: 700;
+  white-space: nowrap;
+  padding: 0;
+  cursor: pointer;
 `;
 
 const HelpText = styled.p`
@@ -136,53 +232,45 @@ const BlockedText = styled.p`
   font-family: 'Noto Sans KR';
   font-size: 16px;
   line-height: 1.5;
+  word-break: keep-all;
 `;
 
-// 저장하기만 화면 아래에 고정한다. 삭제는 되돌릴 수 없어서 목록 끝까지
-// 내려야 닿도록 스크롤 영역 안에 남겨둔다.
-//
-// 연두 배경에 흰 글자라 글씨가 배경에 묻혀 있었다. 다른 화면의 주요 버튼과 같은
-// 진한 글자·테두리로 맞추고, 커서를 올리면 한 단계 진해지게 한다.
 const SaveButton = styled.button`
   width: 100%;
-  height: 54px;
-  border-radius: 14px;
+  height: 56px;
+  border-radius: 16px;
   border: 1.5px solid rgba(74, 58, 47, 0.55);
-  background: #dbe4a1;
-  color: #4a3a2f;
-  font-family: Jua;
-  font-size: 20px;
+  background: #CBD879;
+  color: #4A3A2F;
+  font-family: Jua, sans-serif;
+  font-size: 18px;
   cursor: pointer;
   transition: background 0.15s ease, transform 0.1s ease;
 
   &:hover:not(:disabled) {
-    background: #cbd879;
+    background: #c2d16b;
   }
 
   &:active:not(:disabled) {
-    background: #c2d16b;
+    background: #b6c65c;
     transform: translateY(1px);
   }
-
-  &:disabled {
-    opacity: 0.5;
-    cursor: default;
-  }
 `;
 
+// 지우기는 되돌릴 수 없어서, 저장하기와 헷갈리지 않도록 옅은 테두리만 둔다.
 const DeleteButton = styled.button`
   width: 100%;
-  height: 50px;
-  margin-top: 28px;
-  border-radius: 12px;
-  border: 1.3px solid rgba(74,58,47,.4);
+  height: 48px;
+  margin-top: 4px;
+  border-radius: 16px;
+  border: 1.3px solid rgba(74, 58, 47, 0.35);
+  background: rgba(255, 255, 255, 0.6);
   color: #cc4d4d;
+  font-family: 'Noto Sans KR', sans-serif;
   font-size: 15px;
-  font-weight: 500;
+  font-weight: 700;
+  cursor: pointer;
 `;
-
-const PRESET_TIMES = ['오전 8:00', '오후 12:00', '오후 6:00', '오후 10:00'];
-const ALL_DAY_VALUES = DAY_OPTIONS.map((day) => day.value);
 
 function MedicineEdit() {
   const navigate = useNavigate();
@@ -244,8 +332,14 @@ function MedicineEdit() {
     );
   }
 
+  const customTimes = times.filter((t) => !PRESET_TIMES.includes(t));
+
   const toggleTime = (time) => {
     setTimes((prev) => (prev.includes(time) ? prev.filter((t) => t !== time) : [...prev, time]));
+  };
+
+  const removeCustomTime = (timeToRemove) => {
+    setTimes((prev) => prev.filter((t) => t !== timeToRemove));
   };
 
   const handleAddManualTime = () => {
@@ -270,6 +364,9 @@ function MedicineEdit() {
     setHour('');
     setMinute('');
   };
+
+  const handleHourChange = (e) => setHour(e.target.value.replace(/[^0-9]/g, ''));
+  const handleMinuteChange = (e) => setMinute(e.target.value.replace(/[^0-9]/g, ''));
 
   const toggleDay = (value) =>
     setDays((prev) =>
@@ -337,69 +434,95 @@ function MedicineEdit() {
         <PageHeader>
           <PageTitle>약 정보 수정</PageTitle>
         </PageHeader>
-        <PageDivider />
 
-        <PageScrollArea>
-          <Label>약 이름</Label>
-          <Input value={name} onChange={(e) => setName(e.target.value)} />
+        <PageScrollArea $gap={16}>
+          <InputGroup>
+            <Label>약 이름</Label>
+            <Input placeholder="예: 혈압약" value={name} onChange={(e) => setName(e.target.value)} />
+          </InputGroup>
 
-          <Label>복용 시간을 골라주세요 (여러 개 가능)</Label>
-          <ChipRow>
-            {[...new Set([...PRESET_TIMES, ...times])].map((time) => (
-              <Chip key={time} type="button" $active={times.includes(time)} onClick={() => toggleTime(time)}>
-                {time}
-              </Chip>
-            ))}
-          </ChipRow>
-
-          <Label>직접 시간 정하기</Label>
-          <CustomTimeRow>
-            <Select value={period} onChange={(e) => setPeriod(e.target.value)}>
-              <option value="오전">오전</option>
-              <option value="오후">오후</option>
-            </Select>
-            <Select value={hour} onChange={(e) => setHour(e.target.value)}>
-              <option value="">시</option>
-              {Array.from({ length: 12 }, (_, i) => i + 1).map((h) => (
-                <option key={h} value={h}>
-                  {h}
-                </option>
+          <InputGroup>
+            <Label>복용하는 시간을 골라주세요 (복수 선택 가능)</Label>
+            <TimeWrap>
+              {PRESET_TIMES.map((time) => (
+                <TimeButton
+                  key={time}
+                  type="button"
+                  $active={times.includes(time)}
+                  onClick={() => toggleTime(time)}
+                >
+                  {time}
+                </TimeButton>
               ))}
-            </Select>
-            <Select value={minute} onChange={(e) => setMinute(e.target.value)}>
-              <option value="">분</option>
-              {['00', '10', '20', '30', '40', '50'].map((m) => (
-                <option key={m} value={m}>
-                  {m}
-                </option>
-              ))}
-            </Select>
-            <AddTimeButton type="button" onClick={handleAddManualTime}>
-              +
-            </AddTimeButton>
-          </CustomTimeRow>
+            </TimeWrap>
 
-          <Label>무슨 요일에 드시나요?</Label>
-          <DailyToggle
-            type="button"
-            $on={isEveryDay(days)}
-            onClick={() => setDays(isEveryDay(days) ? [] : ALL_DAY_VALUES)}
-          >
-            매일 먹어요
-          </DailyToggle>
-          <DayRow>
-            {DAY_OPTIONS.map((day) => (
-              <DayChip
-                key={day.value}
+            <Label style={{ marginTop: 16 }}>직접 시간 정하기</Label>
+            <ManualRow>
+              <PeriodSelect value={period} onChange={(e) => setPeriod(e.target.value)}>
+                <option value="오전">오전</option>
+                <option value="오후">오후</option>
+              </PeriodSelect>
+
+              <SmallInput
+                type="text"
+                inputMode="numeric"
+                maxLength={2}
+                placeholder="시"
+                value={hour}
+                onChange={handleHourChange}
+              />
+
+              <SmallInput
+                type="text"
+                inputMode="numeric"
+                maxLength={2}
+                placeholder="분"
+                value={minute}
+                onChange={handleMinuteChange}
+              />
+
+              <AddTimeButton type="button" onClick={handleAddManualTime}>
+                +
+              </AddTimeButton>
+            </ManualRow>
+
+            {customTimes.length > 0 && (
+              <CustomTimeWrap>
+                {customTimes.map((time) => (
+                  <CustomTimeChip key={time}>
+                    {time}
+                    <RemoveIcon type="button" onClick={() => removeCustomTime(time)}>
+                      ×
+                    </RemoveIcon>
+                  </CustomTimeChip>
+                ))}
+              </CustomTimeWrap>
+            )}
+          </InputGroup>
+
+          <InputGroup>
+            <Label>무슨 요일에 드시나요?</Label>
+            <RepeatWrap>
+              <RepeatChip
                 type="button"
-                $on={days.includes(day.value)}
-                onClick={() => toggleDay(day.value)}
+                $active={isEveryDay(days)}
+                onClick={() => setDays(isEveryDay(days) ? [] : ALL_DAY_VALUES)}
               >
-                {day.label}
-              </DayChip>
-            ))}
-          </DayRow>
-          {days.length === 0 && <HelpText>드시는 요일을 하나 이상 골라주세요.</HelpText>}
+                매일
+              </RepeatChip>
+              {DAY_OPTIONS.map((day) => (
+                <RepeatChip
+                  key={day.value}
+                  type="button"
+                  $active={days.includes(day.value)}
+                  onClick={() => toggleDay(day.value)}
+                >
+                  {day.label}
+                </RepeatChip>
+              ))}
+            </RepeatWrap>
+            {days.length === 0 && <HelpText>드시는 요일을 하나 이상 골라주세요.</HelpText>}
+          </InputGroup>
 
           <DeleteButton type="button" onClick={handleDelete}>
             삭제하기

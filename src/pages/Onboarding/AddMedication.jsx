@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
-import back from '../../assets/onboarding/x.png';
 import { createMedication, getMedications } from '../../api/medication';
 import { useApi, useApiAction } from '../../hooks/useApi';
 import {
@@ -18,6 +17,15 @@ import {
   PopupTitle,
   PopupPrimaryButton,
 } from '../../components/PopupShell';
+import {
+  PageFrame,
+  PageContent,
+  PageBack,
+  PageHeader,
+  PageTitle,
+  PageScrollArea,
+  PageFooter,
+} from '../../components/PageShell';
 
 // '월/화/수...' 한글 라벨을 서버가 받는 요일 enum으로 바꾼다.
 const DAY_LABEL_TO_VALUE = Object.fromEntries(DAY_OPTIONS.map((d) => [d.label, d.value]));
@@ -154,17 +162,14 @@ const AddMedication = () => {
   };
 
   return (
-    <Page>
-      <Content>
-        <CloseButton onClick={() => navigate(-1)}>
-          <CloseIcon src={back} alt="닫기" />
-        </CloseButton>
+    <PageFrame>
+      <PageContent>
+        <PageBack onClick={() => navigate(-1)} />
+        <PageHeader>
+          <PageTitle>약 추가하기</PageTitle>
+        </PageHeader>
 
-        <Header>
-          <Title>약 추가하기</Title>
-        </Header>
-
-        <ScrollArea>
+        <PageScrollArea $gap={16}>
           <InputGroup>
             <Label>약 이름</Label>
             <Input
@@ -256,14 +261,14 @@ const AddMedication = () => {
               ))}
             </RepeatWrap>
           </InputGroup>
-        </ScrollArea>
+        </PageScrollArea>
 
-        <ButtonArea>
+        <PageFooter>
           <SaveButton onClick={handleSave}>
             저장하기
           </SaveButton>
-        </ButtonArea>
-      </Content>
+        </PageFooter>
+      </PageContent>
 
       {missing && (
         <PopupBackdrop onClick={() => setMissing(null)}>
@@ -298,81 +303,11 @@ const AddMedication = () => {
           </PopupCard>
         </PopupBackdrop>
       )}
-    </Page>
+    </PageFrame>
   );
 };
 
 export default AddMedication;
-
-/* ---------------- Layout ---------------- */
-
-const Page = styled.div`
-  width: calc(100% + 32px);
-  height: 100%;
-  margin: 0 -${({ theme }) => theme?.spacing?.md || '16px'};
-  background: #fff8ed;
-`;
-
-const Content = styled.div`
-  position: relative;
-  max-width: 402px;
-  height: 100%;
-  margin: 0 auto;
-  padding: 86px 20px 120px;
-  box-sizing: border-box;
-  display: flex;
-  flex-direction: column;
-`;
-
-const Header = styled.div`
-  display: flex;
-  justify-content: center;
-  align-items: center;
-`;
-
-const CloseButton = styled.button`
-  position: absolute;
-  top: 35px;
-  left: 24px;
-  z-index: 10;
-  width: 40px;
-  height: 40px;
-  border: none;
-  background: transparent;
-  padding: 0;
-  cursor: pointer;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-`;
-
-const CloseIcon = styled.img`
-  width: 40px;
-  height: 40px;
-`;
-
-const Title = styled.h1`
-  margin: 0;
-  color: #4a3a2f;
-  font-family: Jua, sans-serif;
-  font-size: 40px;
-  font-weight: 400;
-`;
-
-/* ---------------- Scroll ---------------- */
-
-const ScrollArea = styled.div`
-  flex: 1;
-  overflow-y: auto;
-  margin-top: 22px;
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-
-  &::-webkit-scrollbar {
-    display: none;
-  }
-`;
 
 /* ---------------- Card ---------------- */
 
@@ -580,13 +515,6 @@ const PopupMessage = styled.p`
   font-size: 16px;
   line-height: 1.5;
   word-break: keep-all;
-`;
-
-const ButtonArea = styled.div`
-  position: absolute;
-  left: 20px;
-  right: 20px;
-  bottom: 30px;
 `;
 
 const SaveButton = styled.button`

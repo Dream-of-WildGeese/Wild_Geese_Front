@@ -67,15 +67,21 @@ const GenderRow = styled.div`
   gap: 8px;
 `;
 
+// 온보딩 2단계(건강 프로필)의 성별 버튼과 같은 생김새로 맞춘다. 예전엔 이 화면만
+// 주황 톤이라, 같은 화면 안의 지병 칩(DiseaseChip)과도 색이 따로 놀았다.
 const GenderButton = styled.button`
   flex: 1;
   height: 50px;
-  border-radius: 10px;
-  border: ${({ $active }) => ($active ? '2px solid #e8734a' : '1px solid #e5e0d9')};
-  background: #FFF8ED;
-  color: ${({ $active }) => ($active ? '#e8734a' : '#000')};
-  font-size: 15px;
-  font-weight: 500;
+  border-radius: 14px;
+  border: ${({ $active }) =>
+    $active ? '1.2px solid rgba(74, 58, 47, 0.55)' : '1.2px dashed rgba(74, 58, 47, 0.35)'};
+  background: ${({ $active }) => ($active ? '#F6EBC7' : 'rgba(255, 255, 255, 0.60)')};
+  color: #4A3A2F;
+  text-align: center;
+  font-family: 'Noto Sans KR';
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
 `;
 
 const ChipRow = styled.div`
@@ -84,13 +90,16 @@ const ChipRow = styled.div`
   gap: 8px;
 `;
 
+// 건강 관심사 칩도 지병 칩(DiseaseChip)과 같은 금색 톤으로 맞춘다.
 const Chip = styled.button`
   padding: 8px 14px;
-  border-radius: 20px;
-  border: 1px solid ${({ $active }) => ($active ? 'transparent' : '#e5e0d9')};
-  background: ${({ $active }) => ($active ? '#fae5d9' : '#fff')};
-  color: ${({ $active }) => ($active ? '#e8734a' : '#000')};
-  font-size: 15px;
+  border-radius: 999px;
+  border: ${({ $active }) => ($active ? '1.5px solid #B89A54' : '1.5px dashed #D8D0C7')};
+  background: ${({ $active }) => ($active ? '#F6EBC7' : 'rgba(255, 255, 255, 0.60)')};
+  color: #4a3a2f;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
 `;
 
 // 지병 칩은 온보딩 2단계(건강 프로필)와 같은 생김새를 쓴다.
@@ -154,25 +163,25 @@ const RemoveIcon = styled.button`
 `;
 
 // 스크롤과 상관없이 화면 아래에 붙는다(PageFooter 안).
+// 다른 화면(약 추가하기·약 수정·온보딩 다음 버튼)과 같은 주 버튼 색으로 맞춘다.
 const SaveButton = styled.button`
   width: 100%;
   height: 54px;
   border-radius: 14px;
   border: 1.5px solid rgba(74, 58, 47, 0.55);
-  background: #dbe4a1;
+  background: #cbd879;
   color: #4a3a2f;
   font-family: Jua;
   font-size: 20px;
   cursor: pointer;
   transition: background 0.15s ease, transform 0.1s ease;
 
-  /* 눌러야 하는 버튼이라는 게 드러나도록, 올리면 한 단계 진해진다 */
   &:hover:not(:disabled) {
-    background: #cbd879;
+    background: #c2d16b;
   }
 
   &:active:not(:disabled) {
-    background: #c2d16b;
+    background: #b6c65c;
     transform: translateY(1px);
   }
 

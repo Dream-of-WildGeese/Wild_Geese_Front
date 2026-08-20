@@ -194,6 +194,10 @@ function MedicineCheckPopup({ onClose }) {
   const slotRows = flattenSlot(data?.items ?? [], slotLabel);
   const isAllDay = slotRows.length === 0;
   const medRows = isAllDay ? allRows : slotRows;
+  // '지금 시간대엔 없음'과 '등록된 약이 아예 없음'은 다르다. 후자인데 앞의 경우와
+  // 똑같이 다루면, 완료 화면이 "약을 아직 안 드셨어요 / 0개 중 0개"처럼 마치
+  // 약을 놓친 것처럼 보여준다. 약을 하나도 등록 안 한 것뿐이라 따로 짚어준다.
+  const hasNoMedications = (data?.items ?? []).length === 0;
 
   // 하루에 몇 번 먹는 약인지. 두 번 이상이면 꽃 옆에 시각을 함께 적는다.
   const dosesToday = new Map(
@@ -270,15 +274,20 @@ function MedicineCheckPopup({ onClose }) {
     const scopeLabel = editedWholeDay || isAllDay ? '오늘' : slotLabel;
 
     // 약을 다 챙겼을 때만 칭찬한다. 남았으면 몇 개가 남았는지 알려준다.
-    const title = allTaken
-      ? `${scopeLabel} 약 잘 챙겨 드셨네요!`
-      : done.length === 0
-        ? `${scopeLabel} 약을 아직 안 드셨어요`
-        : `${scopeLabel} 약이 조금 남았어요`;
+    // 등록된 약이 아예 없으면 '안 드셨어요/남았어요'가 아니라 그 사실 그대로 알려준다.
+    const title = hasNoMedications
+      ? '오늘 식사를 기록했어요'
+      : allTaken
+        ? `${scopeLabel} 약 잘 챙겨 드셨네요!`
+        : done.length === 0
+          ? `${scopeLabel} 약을 아직 안 드셨어요`
+          : `${scopeLabel} 약이 조금 남았어요`;
 
-    const note = allTaken
-      ? '오늘도 잊지 않고 챙기셨어요'
-      : `${rows.length}개 중 ${done.length}개 드셨어요. ${remaining}개 남았어요!`;
+    const note = hasNoMedications
+      ? '등록된 약이 없어요. 약이 있다면 복용약 관리에서 추가해보세요.'
+      : allTaken
+        ? '오늘도 잊지 않고 챙기셨어요'
+        : `${rows.length}개 중 ${done.length}개 드셨어요. ${remaining}개 남았어요!`;
 
     return (
       <PopupBackdrop onClick={onClose}>
@@ -288,21 +297,23 @@ function MedicineCheckPopup({ onClose }) {
             {title}
           </PopupTitle>
 
-          <CircleRow>
-            {rows.map((med, index) => (
-              <MedIconWrap key={med.scheduleId}>
-                <PopupIcon
-                  $size={64}
-                  src={med.taken ? MED_FLOWERS[index % MED_FLOWERS.length] : medEmpty}
-                  alt=""
-                />
-                <MedLabel $taken={med.taken}>
-                  {med.name}
-                  {dosesToday.get(med.medicationId) > 1 && <DoseTime>{med.timeLabel}</DoseTime>}
-                </MedLabel>
-              </MedIconWrap>
-            ))}
-          </CircleRow>
+          {!hasNoMedications && (
+            <CircleRow>
+              {rows.map((med, index) => (
+                <MedIconWrap key={med.scheduleId}>
+                  <PopupIcon
+                    $size={64}
+                    src={med.taken ? MED_FLOWERS[index % MED_FLOWERS.length] : medEmpty}
+                    alt=""
+                  />
+                  <MedLabel $taken={med.taken}>
+                    {med.name}
+                    {dosesToday.get(med.medicationId) > 1 && <DoseTime>{med.timeLabel}</DoseTime>}
+                  </MedLabel>
+                </MedIconWrap>
+              ))}
+            </CircleRow>
+          )}
 
           <CompleteNote>{note}</CompleteNote>
 
@@ -325,7 +336,9 @@ function MedicineCheckPopup({ onClose }) {
         <PopupInnerBorder />
         <PopupIcon $size={56} src={clockIcon} alt="" />
         <PopupTitle $center>
-          {isAllDay ? (
+          {hasNoMedications ? (
+            '오늘 식사는 어떠셨나요?'
+          ) : isAllDay ? (
             '오늘 챙길 약이에요!'
           ) : (
             <>
@@ -354,26 +367,30 @@ function MedicineCheckPopup({ onClose }) {
               </CheckBox>
             </CheckRow>
 
-            {medRows.map((med) => (
-              <CheckRow key={med.scheduleId}>
-                <CheckLabel>
-                  {nameCounts[med.name] > 1
-                    ? `${med.name} (${med.timeLabel}) 드셨어요?`
-                    : `${med.name} 드셨어요?`}
-                </CheckLabel>
-                <CheckBox
-                  type="button"
-                  $on={checks[med.scheduleId]}
-                  aria-pressed={Boolean(checks[med.scheduleId])}
-                  aria-label={`${med.name} 먹었어요`}
-                  onClick={() =>
-                    setChecks((prev) => ({ ...prev, [med.scheduleId]: !prev[med.scheduleId] }))
-                  }
-                >
-                  {checks[med.scheduleId] && <TickIcon />}
-                </CheckBox>
-              </CheckRow>
-            ))}
+            {hasNoMedications ? (
+              <EmptyText>등록된 복용약이 없어요.</EmptyText>
+            ) : (
+              medRows.map((med) => (
+                <CheckRow key={med.scheduleId}>
+                  <CheckLabel>
+                    {nameCounts[med.name] > 1
+                      ? `${med.name} (${med.timeLabel}) 드셨어요?`
+                      : `${med.name} 드셨어요?`}
+                  </CheckLabel>
+                  <CheckBox
+                    type="button"
+                    $on={checks[med.scheduleId]}
+                    aria-pressed={Boolean(checks[med.scheduleId])}
+                    aria-label={`${med.name} 먹었어요`}
+                    onClick={() =>
+                      setChecks((prev) => ({ ...prev, [med.scheduleId]: !prev[med.scheduleId] }))
+                    }
+                  >
+                    {checks[med.scheduleId] && <TickIcon />}
+                  </CheckBox>
+                </CheckRow>
+              ))
+            )}
           </>
         )}
 
