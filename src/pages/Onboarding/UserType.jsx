@@ -160,11 +160,9 @@ const OptionText = styled.span`
   font-family: Jua;
   font-size: 60px;
   font-weight: 400;
-  /* line-height: normal은 폰트 자체의 내부 지표를 따라가서, 글자마다(부모/자녀)
-     세로 중앙이 미묘하게 달라 보인다. 고정값으로 묶어서 항상 같게 만든다. */
   line-height: 1;
+  transform: translateY(4px);
 `;
-
 
 
 
