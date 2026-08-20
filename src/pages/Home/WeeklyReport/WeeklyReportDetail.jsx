@@ -199,7 +199,10 @@ const DayLabel = styled.span`
 `;
 
 // 컨디션은 표정 그림 대신 점수 색만 칠한 동그라미로 보여준다.
+// border-box로 두지 않으면 테두리(1.5px×2)만큼 옆의 점선 원(EmptyCircle)보다
+// 커 보인다. $size를 실제 렌더 지름 그대로로 맞추려면 border-box가 필요하다.
 const ConditionDot = styled.span`
+  box-sizing: border-box;
   width: ${({ $size }) => $size}px;
   height: ${({ $size }) => $size}px;
   border-radius: 50%;
