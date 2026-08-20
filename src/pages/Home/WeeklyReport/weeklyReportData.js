@@ -4,10 +4,11 @@ import {
   getFamilyLatestReport,
   getWeeklyHistory,
   getFamilyWeeklyHistory,
+  getFamilyWeeklyReport,
 } from '../../../api/weekly';
 import { getMyFamily } from '../../../api/family';
 import { getDailyLog } from '../../../api/daily';
-import { getMedicationLogs } from '../../../api/medication';
+import { getMedicationLogs, getFamilyMedicationStatus } from '../../../api/medication';
 import { getUserId } from '../../../api/client';
 import { toDateString } from '../../../utils/medication';
 
@@ -192,12 +193,18 @@ async function buildCurrentWeekMetrics(weekStart, days) {
 }
 
 // 이번 주는 서버에 실제 기록이 있으면 그걸 쓰고, 없으면 있는 그대로 빈 채로 둔다.
-async function resolveCurrentWeek(fetched) {
-  const days = daysFilledThisWeek();
+//
+// fillFromDailyLog는 본인 계정에서만 켠다. buildCurrentWeekMetrics는 '나'의
+// 하루 일지(getDailyLog)를 읽는데, 가족 리포트에 이걸 켜두면 상대방의 요일별
+// 값이 내 하루 일지로 덮어써진다 — 상대방 리포트가 내 기록으로 뒤바뀌어 보이던
+// 원인이 이거였다. 가족 쪽은 최신 리포트(family/latest)에 이미 요일별 값이
+// 와 있으니 그대로 믿는다.
+async function resolveCurrentWeek(fetched, { fillFromDailyLog = false } = {}) {
   const weekStart = getWeekStart();
 
-  // 서버가 요일별 값을 못 주더라도 하루 일지에는 남아 있다. 그걸로 채워본다.
-  const built = await buildCurrentWeekMetrics(weekStart, days).catch(() => null);
+  const built = fillFromDailyLog
+    ? await buildCurrentWeekMetrics(weekStart, daysFilledThisWeek()).catch(() => null)
+    : null;
 
   if (hasRecords(fetched) || built) {
     const base = fetched ?? {};
@@ -216,7 +223,11 @@ async function resolveCurrentWeek(fetched) {
           metric,
           {
             ...(base.metrics?.[metric] ?? {}),
-            daily: built ? built[metric] : (base.metrics?.[metric]?.daily ?? []),
+            // 서버가 준 실제 요일별 값이 있으면 그걸 우선한다. 없을 때만
+            // (본인 계정 한정) 하루 일지로 채운 값을 대신 쓴다.
+            daily: base.metrics?.[metric]?.daily?.length
+              ? base.metrics[metric].daily
+              : (built?.[metric] ?? []),
           },
         ]),
       ),
@@ -229,14 +240,27 @@ async function resolveCurrentWeek(fetched) {
   return fetched;
 }
 
+// 본인 하루치 복약 기록. { takenCount, totalCount } 모양 그대로 온다.
+const myDayMedication = (date) => getMedicationLogs(date).catch(() => null);
+
+// 가족 하루치 복약 현황. 목록으로 오기 때문에 본인 쪽과 같은 모양으로 직접 센다.
+const familyDayMedication = (userId) => (date) =>
+  getFamilyMedicationStatus(userId, date)
+    .then((list) => ({
+      takenCount: (list ?? []).filter((item) => item.status === 'TAKEN').length,
+      totalCount: (list ?? []).length,
+    }))
+    .catch(() => null);
+
 // 서버의 주간 복약 집계가 실제와 맞지 않는다.
 // 등록된 약을 다 더해도 주 41회가 계획인데 '58번 중 51번'이 오고, 목요일까지는
 // 최대 23회인데 51번을 챙겼다고 한다. 날짜별 기록은 정확해서 그걸 직접 센다.
-async function withRealMedication(report, weekStart, days) {
+// dayMedication(date)가 본인/가족 중 어느 쪽 API를 쓸지 정한다.
+async function withRealMedication(report, weekStart, days, dayMedication) {
   if (!report) return report;
 
   const dates = Array.from({ length: days }, (_, index) => toDateString(addDays(weekStart, index)));
-  const logs = await Promise.all(dates.map((date) => getMedicationLogs(date).catch(() => null)));
+  const logs = await Promise.all(dates.map((date) => dayMedication(date)));
 
   // 아직 오지 않은 요일은 null로 둬서 빈 칸으로 보이게 한다.
   const daily = logs.map((log) => (log ? (log.takenCount ?? 0) : null));
@@ -341,26 +365,28 @@ export async function loadWeeklyDetail(weekId, person) {
     const partner = await findPartner();
     if (!partner) return null;
 
-    // 목록(/history)은 가족 것도 받아오지만, 특정 지난 주 하나를 상세 조회하는 API는
-    // 아직 없다(최신 리포트만 가능). 엉뚱한 주를 최신 리포트로 보여주느니 비워 둔다.
-    if (weeksAgo > 0) return { week: toWeekSummary(null, start), detail: null };
+    // 특정 지난 주를 조회하는 API가 생겨서, 최신 주 말고도 지난 주를 그대로 받아올 수 있다.
+    const fetched =
+      weeksAgo === 0
+        ? await getFamilyLatestReport(partner.userId).catch(() => null)
+        : await getFamilyWeeklyReport(partner.userId, weekId).catch(() => null);
 
-    const latest = await getFamilyLatestReport(partner.userId).catch(() => null);
-    const report = await resolveCurrentWeek(latest);
-    // 가족의 복약 기록을 읽는 통로가 없어서 직접 셀 수가 없다.
-    // 서버 집계는 실제와 안 맞으니 틀린 숫자를 보여주느니 비워 둔다.
-    const safe = report
-      ? { ...report, medication: { ...(report.medication ?? {}), comment: '' } }
-      : report;
-    return { week: toWeekSummary(safe, start), detail: toWeeklyDetail(safe) };
+    const days = weeksAgo === 0 ? daysFilledThisWeek() : 7;
+    const report = weeksAgo === 0 ? await resolveCurrentWeek(fetched) : fetched;
+
+    // 가족 복약 현황(family/status)을 하루씩 세어서 본인과 같은 방식으로 정확히 센다.
+    const counted = await withRealMedication(report, start, days, familyDayMedication(partner.userId));
+
+    return { week: toWeekSummary(counted, start), detail: toWeeklyDetail(counted) };
   }
 
   const fetched = await reportPromise;
   // 이번 주(weeksAgo 0)는 오늘까지만 채운다. 지난 주는 통째로 채운다.
   const days = weeksAgo === 0 ? daysFilledThisWeek() : 7;
-  const report = weeksAgo === 0 ? await resolveCurrentWeek(fetched) : fetched;
+  const report =
+    weeksAgo === 0 ? await resolveCurrentWeek(fetched, { fillFromDailyLog: true }) : fetched;
 
-  const counted = await withRealMedication(report, start, days);
+  const counted = await withRealMedication(report, start, days, myDayMedication);
 
   return { week: toWeekSummary(counted, start), detail: toWeeklyDetail(counted) };
 }
