@@ -38,8 +38,18 @@
 
 | 분류 | 스택 |
 |---|---|
-| 언어/프레임워크 | Java, Spring |
-| 배포/인프라 | Nginx |
+| 언어/프레임워크 | Java, Spring Boot, Spring Data JPA |
+| Database | MySQL, AWS RDS |
+| Infra | AWS EC2, Nginx |
+| Storage | AWS S3 |
+| API 문서 | Swagger |
+
+**AI 모델**
+
+| 분류 | 모델 |
+|---|---|
+| LLM | gpt-4o-mini |
+| STT | whisper-1 |
 
 ## 시작하기
 
