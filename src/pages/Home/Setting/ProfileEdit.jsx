@@ -9,6 +9,10 @@ import {
   splitDiseases,
   mergeDiseases,
   toggleDisease,
+  INTEREST_LIST,
+  INTEREST_VALUES,
+  INTEREST_LABELS,
+  toggleInterest as toggleInterestValue,
 } from '../../../utils/health';
 import {
   PageFrame,
@@ -191,20 +195,6 @@ const SaveButton = styled.button`
   }
 `;
 
-const INTEREST_LIST = ['수면', '활동량', '식사', '복약', '기분'];
-
-// 서버는 관심사를 enum으로만 주고받는다. 화면 라벨과 양방향으로 변환한다.
-const INTEREST_TO_ENUM = {
-  수면: 'SLEEP',
-  활동량: 'ACTIVITY',
-  식사: 'MEAL',
-  복약: 'MEDICINE',
-  기분: 'MOOD',
-};
-const ENUM_TO_INTEREST = Object.fromEntries(
-  Object.entries(INTEREST_TO_ENUM).map(([label, value]) => [value, label]),
-);
-
 function ProfileEdit() {
   const navigate = useNavigate();
   const { setProfile, setInterests, setConditions } = useAppData();
@@ -233,7 +223,7 @@ function ProfileEdit() {
     setGender(profile?.gender ?? '');
     setDiseases(splitDiseases(profile?.diseases));
     setLocalInterests(
-      (profile?.wellnessInterests ?? []).map((value) => ENUM_TO_INTEREST[value]).filter(Boolean),
+      (profile?.wellnessInterests ?? []).map((value) => INTEREST_LABELS[value]).filter(Boolean),
     );
   }, [me, profile, meLoading, profileLoading]);
 
@@ -257,9 +247,7 @@ function ProfileEdit() {
   };
 
   const toggleInterest = (item) => {
-    setLocalInterests((prev) =>
-      prev.includes(item) ? prev.filter((v) => v !== item) : [...prev, item],
-    );
+    setLocalInterests((prev) => toggleInterestValue(prev, item));
   };
 
   const handleSave = async () => {
@@ -277,7 +265,7 @@ function ProfileEdit() {
       birthDate: birth,
       gender,
       diseases: savedDiseases,
-      wellnessInterests: interests.map((item) => INTEREST_TO_ENUM[item]).filter(Boolean),
+      wellnessInterests: interests.map((item) => INTEREST_VALUES[item]).filter(Boolean),
     });
     if (!ok) {
       alert(error.message);
