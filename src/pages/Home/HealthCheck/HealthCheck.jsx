@@ -1,7 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
-import back from '../../../assets/onboarding/x.png';
 import AddHealthCheck from './AddHealthCheck';
 import { useFamilyRelation } from '../../../hooks/useFamilyRelation';
 import { useApi, useApiAction } from '../../../hooks/useApi';
@@ -244,13 +243,13 @@ const HealthCheck = () => {
   return (
     <Page>
       <Content>
-        <BackButton
+        <CloseButton
           type="button"
           onClick={() => navigate('/home')}
-          aria-label="뒤로가기"
+          aria-label="닫기"
         >
-          <BackIcon src={back} alt="뒤로가기" />
-        </BackButton>
+          ✕
+        </CloseButton>
 
         <HeaderArea>
           <HeaderTitle>건강검진</HeaderTitle>
@@ -560,10 +559,12 @@ const Content = styled.div`
   flex-direction: column;
 `;
 
-const BackButton = styled.button`
+// 뒤로가기(<) 대신 닫기(✕)로 나간다. 자리만 오른쪽 위로 옮기고, 모양은 다른 팝업들의
+// 닫기 버튼(PopupClose)과 맞춘다.
+const CloseButton = styled.button`
   position: absolute;
   top: 35px;
-  left: 20px;
+  right: 20px;
   z-index: 10;
   width: 40px;
   height: 40px;
@@ -574,11 +575,10 @@ const BackButton = styled.button`
   display: flex;
   align-items: center;
   justify-content: center;
-`;
-
-const BackIcon = styled.img`
-  width: 38px;
-  height: 38px;
+  color: #8c8780;
+  font-size: 24px;
+  font-weight: 700;
+  line-height: 1;
 `;
 
 const HeaderArea = styled.div`

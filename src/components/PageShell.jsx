@@ -62,6 +62,39 @@ export function PageBack({ onClick, label = '뒤로가기' }) {
   );
 }
 
+// 뒤로가기(<) 대신 닫기(✕)로 나가는 화면에서 쓴다. 위치·크기는 PageBack과 같은 자리를
+// 오른쪽으로 옮긴 것뿐이고, 모양은 팝업들의 닫기 버튼(PopupClose)과 맞췄다.
+const CloseButton = styled.button`
+  position: absolute;
+  top: 35px;
+  right: 20px;
+  z-index: 10;
+
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  color: #8c8780;
+  font-size: 24px;
+  font-weight: 700;
+  line-height: 1;
+`;
+
+export function PageClose({ onClick, label = '닫기' }) {
+  return (
+    <CloseButton type="button" aria-label={label} onClick={onClick}>
+      ✕
+    </CloseButton>
+  );
+}
+
 export const PageHeader = styled.div`
   flex-shrink: 0;
   display: flex;
