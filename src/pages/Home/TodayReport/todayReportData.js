@@ -1,13 +1,11 @@
 import { getDailyLog, getFamilyDailyLog } from '../../../api/daily';
-import { getMedications, getMedicationLogs } from '../../../api/medication';
+import { getMedications, getMedicationLogs, getFamilyMedicationStatus } from '../../../api/medication';
 import { getMorningHistory, getTodayQuestion } from '../../../api/morning';
 import { getMyFamily } from '../../../api/family';
 import { getUserId } from '../../../api/client';
 import { toDateString, timeToLabel, activeSchedules } from '../../../utils/medication';
 import { getRelationLabel, withCompanionJosa } from '../../../utils/family';
 import { findMyLatestAnswer, findPartnerLatestAnswer } from '../../../utils/morningAnswer';
-import { getWeekStart } from '../WeeklyReport/weeklyReportData';
-import { getMockDailyReport } from '../../../mock/dailyReport';
 import { getMockSteps, buildStepsMessage } from '../../../mock/steps';
 
 const WEEKDAY_LABELS = ['일', '월', '화', '수', '목', '금', '토'];
@@ -79,8 +77,10 @@ const buildMedicationEntry = (medicationLog, medications) => {
     const info = scheduleInfo.get(log.scheduleId);
     return {
       key: log.scheduleId ?? `row-${index}`,
-      name: info?.name ?? '복용약',
-      timeLabel: info?.timeLabel ?? '',
+      // 가족 복약 현황(family/status)은 scheduleId 대신 이름·시각을 직접 실어 준다.
+      // 그때는 이 값을 그대로 쓰고, 없으면(내 계정) scheduleId로 찾은 값을 쓴다.
+      name: log.name ?? info?.name ?? '복용약',
+      timeLabel: log.timeLabel ?? info?.timeLabel ?? '',
       taken: log.status === 'TAKEN',
       ...MEDICATION_COLORS[index % MEDICATION_COLORS.length],
     };
@@ -106,6 +106,24 @@ const buildMedicationEntry = (medicationLog, medications) => {
       notTaken.length > 0
         ? `${notTaken.length}번은 아직 기록되지 않았어요`
         : '오늘 복약을 모두 챙기셨어요',
+  };
+};
+
+// 가족 복약 현황(GET /medications/family/status)은 내 복약 기록(GET /medications/logs)과
+// 응답 모양이 다르다 — scheduleId 대신 medicationId+scheduledTime, 이름·시각도
+// 이미 다 들어 있다. buildMedicationEntry가 쓰는 모양({ medications, takenCount,
+// totalCount })으로 맞춰준다.
+const normalizeFamilyMedicationLog = (statusList) => {
+  const medications = (statusList ?? []).map((item) => ({
+    scheduleId: `${item.medicationId}-${item.scheduledTime}`,
+    status: item.status,
+    name: item.medicationName,
+    timeLabel: timeToLabel(item.scheduledTime),
+  }));
+  return {
+    medications,
+    takenCount: medications.filter((item) => item.status === 'TAKEN').length,
+    totalCount: medications.length,
   };
 };
 
@@ -168,13 +186,6 @@ const buildSummary = (dailyLog, medicationLog) => {
   };
 };
 
-// 이번 주를 0으로 놓고 몇 주 전인지 센다. 테스트 계정은 지난 주 기록이 서버에 없어서
-// 주간 리포트와 같은 시연용 데이터를 쓴다.
-const weeksAgoOf = (date) => {
-  const start = getWeekStart(date);
-  return Math.round((getWeekStart() - start) / (7 * 24 * 60 * 60 * 1000));
-};
-
 // person이 'me'면 내 일지를, 아니면 가족 구성원의 일지를 불러온다.
 // dateString은 '2026-08-04' 또는 null(오늘). useApi가 인자를 JSON으로 주고받아서
 // Date 객체를 그대로 넘길 수 없다.
@@ -185,27 +196,11 @@ export async function loadTodayReport(person, dateString = null) {
   const family = await getMyFamily().catch(() => null);
   const myUserId = getUserId();
   const members = family?.members ?? [];
-  const me = members.find((member) => String(member.userId) === String(myUserId));
   const partner = members.find((member) => String(member.userId) !== String(myUserId));
 
   const isMe = person === 'me';
   if (!isMe && !partner) {
     return null;
-  }
-
-  // 지난 주 날짜를 열었다면 주간 리포트와 같은 요일 값에서 하루 기록을 만든다.
-  const weeksAgo = weeksAgoOf(date);
-  if (weeksAgo > 0) {
-    const myRole = me?.role === 'CHILD' ? 'child' : 'parent';
-    const role = isMe ? myRole : myRole === 'parent' ? 'child' : 'parent';
-    const mock = getMockDailyReport({
-      role,
-      weeksAgo,
-      date,
-      personLabel: isMe ? '나' : getRelationLabel(partner),
-      isMine: isMe,
-    });
-    if (mock) return mock;
   }
 
   // 걸음 수는 서버에 없어서 날짜로 정하는데, '어제보다 N보' 문장을 만들려면
@@ -221,7 +216,11 @@ export async function loadTodayReport(person, dateString = null) {
     isMe
       ? getDailyLog(recordDate).catch(() => null)
       : getFamilyDailyLog(partner.userId, recordDate).catch(() => null),
-    isMe ? getMedicationLogs(recordDate).catch(() => null) : null,
+    isMe
+      ? getMedicationLogs(recordDate).catch(() => null)
+      : getFamilyMedicationStatus(partner.userId, recordDate)
+          .then(normalizeFamilyMedicationLog)
+          .catch(() => null),
     isMe ? getMedications().catch(() => []) : [],
     getMorningHistory({ from: recordDate, to: recordDate }).catch(() => []),
     isMe

@@ -4,5 +4,6 @@ export { updateMedication } from './updateMedication';
 export { deleteMedication } from './deleteMedication';
 export { getDueMedications } from './getDueMedications';
 export { getMedicationLogs } from './getMedicationLogs';
+export { getFamilyMedicationStatus } from './getFamilyMedicationStatus';
 export { createMedicationLog } from './createMedicationLog';
 export { updateMedicationLogs } from './updateMedicationLogs';
