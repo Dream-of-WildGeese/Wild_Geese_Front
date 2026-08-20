@@ -4,9 +4,9 @@ import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { completeOnboarding } from '../../api/user';
 import { useApiAction } from '../../hooks/useApi';
 import { useAppData } from '../../store/AppDataContext';
-import sprout from '../../assets/onboarding/sprout.svg';
-import completeFlower from '../../assets/onboarding/complete-flower.svg';
-import completeFlower2 from '../../assets/onboarding/complete-flower2.svg';
+import sprout from '../../assets/onboarding/sprout.png';
+import completeFlower from '../../assets/onboarding/complete-flower.png';
+import completeFlower2 from '../../assets/onboarding/complete-flower2.png';
 
 
 const StepComplete = () => {

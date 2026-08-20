@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
-import back from '../../assets/onboarding/x.svg';
+import back from '../../assets/onboarding/x.png';
 import { createMedication, getMedications } from '../../api/medication';
 import { useApi, useApiAction } from '../../hooks/useApi';
 import {

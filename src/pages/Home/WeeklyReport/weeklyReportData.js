@@ -266,10 +266,33 @@ async function withRealMedication(report, weekStart, days) {
   };
 }
 
-// 목록 화면용. 주 목록을 주는 API가 없어서 최근 주차를 직접 만들어 각각 조회한다.
-// 지난 주는 아직 서버에 리포트가 없어서, 없는 주만 시연용 데이터로 채운다.
+// /weekly는 한 번에 3~4초가 걸린다(서버가 요청마다 AI 문구를 만든다).
+// 같은 주를 다시 열 때 또 기다리지 않도록 받아둔 것을 기억한다.
+// 약속(Promise)째로 담아둬서, 동시에 두 번 부르면 요청도 한 번만 나간다.
+const reportCache = new Map();
+
+const fetchWeeklyReport = (weekId) => {
+  if (!reportCache.has(weekId)) {
+    reportCache.set(weekId, getWeeklyReport(weekId).catch(() => null));
+  }
+  return reportCache.get(weekId);
+};
+
+// 목록 화면이 부른다. 사용자가 카드를 누를 때쯤이면 이미 도착해 있다.
+export const prefetchWeeklyReport = (weekId) => {
+  fetchWeeklyReport(weekId);
+};
+
+// 목록 화면용.
+//
+// 예전에는 주마다 /weekly를 한 번씩 불렀다. 그런데 그 API는 한 번에 3~4초가 걸린다
+// (서버가 요청마다 AI 문구를 만든다). 일곱 주면 스무 초가 넘게 걸렸다.
+//
+// 목록이 실제로 쓰는 건 '주차 이름'과 '한 줄평' 둘뿐인데, 그 둘은 /weekly/history가
+// 0.2초 만에 통째로 준다. 무거운 조회는 상세 화면으로 미룬다.
 export async function loadWeeklyList(person) {
   const thisWeekStart = getWeekStart();
+  const thisWeekId = toDateString(thisWeekStart);
   const starts = Array.from({ length: PAST_WEEK_COUNT + 1 }, (_, index) =>
     addDays(thisWeekStart, -7 * index),
   );
@@ -281,50 +304,41 @@ export async function loadWeeklyList(person) {
     .slice(1)
     .map((start, index) => getMockReport(role, index + 1, toDateString(start)));
 
-  // 가족은 최신 주차만 조회할 수 있어서, 이번 주만 서버에서 가져온다.
+  // 이번 주 카드는 주차 이름과 '입력 중' 표시만 보여준다. 리포트를 받을 일이 없다.
+  const currentSummary = toWeekSummary({ inProgress: true }, thisWeekStart);
+
+  // 가족은 지난 주를 조회할 통로가 없어서 시연용 데이터로 채운다.
   if (person !== 'me') {
     if (!partner) return { current: null, past: [], partnerOnly: true };
 
-    const latest = await getFamilyLatestReport(partner.userId).catch(() => null);
     return {
-      current: toWeekSummary(
-        await resolveCurrentWeek(latest, role, toDateString(starts[0])),
-        starts[0],
-      ),
+      current: currentSummary,
       past: mockPast.map((report, index) => toWeekSummary(report, starts[index + 1])),
       partnerOnly: true,
     };
   }
 
-  // 서버가 리포트를 만들어둔 주 목록. 없는 주를 헛되이 조회하지 않아도 된다.
-  // 다만 월요일 시작과 일요일 시작이 섞여 오는데, 앱은 월요일 기준이라
-  // 월요일 것만 취한다. 안 그러면 6일이 겹치는 주가 나란히 뜬다.
+  // 월요일 시작과 일요일 시작이 섞여 오는데, 앱은 월요일 기준이라 월요일 것만 취한다.
+  // 안 그러면 6일이 겹치는 주가 나란히 뜬다.
   const history = await getWeeklyHistory().catch(() => null);
-  const historyStarts = (history ?? [])
-    .map((item) => item.weekStartDate)
-    .filter((date) => new Date(`${date}T00:00:00`).getDay() === 1);
+  const byDate = new Map(
+    (history ?? [])
+      .filter((item) => new Date(`${item.weekStartDate}T00:00:00`).getDay() === 1)
+      .map((item) => [item.weekStartDate, item]),
+  );
 
-  // 목록에 없더라도 최근 몇 주는 시연용 데이터로 채워야 해서 둘을 합친다.
-  const pastDates = [...new Set([...starts.slice(1).map(toDateString), ...historyStarts])]
-    .filter((date) => date < toDateString(starts[0]))
+  // 서버에 있는 주와 시연용으로 채울 주를 합친다.
+  const pastDates = [...new Set([...starts.slice(1).map(toDateString), ...byDate.keys()])]
+    .filter((date) => date < thisWeekId)
     .sort((a, b) => b.localeCompare(a))
     .slice(0, PAST_WEEK_COUNT);
 
-  const [currentReport, ...pastReports] = await Promise.all([
-    getWeeklyReport(toDateString(starts[0])).catch(() => null),
-    ...pastDates.map((date) => getWeeklyReport(date).catch(() => null)),
-  ]);
-
   return {
-    current: toWeekSummary(
-      await resolveCurrentWeek(currentReport, role, toDateString(starts[0])),
-      starts[0],
-    ),
-    past: pastReports.map((report, index) => {
-      const start = new Date(`${pastDates[index]}T00:00:00`);
-      // 서버에 실제 기록이 없는 주는 몇 주 전인지에 맞는 시연용 데이터로 채운다.
-      const mock = getMockReport(role, weeksAgoOf(start), pastDates[index]);
-      return toWeekSummary(hasRecords(report) ? report : (mock ?? report), start);
+    current: currentSummary,
+    past: pastDates.map((date) => {
+      const start = new Date(`${date}T00:00:00`);
+      // 서버에 있으면 그 한 줄평을, 없으면 몇 주 전인지에 맞는 시연용 데이터를 쓴다.
+      return toWeekSummary(byDate.get(date) ?? getMockReport(role, weeksAgoOf(start), date), start);
     }),
     partnerOnly: false,
   };
@@ -333,9 +347,13 @@ export async function loadWeeklyList(person) {
 // 상세 화면용. weekId는 그 주의 월요일 날짜('2026-08-10')다.
 export async function loadWeeklyDetail(weekId, person) {
   const start = new Date(`${weekId}T00:00:00`);
+  const weeksAgo = weeksAgoOf(start);
+
+  // 가족 조회를 기다린 뒤에 리포트를 부르면 두 시간이 그대로 더해진다.
+  // 리포트 쪽이 3~4초로 훨씬 길어서, 둘을 같이 띄워 보낸다.
+  const reportPromise = person === 'me' ? fetchWeeklyReport(weekId) : null;
   const { partner, myRole, partnerRole } = await findFamilyRoles();
   const role = person === 'me' ? myRole : partnerRole;
-  const weeksAgo = weeksAgoOf(start);
   const mock = getMockReport(role, weeksAgo, weekId);
 
   if (person !== 'me') {
@@ -354,7 +372,7 @@ export async function loadWeeklyDetail(weekId, person) {
     return { week: toWeekSummary(safe, start), detail: toWeeklyDetail(safe) };
   }
 
-  const fetched = await getWeeklyReport(weekId).catch(() => null);
+  const fetched = await reportPromise;
   // 이번 주(weeksAgo 0)는 오늘까지만 채운다. 지난 주는 통째로 채운다.
   const report =
     weeksAgo === 0

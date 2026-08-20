@@ -6,7 +6,7 @@ import { getMe, updateHealthProfile, getHealthProfile } from '../../api/user';
 import { getMedications } from '../../api/medication';
 import { useApi, useApiAction } from '../../hooks/useApi';
 import BirthDatePickerModal from '../../components/BirthDatePickerModal';
-import heart from '../../assets/onboarding/heart.svg';
+import heart from '../../assets/onboarding/heart.png';
 import MissingFieldsPopup from '../../components/MissingFieldsPopup';
 import { DISEASE_LIST } from '../../utils/health';
 
