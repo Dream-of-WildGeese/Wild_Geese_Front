@@ -2,7 +2,7 @@ import styled from 'styled-components';
 import medicationIconBg from '../../assets/medication-icon-bg.svg';
 import settingsIconBg from '../../assets/settings-icon-bg.svg';
 import healthCrossIcon from '../../assets/home/popup-cross.svg';
-import bellIcon from '../../assets/home/bell.svg';
+import bellIcon from '../../assets/home/bell.png';
 import settingsIcon from '../../assets/home/settings.png';
 
 const Bar = styled.div`
