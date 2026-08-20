@@ -277,7 +277,7 @@ export async function loadTodayReport(person, dateString = null) {
           title: `이제 ${withCompanionJosa(personLabel)} 안부를 나눠볼까요?`,
           // 서버 요약을 그대로 인용하면 문장이 어색하거나 텅 빌 때가 있었다.
           // API에 기대지 않고 항상 같은 고정 문구만 보여준다.
-          suggestedMessage: '"안부 전화를 걸어보는 건 어때요?"',
+          suggestedMessage: '"안부 전화를 걸어볼까요?"',
         },
   };
 }

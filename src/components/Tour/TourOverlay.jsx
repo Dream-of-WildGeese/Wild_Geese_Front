@@ -17,6 +17,13 @@ const findTarget = (name) =>
 
 // 화면 절대 좌표가 아니라 폰 프레임 안에서의 좌표를 낸다.
 // 프레임은 창 가운데에 떠 있어서, 창 크기가 바뀌면 프레임째로 좌우로 움직인다.
+//
+// 이 오버레이는 PopupPortal로 프레임의 자식으로 붙고 inset:0을 쓰는데,
+// 그건 프레임의 '테두리 안쪽'(패딩 박스)을 기준으로 잡힌다. 반면
+// getBoundingClientRect()의 frame 좌표는 테두리를 포함한 바깥쪽(보더 박스)
+// 기준이라, 프레임에 테두리가 있으면(지금 2px) 그만큼 오차가 생겨 오른쪽·
+// 아래쪽 여백이 왼쪽·위쪽보다 미세하게 커 보였다. clientLeft/clientTop(테두리
+// 두께)를 빼서 오버레이가 실제로 그려지는 기준점에 맞춘다.
 const rectOf = (el) => {
   const frame = frameEl();
   if (!el || !frame) return null;
@@ -27,8 +34,8 @@ const rectOf = (el) => {
   if (r.width === 0 || r.height === 0) return null;
 
   return {
-    top: Math.round(r.top - f.top),
-    left: Math.round(r.left - f.left),
+    top: Math.round(r.top - f.top - frame.clientTop),
+    left: Math.round(r.left - f.left - frame.clientLeft),
     width: Math.round(r.width),
     height: Math.round(r.height),
   };
@@ -234,12 +241,20 @@ function TourOverlay({ onClose }) {
   const [index, setIndex] = useState(0);
   const [rects, setRects] = useState([]);
   const [labels, setLabels] = useState([]);
-  const [waiting, setWaiting] = useState(false);
   const [frame, setFrame] = useState({ width: 402, height: 874 });
 
   // 되풀이해서 재는 함수가 늘 최신 단계를 보도록 따로 담아둔다.
   const indexRef = useRef(0);
   indexRef.current = index;
+
+  // 'gone'(닫히면 다음으로)은 '한 번 열린 뒤 닫힘'과 '애초에 연 적이 없음'을
+  // 구분해야 한다. '이전/다음' 버튼으로 이 단계에 수동으로 들어왔을 때는
+  // 실제 팝업을 아직 안 열었을 수 있는데, 그때도 findTarget이 못 찾으면
+  // '방금 닫혔다'로 착각해서 곧장 다음 단계로 튕겨나갔다.
+  const seenAnchorRef = useRef(false);
+  useEffect(() => {
+    seenAnchorRef.current = false;
+  }, [index]);
 
   const finish = useCallback(() => {
     markTourSeen();
@@ -252,6 +267,9 @@ function TourOverlay({ onClose }) {
       const step = TOUR_STEPS[current];
       if (!step) return;
 
+      const found = !step.anchor || Boolean(findTarget(step.anchor));
+      if (found) seenAnchorRef.current = true;
+
       // 1) 앞으로 갈 때가 됐는지 먼저 본다.
       if (step.advance === 'next') {
         const next = TOUR_STEPS[current + 1];
@@ -260,25 +278,21 @@ function TourOverlay({ onClose }) {
           return;
         }
       }
-      if (step.advance === 'gone' && !findTarget(step.anchor)) {
+      if (step.advance === 'gone' && seenAnchorRef.current && !found) {
         if (current + 1 < TOUR_STEPS.length) setIndex(current + 1);
         else finish();
         return;
       }
 
       // 2) 지금 단계가 있을 자리인지 본다.
-      //    자리가 아니면 조용히 감추고 기다린다. 사용자가 딴 데로 새도 안 깨진다.
-      if (step.anchor && !findTarget(step.anchor)) {
-        for (let back = current - 1; back >= 0; back -= 1) {
-          if (findTarget(TOUR_STEPS[back].anchor)) {
-            setIndex(back);
-            return;
-          }
-        }
-        setWaiting(true);
+      //    자리가 없으면(아직 그 화면/팝업을 안 열었으면) 밝힐 구멍만 없이 두고
+      //    안내 글은 그대로 보여준다. 예전에는 여기서 앞 단계 중 자리가 있는
+      //    쪽으로 조용히 되돌렸는데, 그러면 '이전/다음' 버튼으로 옮긴 단계를
+      //    이 코드가 마음대로 다시 튕겨서 순서대로 못 갔다.
+      if (!found) {
+        setRects((prev) => (prev.length === 0 ? prev : []));
         return;
       }
-      setWaiting(false);
 
       // 3) 자리를 잰다.
       const frameNode = frameEl();
@@ -360,7 +374,7 @@ function TourOverlay({ onClose }) {
     return () => window.removeEventListener('keydown', onKeyDown);
   }, [finish]);
 
-  if (!step || waiting) return null;
+  if (!step) return null;
 
   const dim = step.dim ?? DEFAULT_DIM;
   const clickAnywhere = step.advance === 'any';
@@ -480,10 +494,12 @@ function TourOverlay({ onClose }) {
             key={label.target}
             style={{
               left: label.rect.left + label.rect.width / 2,
-              // 이름표가 아이콘에 거의 붙어 보여서 위/아래 간격을 더 벌린다.
+              // 상단 아이콘(below)은 이름표가 바로 밑에 거의 붙어야 한눈에
+              // 어느 아이콘 이름인지 알 수 있다. 하단 아이콘(above)은 그 위의
+              // 안내 창과 겹치지 않도록 조금 더 띄운다.
               ...(label.side === 'above'
                 ? { top: Math.max(label.rect.top - 34, 4) }
-                : { top: label.rect.top + label.rect.height + 14 }),
+                : { top: label.rect.top + label.rect.height + 4 }),
             }}
           >
             {label.text}
