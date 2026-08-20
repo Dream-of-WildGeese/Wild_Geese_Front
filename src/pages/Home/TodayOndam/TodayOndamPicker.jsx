@@ -20,7 +20,7 @@ const OPTIONS = [
     label: '아침 연결 질문',
     desc: '오늘의 이야기를 나눠요',
   },
-  { type: 'medication', icon: pillIcon, label: '복용 약 체크', desc: '오늘의 약을 챙겨요' },
+  { type: 'medication', icon: pillIcon, label: '복용약 체크', desc: '오늘의 약을 챙겨요' },
   { type: 'evening', icon: moonIcon, label: '저녁 건강 기록', desc: '오늘의 건강을 기록해요' },
 ];
 
