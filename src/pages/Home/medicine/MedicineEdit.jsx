@@ -149,14 +149,7 @@ function MedicineEdit() {
     setSaveBlocked(true);
   };
 
-  const handleDelete = async () => {
-    const { ok, error } = await removeMedication(medication.id);
-    if (ok) {
-      navigate('/home/medicine');
-      return;
-    }
-    alert(error.message);
-  };
+  
 
   if (loading) {
     return (

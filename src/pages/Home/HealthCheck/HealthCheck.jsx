@@ -111,20 +111,31 @@ const HealthCheck = () => {
   // AI 인사이트(doctorQuestions)는 서버가 조회할 때마다 문구를 새로 생성해서, 화면에
   // 들어올 때마다 멘트가 바뀌는 문제가 있었다. "저녁 건강체크를 완료한 당사자의 인사이트만
   // 갱신"하기로 해서, 나/가족 각자의 저녁체크 완료 여부를 오늘 날짜로 조회해 신호로 쓴다.
-  const dailyLogArgs = person === 'family' ? [partnerUserId, todayStr] : [todayStr];
-  const { data: relevantDailyLog } = useApi(
-    person === 'family' ? getFamilyDailyLog : getDailyLog,
-    { args: dailyLogArgs, enabled: person !== 'family' || Boolean(partnerUserId) },
-  );
+  //
+  // 나/가족용 요청을 person 하나로 스위치해서 같은 훅으로 부르면, 탭을 바꾼 직후 한
+  // 렌더 동안 args만 바뀌고 이전 사람의 응답이 아직 남아있는 순간이 생긴다. 그 순간에
+  // 캐시에 잘못 저장되면(다른 사람 문구가 그대로 굳어버림) 나/가족 인사이트가 똑같이
+  // 보이는 문제가 생겨서, 아예 훅을 나/가족용으로 나눠 스위칭 자체가 없게 한다.
+  const { data: myDailyLog } = useApi(getDailyLog, { args: [todayStr] });
+  const { data: familyDailyLog } = useApi(getFamilyDailyLog, {
+    args: partnerUserId ? [partnerUserId, todayStr] : [],
+    enabled: Boolean(partnerUserId),
+  });
+  const relevantDailyLog = person === 'family' ? familyDailyLog : myDailyLog;
   const eveningAnsweredToday = (relevantDailyLog?.eveningAnswers ?? []).length > 0;
 
-  // doctorQuestions(AI 인사이트)는 아직 /all에 없어서 기존 엔드포인트를 그대로 쓰고,
+  // doctorQuestions(AI 인사이트)도 같은 이유로 나/가족용을 각각 따로 불러온다.
+  // 아직 /all에는 없어서 기존 엔드포인트를 그대로 쓴다.
+  const { data: myCheckupData, refetch: refetchMyCheckup } = useApi(getCheckups, { args: [] });
+  const { data: familyCheckupData, refetch: refetchFamilyCheckup } = useApi(getCheckups, {
+    args: partnerUserId ? [partnerUserId] : [],
+    enabled: Boolean(partnerUserId),
+  });
+  const checkupData = person === 'family' ? familyCheckupData : myCheckupData;
+
   // 검진 목록(다가오는/지난/달력)은 전체를 다 내려주는 /checkups/all로 만든다.
   // 기존 /checkups는 "가장 가까운 미래 검진" 1개만 줘서, 미래 검진이 2개 이상이면
   // 나머지가 응답에서 통째로 빠지는 문제가 있었다.
-  const { data: checkupData, refetch } = useApi(getCheckups, {
-    args: targetId ? [targetId] : [],
-  });
   const { data: allCheckups, refetch: refetchAll } = useApi(getAllCheckups, {
     args: targetId ? [targetId] : [],
   });
@@ -145,7 +156,8 @@ const HealthCheck = () => {
   const [deleteError, setDeleteError] = useState(null);
 
   const refetchAllLists = () => {
-    refetch();
+    refetchMyCheckup();
+    refetchFamilyCheckup();
     refetchAll();
   };
 
