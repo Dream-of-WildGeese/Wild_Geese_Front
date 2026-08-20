@@ -93,13 +93,12 @@ export const toWeeklyDetail = (report) => {
 
   return {
     // 아직 쌓이는 중인 주는 문구를 만들지 않는다.
-    headline: inProgress ? '' : (report.weeklyComment ?? ''),
-    headlineDesc: inProgress
-      ? ''
-      : (report.weeklyDetail ??
-        (report.isBaselineSufficient
-          ? ''
-          : '아직 비교할 지난주 기록이 부족해서, 이번 주 기록만 보여드려요.')),
+    headline: report.weeklyComment ?? '',
+    headlineDesc:
+      report.weeklyDetail ??
+      (report.isBaselineSufficient
+        ? ''
+        : '아직 비교할 지난주 기록이 부족해서, 이번 주 기록만 보여드려요.'),
     condition: toDailyDots(condition),
     conditionTrend: toTrend(condition?.trend),
     conditionNote: condition?.comment ?? '',
@@ -146,8 +145,7 @@ const toWeekSummary = (report, start) => {
       start.getFullYear() === new Date().getFullYear()
         ? `${start.getMonth() + 1}월`
         : `${start.getFullYear()}년 ${start.getMonth() + 1}월`,
-    // 한 주가 다 차지 않은 리포트는 한 줄평을 만들지 않는다(목록에서도 비워둔다).
-    comment: report?.inProgress ? '' : (report?.weeklyComment ?? ''),
+    comment: report?.weeklyComment ?? '',
     // 이번 주는 아직 쌓이는 중이라 목록에서 '입력 중'으로 표시한다.
     inProgress: Boolean(report?.inProgress),
   };
@@ -209,29 +207,26 @@ async function resolveCurrentWeek(fetched, role, weekStartDate) {
   if (hasRecords(fetched) || built) {
     const base = fetched ?? {};
 
-    // 한 주가 다 차기 전에는 어떤 문장도 만들지 않는다.
-    // 서버는 '이번 주 35번 중 30번 챙기셨어요' 같은 완결된 문장을 미리 주는데,
-    // 아직 이틀치만 쌓인 주에 그런 말을 붙이면 사실과 다른 요약이 된다.
-    // 그래프(요일별 값)만 보여주고 한 줄평·다음 주 제안·AI 코멘트는 모두 비운다.
+    // 예전에는 진행 중인 주의 문장을 전부 비웠다. 서버가 아직 덜 찬 주에도
+    // 완결된 요약을 미리 붙여서 사실과 달랐기 때문이다.
+    // 지금은 서버가 요일을 짚어가며 제대로 써준다('특히 월요일과 화요일에 푹
+    // 주무셨네요'), 그래서 그대로 보여준다.
     const meds = base.medication ?? {};
 
     return {
       ...base,
       inProgress: true,
-      weeklyComment: '',
-      weeklyDetail: '',
-      nextWeekSuggestion: '',
-      aiCoachInsight: '',
       metrics: Object.fromEntries(
         EVENING_ORDER.map((metric) => [
           metric,
           {
             ...(base.metrics?.[metric] ?? {}),
             daily: built ? built[metric] : (base.metrics?.[metric]?.daily ?? []),
-            comment: '',
           },
         ]),
       ),
+      // 복약 집계만 비운다. 이 숫자는 지금도 맞지 않는다.
+      // (주 41회가 계획인데 '58번 중 51번'이라고 온다. 목요일까지는 최대 23회다)
       medication: { ...meds, comment: '' },
     };
   }
