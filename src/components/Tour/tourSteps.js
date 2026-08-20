@@ -20,7 +20,7 @@ export const TOUR_STEPS = [
     place: 'center',
     title: '온담에 오신 걸 환영해요',
     body: '떨어져 지내도 매일 안부를 나누는 곳이에요.\n어떻게 쓰는지 한 바퀴 보여드릴게요.',
-    action: '둘러보기',
+    action: '시작하기',
   },
   {
     id: 'cta',
