@@ -98,14 +98,6 @@ const YearPageButton = styled.button`
   opacity: ${({ disabled }) => (disabled ? 0.35 : 1)};
 `;
 
-const Hint = styled.p`
-  margin: ${({ theme }) => theme.spacing.md} 0 0;
-  text-align: center;
-  font-family: 'Noto Sans KR', sans-serif;
-  font-size: 13px;
-  color: #8c8172;
-`;
-
 function MorningReportDatePicker({ year, month, onConfirm, onClose }) {
   const [draftYear, setDraftYear] = useState(year);
   // 처음 열 때 보고 있던 해가 담긴 쪽을 펴둔다.
@@ -168,8 +160,6 @@ function MorningReportDatePicker({ year, month, onConfirm, onClose }) {
               </OptionButton>
             ))}
           </OptionGrid>
-
-          <Hint>{draftYear}년에서 볼 달을 골라주세요</Hint>
         </Card>
       </Backdrop>
     </PopupPortal>

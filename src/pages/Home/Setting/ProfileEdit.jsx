@@ -4,6 +4,7 @@ import styled from 'styled-components';
 import { useAppData } from '../../../store/AppDataContext';
 import { getMe, getHealthProfile, updateHealthProfile } from '../../../api/user';
 import { useApi, useApiAction } from '../../../hooks/useApi';
+import BirthDatePickerModal from '../../../components/BirthDatePickerModal';
 import {
   DISEASE_LIST,
   splitDiseases,
@@ -53,6 +54,22 @@ const Label = styled.p`
   &:first-of-type {
     margin-top: 0;
   }
+`;
+
+// 생년월일은 온보딩(HealthSet)과 같은 달력 팝업을 쓴다. 브라우저 기본
+// 날짜 입력창은 화면마다 생김새가 달라서 앱 디자인과 어긋나 보였다.
+const DateSelectButton = styled.button`
+  width: 100%;
+  height: 50px;
+  box-sizing: border-box;
+  padding: 0 14px;
+  border-radius: 10px;
+  border: 1.3px solid rgba(74,58,47,.4);
+  background: #FFF8ED;
+  color: ${({ $placeholder }) => ($placeholder ? '#a79c8e' : '#000')};
+  font-size: 16px;
+  text-align: left;
+  cursor: pointer;
 `;
 
 const Input = styled.input`
@@ -195,6 +212,16 @@ const SaveButton = styled.button`
   }
 `;
 
+// "1856-03-02" -> "1856년 3월 2일". 온보딩(HealthSet)과 같은 표기.
+const formatBirthLabel = (value) => {
+  const [year, month, day] = String(value).split('-').map(Number);
+  return `${year}년 ${month}월 ${day}일`;
+};
+
+// 온보딩과 같은 가입 가능 연령 기준.
+const MIN_AGE = 14;
+const MAX_AGE = 120;
+
 function ProfileEdit() {
   const navigate = useNavigate();
   const { setProfile, setInterests, setConditions } = useAppData();
@@ -206,6 +233,7 @@ function ProfileEdit() {
 
   const [name, setName] = useState('');
   const [birth, setBirth] = useState('');
+  const [isBirthPickerOpen, setIsBirthPickerOpen] = useState(false);
   const [gender, setGender] = useState('');
   const [interests, setLocalInterests] = useState([]);
   // 목록에서 고른 항목('기타' 표시 포함)과, 직접 적어 넣은 병명을 나눠서 들고 있다.
@@ -295,7 +323,13 @@ function ProfileEdit() {
             <Label>이름</Label>
             <Input value={name} onChange={(e) => setName(e.target.value)} />
             <Label>생년월일</Label>
-            <Input type="date" value={birth} onChange={(e) => setBirth(e.target.value)} />
+            <DateSelectButton
+              type="button"
+              $placeholder={!birth}
+              onClick={() => setIsBirthPickerOpen(true)}
+            >
+              {birth ? formatBirthLabel(birth) : '생년월일을 선택해주세요'}
+            </DateSelectButton>
             <Label>성별</Label>
             <GenderRow>
               <GenderButton type="button" $active={gender === 'MALE'} onClick={() => setGender('MALE')}>
@@ -380,6 +414,19 @@ function ProfileEdit() {
           </SaveButton>
         </PageFooter>
       </PageContent>
+
+      {isBirthPickerOpen && (
+        <BirthDatePickerModal
+          value={birth}
+          minAge={MIN_AGE}
+          maxAge={MAX_AGE}
+          onConfirm={(nextBirth) => {
+            setBirth(nextBirth);
+            setIsBirthPickerOpen(false);
+          }}
+          onClose={() => setIsBirthPickerOpen(false)}
+        />
+      )}
     </PageFrame>
   );
 }

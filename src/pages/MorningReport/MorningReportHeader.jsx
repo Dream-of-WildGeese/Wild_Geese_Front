@@ -38,6 +38,18 @@ const TopRowSpacer = styled.div`
   flex-shrink: 0;
 `;
 
+// 다른 페이지들과 같은 자리·같은 글꼴로 제목을 둔다. 이 화면만 제목이 없어서
+// 아래로 내려가면 지금 뭘 보고 있는 화면인지 알기 어려웠다.
+const Title = styled.h1`
+  margin: 0;
+  width: 100%;
+  text-align: center;
+  color: #4a3a2f;
+  font-family: Jua, sans-serif;
+  font-size: 32px;
+  font-weight: 400;
+`;
+
 const MonthNav = styled.div`
   display: flex;
   flex-direction: column;
@@ -99,6 +111,7 @@ function MorningReportHeader({ year, month, onPrevMonth, onNextMonth, onOpenPick
         </BackButton>
         <TopRowSpacer />
       </TopRow>
+      <Title>추억 보관함</Title>
       <MonthNav>
         <YearLabel type="button" aria-label="연월 빠른 이동" onClick={onOpenPicker}>
           {year}

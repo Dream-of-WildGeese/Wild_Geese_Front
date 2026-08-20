@@ -198,13 +198,15 @@ const DayLabel = styled.span`
   font-size: 11px;
 `;
 
-// 컨디션은 표정 그림 대신 점수 색만 칠한 동그라미로 보여준다.
-// border-box로 두지 않으면 테두리(1.5px×2)만큼 옆의 점선 원(EmptyCircle)보다
-// 커 보인다. $size를 실제 렌더 지름 그대로로 맞추려면 border-box가 필요하다.
+// 컨디션·식사·복약이 같은 자리에서 원 하나로 그날의 기록 여부를 보여준다.
+// 예전엔 컨디션(26px, 테두리 포함 실측은 더 큼)·식사(40px)·복약(36px)·빈 원(26px)이
+// 전부 크기가 달라서 같은 줄에서도 오르락내리락해 보였다. 넷 다 32px로 맞춘다.
+const CIRCLE_SIZE = 32;
+
 const ConditionDot = styled.span`
   box-sizing: border-box;
-  width: ${({ $size }) => $size}px;
-  height: ${({ $size }) => $size}px;
+  width: ${CIRCLE_SIZE}px;
+  height: ${CIRCLE_SIZE}px;
   border-radius: 50%;
   background: ${({ $color }) => $color};
   border: 1.5px solid rgba(74, 58, 47, 0.2);
@@ -219,20 +221,20 @@ const IconWrap = styled.div`
 `;
 
 const MealIcon = styled.img`
-  width: 40px;
-  height: 40px;
+  width: ${CIRCLE_SIZE}px;
+  height: ${CIRCLE_SIZE}px;
   object-fit: contain;
 `;
 
 const FlowerIcon = styled.img`
-  width: 36px;
-  height: 36px;
+  width: ${CIRCLE_SIZE}px;
+  height: ${CIRCLE_SIZE}px;
   object-fit: contain;
 `;
 
 const EmptyCircle = styled.img`
-  width: 26px;
-  height: 26px;
+  width: ${CIRCLE_SIZE}px;
+  height: ${CIRCLE_SIZE}px;
   object-fit: contain;
 `;
 
@@ -518,14 +520,16 @@ function WeeklyReportDetail() {
               <DayRow $height={CHART_ROW}>
                 {detail.condition.map((item) => (
                   <DayCol key={item.day}>
-                    {/* 아직 답하지 않은 날은 빈 원으로 둔다. 표정을 채우면 기록한 것처럼 보인다 */}
-                    {item.score ? (
-                      <ConditionDot $size={26} $color={scoreColor(item.score)} />
-                    ) : (
-                      <IconWrap>
+                    {/* 아직 답하지 않은 날은 빈 원으로 둔다. 표정을 채우면 기록한 것처럼 보인다.
+                        점수가 있을 때만 IconWrap 없이 두면 그 칸만 살짝 다른 높이에 놓여서,
+                        다른 지표(식사·복약)처럼 항상 IconWrap으로 감싸 자리를 맞춘다. */}
+                    <IconWrap>
+                      {item.score ? (
+                        <ConditionDot $color={scoreColor(item.score)} />
+                      ) : (
                         <EmptyCircle src={emptyCircleIcon} alt="" />
-                      </IconWrap>
-                    )}
+                      )}
+                    </IconWrap>
                     <DayLabel>{item.day}</DayLabel>
                   </DayCol>
                 ))}

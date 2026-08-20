@@ -179,7 +179,13 @@ function MedicineCheckPopup({ onClose }) {
 
   // '기록 수정'은 하루치를 통째로 고친다. 고치고 돌아왔는데 완료 화면이 지금
   // 시간대만 보여주면, 방금 뺀 체크가 안 지워진 것처럼 보인다. 그때는 하루 전체를 본다.
+  //
+  // 다만 이걸 늘 켜두면, 지금 시간대 것만 보려고 들어갔다가 아무것도 안 바꾸고
+  // (또는 다른 시간대를 체크했다 다시 취소하고) 나와도 완료 화면이 하루 전체로
+  // 바뀌어 버린다. 수정 전/후를 비교해서 '지금 시간대 바깥'이 실제로 달라졌을
+  // 때만 하루 전체를 보여준다.
   const [editedWholeDay, setEditedWholeDay] = useState(false);
+  const preEditTakenRef = useRef(null);
 
   // 두 팝업이 같은 로더를 쓴다. 여기서 목록을 따로 만들면 기록 수정 화면과 어긋난다.
   const { data, loading, error, refetch } = useApi(loadTodayMedications);
@@ -254,8 +260,22 @@ function MedicineCheckPopup({ onClose }) {
         onClose={onClose}
         onDone={async () => {
           // 수정한 내용을 완료 화면이 바로 보여주도록 기록을 다시 읽는다.
-          await refetch();
-          setEditedWholeDay(true);
+          const fresh = await refetch();
+          const freshRows = flattenAll(fresh?.items ?? []);
+          const currentSlotIds = new Set(medRows.map((med) => med.scheduleId));
+          const before = preEditTakenRef.current ?? new Map();
+
+          // 지금 시간대 바깥의 약 중 하나라도 체크 상태가 실제로 달라졌을 때만
+          // 하루 전체 보기로 바꾼다. 안 그러면 아무것도 안 바뀐 시간대까지
+          // 하루 전체로 보여서 방금까지 보던 것과 다른 화면처럼 느껴진다.
+          const changedOutsideSlot = freshRows.some(
+            (med) =>
+              !currentSlotIds.has(med.scheduleId) &&
+              before.has(med.scheduleId) &&
+              before.get(med.scheduleId) !== med.taken,
+          );
+
+          setEditedWholeDay(changedOutsideSlot);
           setStep('complete');
         }}
       />
@@ -318,7 +338,13 @@ function MedicineCheckPopup({ onClose }) {
           <CompleteNote>{note}</CompleteNote>
 
           <PopupButtonRow>
-            <EditRecordButton type="button" onClick={() => setStep('edit')}>
+            <EditRecordButton
+              type="button"
+              onClick={() => {
+                preEditTakenRef.current = new Map(allRows.map((med) => [med.scheduleId, med.taken]));
+                setStep('edit');
+              }}
+            >
               기록 수정하기
             </EditRecordButton>
             <PopupPrimaryButton type="button" onClick={onClose}>
@@ -339,7 +365,7 @@ function MedicineCheckPopup({ onClose }) {
           {hasNoMedications ? (
             '오늘 식사는 어떠셨나요?'
           ) : isAllDay ? (
-            '오늘 챙길 약이에요!'
+            '오늘의 약을 챙겨요'
           ) : (
             <>
               {timeLabel}
