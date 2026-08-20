@@ -275,9 +275,9 @@ export async function loadTodayReport(person, dateString = null) {
       : {
           // '가족'이라고만 하면 누구인지 모호해서, 관계 호칭을 그대로 넣는다.
           title: `이제 ${withCompanionJosa(personLabel)} 안부를 나눠볼까요?`,
-          suggestedMessage: dailyLog?.summaryText
-            ? `"${dailyLog.summaryText}"`
-            : '"오늘 하루는 어떠셨어요?"',
+          // 서버 요약을 그대로 인용하면 문장이 어색하거나 텅 빌 때가 있었다.
+          // API에 기대지 않고 항상 같은 고정 문구만 보여준다.
+          suggestedMessage: '"안부 전화를 걸어보는 건 어때요?"',
         },
   };
 }

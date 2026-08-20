@@ -329,9 +329,11 @@ const MedIconWrap = styled.div`
   gap: 6px;
 `;
 
+// 먹은 약과 안 먹은 약의 그림 크기가 달라서(52px vs 40px) 이름표가 줄마다
+// 다른 높이에 걸려 나란해 보이지 않았다. 크기를 하나로 맞춘다.
 const MedIcon = styled.img`
-  width: ${({ $taken }) => ($taken ? 52 : 40)}px;
-  height: ${({ $taken }) => ($taken ? 52 : 40)}px;
+  width: 48px;
+  height: 48px;
   object-fit: contain;
 `;
 
