@@ -867,15 +867,18 @@ const MonthDayText = styled.span`
   white-space: nowrap;
 `;
 
-// 뱃지 너비와 텍스트 정렬을 고정하여 '1주 전', 'D-1', '오늘' 모두 동일한 칸을 차지
-// 양옆에 margin을 줘서 날짜·종류 글자와 더 떨어지게(여백 있게) 한다.
+// 뱃지 너비를 min-width가 아니라 고정 width로 둬서 '오늘'처럼 짧은 글자든
+// '11개월 전'처럼 긴 글자든 항상 같은 칸을 차지하게 한다. min-width였을 때는
+// 내용에 따라 뱃지 폭이 늘어나면서 뒤에 오는 검진 종류(이비인후과 등) 글자의
+// 시작 위치가 카드마다 달라져 정렬이 안 맞았다.
 const Badge = styled.span`
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-width: 52px;
+  width: 72px;
+  flex-shrink: 0;
   margin: 0 6px;
-  padding: 3px 8px;
+  padding: 3px 4px;
   border-radius: 999px;
   background: #C4DA85;
   color: #374619;
@@ -883,7 +886,7 @@ const Badge = styled.span`
   font-size: 13px;
   font-weight: 700;
   line-height: 1.3;
-  flex-shrink: 0;
+  white-space: nowrap;
   text-align: center;
 `;
 
