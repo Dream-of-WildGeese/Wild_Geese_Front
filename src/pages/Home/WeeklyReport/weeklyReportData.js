@@ -6,6 +6,7 @@ import {
 } from '../../../api/weekly';
 import { getMyFamily } from '../../../api/family';
 import { getDailyLog } from '../../../api/daily';
+import { getMedicationLogs } from '../../../api/medication';
 import { getUserId } from '../../../api/client';
 import { toDateString } from '../../../utils/medication';
 import { getMockReport, getMockCurrentWeek, MOCK_WEEK_COUNT } from '../../../mock/weeklyReport';
@@ -111,12 +112,13 @@ export const toWeeklyDetail = (report) => {
     stepsNote: activity?.comment ?? '',
     // 서버는 복약을 주 단위 합계로만 준다. 요일별(daily)은 시연용 데이터에만 있어서,
     // 없으면 요일 칸을 비워 둔다. 합계만으로 앞에서부터 채우면 실제와 다른 그림이 된다.
-    meds: DAYS.map((day, index) => ({
-      day,
-      taken: medication.daily?.[index] ?? null,
-      total: perDay,
-      done: perDay > 0 && medication.daily?.[index] === perDay,
-    })),
+    meds: DAYS.map((day, index) => {
+      // 약마다 먹는 요일이 달라서 하루에 몇 번인지가 날마다 다르다.
+      // 날짜별 횟수가 있으면 그걸 쓰고, 없으면 예전처럼 하루치 하나로 본다.
+      const total = medication.perDayTotals?.[index] ?? perDay;
+      const taken = medication.daily?.[index] ?? null;
+      return { day, taken, total, done: total > 0 && taken === total };
+    }),
     medsTakenCount: medication.takenCount ?? 0,
     medsTotal: medication.totalCount ?? 0,
     medsNote: medication.comment ?? '',
@@ -234,6 +236,36 @@ async function resolveCurrentWeek(fetched, role, weekStartDate) {
   return getMockCurrentWeek(role, days, weekStartDate) ?? fetched;
 }
 
+// 서버의 주간 복약 집계가 실제와 맞지 않는다.
+// 등록된 약을 다 더해도 주 41회가 계획인데 '58번 중 51번'이 오고, 목요일까지는
+// 최대 23회인데 51번을 챙겼다고 한다. 날짜별 기록은 정확해서 그걸 직접 센다.
+async function withRealMedication(report, weekStart, days) {
+  // 시연용 데이터에는 요일별 값이 이미 들어 있다. 그건 손대지 않는다.
+  if (!report || report.medication?.daily) return report;
+
+  const dates = Array.from({ length: days }, (_, index) => toDateString(addDays(weekStart, index)));
+  const logs = await Promise.all(dates.map((date) => getMedicationLogs(date).catch(() => null)));
+
+  // 아직 오지 않은 요일은 null로 둬서 빈 칸으로 보이게 한다.
+  const daily = logs.map((log) => (log ? (log.takenCount ?? 0) : null));
+  const perDayTotals = logs.map((log) => log?.totalCount ?? 0);
+  const takenCount = daily.reduce((sum, value) => sum + (value ?? 0), 0);
+  const totalCount = perDayTotals.reduce((sum, value) => sum + value, 0);
+
+  return {
+    ...report,
+    medication: {
+      daily,
+      perDayTotals,
+      takenCount,
+      totalCount,
+      comment: totalCount
+        ? `${report.inProgress ? '지금까지' : '이번 주'} ${totalCount}번 중 ${takenCount}번 챙기셨어요.`
+        : '',
+    },
+  };
+}
+
 // 목록 화면용. 주 목록을 주는 API가 없어서 최근 주차를 직접 만들어 각각 조회한다.
 // 지난 주는 아직 서버에 리포트가 없어서, 없는 주만 시연용 데이터로 채운다.
 export async function loadWeeklyList(person) {
@@ -314,7 +346,12 @@ export async function loadWeeklyDetail(weekId, person) {
 
     const latest = await getFamilyLatestReport(partner.userId).catch(() => null);
     const report = await resolveCurrentWeek(latest, role, weekId);
-    return { week: toWeekSummary(report, start), detail: toWeeklyDetail(report) };
+    // 가족의 복약 기록을 읽는 통로가 없어서 직접 셀 수가 없다.
+    // 서버 집계는 실제와 안 맞으니 틀린 숫자를 보여주느니 비워 둔다.
+    const safe = report
+      ? { ...report, medication: { ...(report.medication ?? {}), comment: '' } }
+      : report;
+    return { week: toWeekSummary(safe, start), detail: toWeeklyDetail(safe) };
   }
 
   const fetched = await getWeeklyReport(weekId).catch(() => null);
@@ -324,7 +361,9 @@ export async function loadWeeklyDetail(weekId, person) {
       ? await resolveCurrentWeek(fetched, role, weekId)
       : (hasRecords(fetched) ? fetched : (mock ?? fetched));
 
-  return { week: toWeekSummary(report, start), detail: toWeeklyDetail(report) };
+  const counted = await withRealMedication(report, start, weeksAgo === 0 ? daysFilledThisWeek() : 7);
+
+  return { week: toWeekSummary(counted, start), detail: toWeeklyDetail(counted) };
 }
 
 export { getMyLatestReport };
