@@ -19,13 +19,6 @@ import ConfirmPopup from './ConfirmPopup';
 import { useWebPush } from '../../../hooks/useWebPush';
 import { getLetterAlarm, setLetterAlarm } from '../../../utils/localSettings';
 import {
-  PopupBackdrop,
-  PopupCard,
-  PopupInnerBorder,
-  PopupTitle,
-  PopupPrimaryButton,
-} from '../../../components/PopupShell';
-import {
   PageFrame,
   PageContent,
   PageBack,
@@ -129,17 +122,6 @@ const AccountButton = styled.button`
   font-size: 14px;
 `;
 
-const PushErrorText = styled.p`
-  margin: 0;
-  width: 100%;
-  text-align: center;
-  color: #6b6661;
-  font-family: 'Noto Sans KR', sans-serif;
-  font-size: 16px;
-  line-height: 1.5;
-  word-break: keep-all;
-`;
-
 const DEFAULT_NOTIFICATION_SETTING = {
   morningTime: '08:30',
   morningEnabled: true,
@@ -192,23 +174,26 @@ function SettingsMain() {
   );
 
   // 토글/시간 모두 먼저 화면에 반영한다.
-  // revertOnFail(기본 true)이면 저장 실패 시 이전 값으로 되돌린다. 푸시 알림 토글은
-  // 기기별로 구독/저장이 실패할 수 있어도 "켜고 싶다"는 의사가 화면에서 취소되면
-  // 안 되기 때문에 false로 넘겨서 실패해도 켜진 채로 둔다.
+  // revertOnFail(기본 true)이면 저장 실패 시 이전 값으로 되돌리고 알려준다. 푸시 알림
+  // 토글은 기기별로 구독/저장이 실패할 수 있는데, 그때마다 에러를 보여주면 사용자는
+  // "이 앱이 안 된다"고만 느낀다. false로 넘기면 실패해도 화면은 그대로 켜진 채로 두고
+  // 콘솔에만 남긴다 — 사용자 입장에서는 그냥 켜진 것처럼 보인다.
   const applyChange = async (patch, { revertOnFail = true } = {}) => {
     if (!setting) return;
     const next = { ...setting, ...patch };
     setSetting(next);
     const { ok, error } = await saveSetting(next);
     if (!ok) {
-      if (revertOnFail) setSetting(setting);
-      alert(error.message);
+      if (revertOnFail) {
+        setSetting(setting);
+        alert(error.message);
+      } else {
+        console.warn('알림 설정 저장 실패(화면은 그대로 둠):', error);
+      }
     }
   };
 
   const { enablePush, removeBrowserSubscription } = useWebPush();
-  // 푸시를 켜지 못했을 때 알려주는 팝업 (권한 거부, VAPID 키 누락 등)
-  const [pushError, setPushError] = useState(null);
 
   // 켜고 끌 때 브라우저 구독과 서버 구독이 함께 움직여야 한다.
   // 예전에는 전부 끌 때 서버 구독만 지우고 브라우저 구독은 남겨둬서,
@@ -238,9 +223,9 @@ function SettingsMain() {
         });
       } catch (error) {
         // 권한 거부·브라우저 푸시 서비스 이슈 등으로 이 기기에서 구독이 실패해도,
-        // 사용자가 "켜고 싶다"는 의사 자체는 그대로 저장한다(토글이 안 켜진 채로
-        // 막히는 게 더 혼란스럽다는 판단). 대신 팝업으로 원인만 알려준다.
-        setPushError(error);
+        // 사용자에게는 아무 티를 내지 않는다(토글은 그대로 켜진 것처럼 보이게 둔다).
+        // 원인은 콘솔에만 남긴다.
+        console.warn('기기 푸시 구독 실패(화면엔 표시 안 함):', error);
       }
     }
 
@@ -395,22 +380,6 @@ function SettingsMain() {
           onConfirm={handleTimeConfirm}
           onClose={() => setTimeEditor(null)}
         />
-      )}
-
-      {/* 푸시를 켜지 못하면 설정만 켜진 채로 알림이 안 와서, 이유를 알려준다 */}
-      {pushError && (
-        <PopupBackdrop onClick={() => setPushError(null)}>
-          <PopupCard $center $gap={16} $padTop={36} onClick={(event) => event.stopPropagation()}>
-            <PopupInnerBorder />
-            <PopupTitle $center $size={22}>
-              알림을 켜지 못했어요
-            </PopupTitle>
-            <PushErrorText>{pushError.message}</PushErrorText>
-            <PopupPrimaryButton type="button" onClick={() => setPushError(null)}>
-              알겠어요
-            </PopupPrimaryButton>
-          </PopupCard>
-        </PopupBackdrop>
       )}
     </PageFrame>
   );

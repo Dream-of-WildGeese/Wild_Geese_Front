@@ -9,6 +9,7 @@ import {
   PopupInnerBorder,
   PopupTitle,
   PopupPrimaryButton,
+  PopupClose,
 } from '../../../components/PopupShell';
 
 const formatDateLabel = (value) => {
@@ -128,6 +129,10 @@ const AddHealthCheck = ({ onClose, onSuccess, editing = null }) => {
         onClick={(event) => event.stopPropagation()}
       >
         <ModalInner>
+          <PopupClose type="button" aria-label="닫기" onClick={onClose}>
+            ✕
+          </PopupClose>
+
           <HeaderTitle id="add-health-check-title">
             {editing ? '검진 일정 수정하기' : '검진 일정 추가하기'}
           </HeaderTitle>
