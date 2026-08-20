@@ -285,6 +285,7 @@ function HomeCharacterStage({ onMailboxClick, unreadLetterCount = 0 }) {
         type="button"
         aria-label={hasUnread ? `안 읽은 편지 ${unreadLetterCount}통 보기` : '우체통 열기'}
         onClick={onMailboxClick}
+        data-tour="mailbox"
       >
         <MailboxImage src={mailboxImg} alt="" $pulse={hasUnread} />
         {hasUnread && <Badge>{unreadLetterCount > 99 ? '99+' : unreadLetterCount}</Badge>}

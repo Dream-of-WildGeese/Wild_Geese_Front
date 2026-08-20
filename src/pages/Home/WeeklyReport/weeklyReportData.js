@@ -6,12 +6,13 @@ import {
 } from '../../../api/weekly';
 import { getMyFamily } from '../../../api/family';
 import { getDailyLog } from '../../../api/daily';
+import { getMedicationLogs } from '../../../api/medication';
 import { getUserId } from '../../../api/client';
 import { toDateString } from '../../../utils/medication';
+import { getMockReport, getMockCurrentWeek, MOCK_WEEK_COUNT } from '../../../mock/weeklyReport';
 
 const DAYS = ['월', '화', '수', '목', '금', '토', '일'];
-// 목록에 한 번에 올릴 지난 주 개수의 상한.
-const PAST_WEEK_COUNT = 12;
+const PAST_WEEK_COUNT = MOCK_WEEK_COUNT;
 
 // 저녁 건강체크 선택지 점수를 도트 색으로 바꾼다.
 // 서버가 주는 값은 좋았어요=3, 보통=2, 힘들었어요=1로 클수록 좋은 상태다.
@@ -93,13 +94,12 @@ export const toWeeklyDetail = (report) => {
 
   return {
     // 아직 쌓이는 중인 주는 문구를 만들지 않는다.
-    headline: inProgress ? '' : (report.weeklyComment ?? ''),
-    headlineDesc: inProgress
-      ? ''
-      : (report.weeklyDetail ??
-        (report.isBaselineSufficient
-          ? ''
-          : '아직 비교할 지난주 기록이 부족해서, 이번 주 기록만 보여드려요.')),
+    headline: report.weeklyComment ?? '',
+    headlineDesc:
+      report.weeklyDetail ??
+      (report.isBaselineSufficient
+        ? ''
+        : '아직 비교할 지난주 기록이 부족해서, 이번 주 기록만 보여드려요.'),
     condition: toDailyDots(condition),
     conditionTrend: toTrend(condition?.trend),
     conditionNote: condition?.comment ?? '',
@@ -112,12 +112,13 @@ export const toWeeklyDetail = (report) => {
     stepsNote: activity?.comment ?? '',
     // 서버는 복약을 주 단위 합계로만 준다. 요일별(daily)은 시연용 데이터에만 있어서,
     // 없으면 요일 칸을 비워 둔다. 합계만으로 앞에서부터 채우면 실제와 다른 그림이 된다.
-    meds: DAYS.map((day, index) => ({
-      day,
-      taken: medication.daily?.[index] ?? null,
-      total: perDay,
-      done: perDay > 0 && medication.daily?.[index] === perDay,
-    })),
+    meds: DAYS.map((day, index) => {
+      // 약마다 먹는 요일이 달라서 하루에 몇 번인지가 날마다 다르다.
+      // 날짜별 횟수가 있으면 그걸 쓰고, 없으면 예전처럼 하루치 하나로 본다.
+      const total = medication.perDayTotals?.[index] ?? perDay;
+      const taken = medication.daily?.[index] ?? null;
+      return { day, taken, total, done: total > 0 && taken === total };
+    }),
     medsTakenCount: medication.takenCount ?? 0,
     medsTotal: medication.totalCount ?? 0,
     medsNote: medication.comment ?? '',
@@ -146,8 +147,7 @@ const toWeekSummary = (report, start) => {
       start.getFullYear() === new Date().getFullYear()
         ? `${start.getMonth() + 1}월`
         : `${start.getFullYear()}년 ${start.getMonth() + 1}월`,
-    // 한 주가 다 차지 않은 리포트는 한 줄평을 만들지 않는다(목록에서도 비워둔다).
-    comment: report?.inProgress ? '' : (report?.weeklyComment ?? ''),
+    comment: report?.weeklyComment ?? '',
     // 이번 주는 아직 쌓이는 중이라 목록에서 '입력 중'으로 표시한다.
     inProgress: Boolean(report?.inProgress),
   };
@@ -197,9 +197,9 @@ async function buildCurrentWeekMetrics(weekStart, days) {
   return filled ? daily : null;
 }
 
-// 이번 주는 아직 쌓이는 중이라, 서버가 요일별 값을 못 채워줄 때가 있다.
-// 그때는 월요일부터 오늘까지 하루 일지를 직접 읽어 그래프를 만든다.
-async function resolveCurrentWeek(fetched) {
+// 이번 주는 서버에 실제 기록이 있으면 그걸 쓰고, 없을 때만 오늘까지 채운 시연용
+// 데이터를 쓴다. 시연 도중 입력한 내용이 목업에 가려지면 안 된다.
+async function resolveCurrentWeek(fetched, role, weekStartDate) {
   const days = daysFilledThisWeek();
   const weekStart = getWeekStart();
 
@@ -209,43 +209,77 @@ async function resolveCurrentWeek(fetched) {
   if (hasRecords(fetched) || built) {
     const base = fetched ?? {};
 
-    // 한 주가 다 차기 전에는 어떤 문장도 만들지 않는다.
-    // 서버는 '이번 주 35번 중 30번 챙기셨어요' 같은 완결된 문장을 미리 주는데,
-    // 아직 이틀치만 쌓인 주에 그런 말을 붙이면 사실과 다른 요약이 된다.
-    // 그래프(요일별 값)만 보여주고 한 줄평·다음 주 제안·AI 코멘트는 모두 비운다.
+    // 예전에는 진행 중인 주의 문장을 전부 비웠다. 서버가 아직 덜 찬 주에도
+    // 완결된 요약을 미리 붙여서 사실과 달랐기 때문이다.
+    // 지금은 서버가 요일을 짚어가며 제대로 써준다('특히 월요일과 화요일에 푹
+    // 주무셨네요'), 그래서 그대로 보여준다.
     const meds = base.medication ?? {};
 
     return {
       ...base,
       inProgress: true,
-      weeklyComment: '',
-      weeklyDetail: '',
-      nextWeekSuggestion: '',
-      aiCoachInsight: '',
       metrics: Object.fromEntries(
         EVENING_ORDER.map((metric) => [
           metric,
           {
             ...(base.metrics?.[metric] ?? {}),
             daily: built ? built[metric] : (base.metrics?.[metric]?.daily ?? []),
-            comment: '',
           },
         ]),
       ),
+      // 복약 집계만 비운다. 이 숫자는 지금도 맞지 않는다.
+      // (주 41회가 계획인데 '58번 중 51번'이라고 온다. 목요일까지는 최대 23회다)
       medication: { ...meds, comment: '' },
     };
   }
 
-  return fetched;
+  return getMockCurrentWeek(role, days, weekStartDate) ?? fetched;
 }
 
-// 목록 화면용. 주 목록을 주는 API가 없어서, 서버가 만들어둔 주를 이력에서 받아
-// 각각 조회한다.
+// 서버의 주간 복약 집계가 실제와 맞지 않는다.
+// 등록된 약을 다 더해도 주 41회가 계획인데 '58번 중 51번'이 오고, 목요일까지는
+// 최대 23회인데 51번을 챙겼다고 한다. 날짜별 기록은 정확해서 그걸 직접 센다.
+async function withRealMedication(report, weekStart, days) {
+  // 시연용 데이터에는 요일별 값이 이미 들어 있다. 그건 손대지 않는다.
+  if (!report || report.medication?.daily) return report;
+
+  const dates = Array.from({ length: days }, (_, index) => toDateString(addDays(weekStart, index)));
+  const logs = await Promise.all(dates.map((date) => getMedicationLogs(date).catch(() => null)));
+
+  // 아직 오지 않은 요일은 null로 둬서 빈 칸으로 보이게 한다.
+  const daily = logs.map((log) => (log ? (log.takenCount ?? 0) : null));
+  const perDayTotals = logs.map((log) => log?.totalCount ?? 0);
+  const takenCount = daily.reduce((sum, value) => sum + (value ?? 0), 0);
+  const totalCount = perDayTotals.reduce((sum, value) => sum + value, 0);
+
+  return {
+    ...report,
+    medication: {
+      daily,
+      perDayTotals,
+      takenCount,
+      totalCount,
+      comment: totalCount
+        ? `${report.inProgress ? '지금까지' : '이번 주'} ${totalCount}번 중 ${takenCount}번 챙기셨어요.`
+        : '',
+    },
+  };
+}
+
+// 목록 화면용. 주 목록을 주는 API가 없어서 최근 주차를 직접 만들어 각각 조회한다.
+// 지난 주는 아직 서버에 리포트가 없어서, 없는 주만 시연용 데이터로 채운다.
 export async function loadWeeklyList(person) {
   const thisWeekStart = getWeekStart();
-  const thisWeekId = toDateString(thisWeekStart);
+  const starts = Array.from({ length: PAST_WEEK_COUNT + 1 }, (_, index) =>
+    addDays(thisWeekStart, -7 * index),
+  );
 
-  const { partner } = await findFamilyRoles();
+  const { partner, myRole, partnerRole } = await findFamilyRoles();
+  const role = person === 'me' ? myRole : partnerRole;
+
+  const mockPast = starts
+    .slice(1)
+    .map((start, index) => getMockReport(role, index + 1, toDateString(start)));
 
   // 가족은 최신 주차만 조회할 수 있어서, 이번 주만 서버에서 가져온다.
   if (person !== 'me') {
@@ -253,8 +287,11 @@ export async function loadWeeklyList(person) {
 
     const latest = await getFamilyLatestReport(partner.userId).catch(() => null);
     return {
-      current: toWeekSummary(await resolveCurrentWeek(latest), thisWeekStart),
-      past: [],
+      current: toWeekSummary(
+        await resolveCurrentWeek(latest, role, toDateString(starts[0])),
+        starts[0],
+      ),
+      past: mockPast.map((report, index) => toWeekSummary(report, starts[index + 1])),
       partnerOnly: true,
     };
   }
@@ -267,22 +304,28 @@ export async function loadWeeklyList(person) {
     .map((item) => item.weekStartDate)
     .filter((date) => new Date(`${date}T00:00:00`).getDay() === 1);
 
-  // 서버가 만들어둔 주만 보여준다. 없는 주를 지어내지 않는다.
-  const pastDates = [...new Set(historyStarts)]
-    .filter((date) => date < thisWeekId)
+  // 목록에 없더라도 최근 몇 주는 시연용 데이터로 채워야 해서 둘을 합친다.
+  const pastDates = [...new Set([...starts.slice(1).map(toDateString), ...historyStarts])]
+    .filter((date) => date < toDateString(starts[0]))
     .sort((a, b) => b.localeCompare(a))
     .slice(0, PAST_WEEK_COUNT);
 
   const [currentReport, ...pastReports] = await Promise.all([
-    getWeeklyReport(thisWeekId).catch(() => null),
+    getWeeklyReport(toDateString(starts[0])).catch(() => null),
     ...pastDates.map((date) => getWeeklyReport(date).catch(() => null)),
   ]);
 
   return {
-    current: toWeekSummary(await resolveCurrentWeek(currentReport), thisWeekStart),
-    past: pastReports.map((report, index) =>
-      toWeekSummary(report, new Date(`${pastDates[index]}T00:00:00`)),
+    current: toWeekSummary(
+      await resolveCurrentWeek(currentReport, role, toDateString(starts[0])),
+      starts[0],
     ),
+    past: pastReports.map((report, index) => {
+      const start = new Date(`${pastDates[index]}T00:00:00`);
+      // 서버에 실제 기록이 없는 주는 몇 주 전인지에 맞는 시연용 데이터로 채운다.
+      const mock = getMockReport(role, weeksAgoOf(start), pastDates[index]);
+      return toWeekSummary(hasRecords(report) ? report : (mock ?? report), start);
+    }),
     partnerOnly: false,
   };
 }
@@ -290,22 +333,37 @@ export async function loadWeeklyList(person) {
 // 상세 화면용. weekId는 그 주의 월요일 날짜('2026-08-10')다.
 export async function loadWeeklyDetail(weekId, person) {
   const start = new Date(`${weekId}T00:00:00`);
-  const { partner } = await findFamilyRoles();
+  const { partner, myRole, partnerRole } = await findFamilyRoles();
+  const role = person === 'me' ? myRole : partnerRole;
   const weeksAgo = weeksAgoOf(start);
+  const mock = getMockReport(role, weeksAgo, weekId);
 
   if (person !== 'me') {
     if (!partner) return null;
     // 가족은 특정 주를 지정할 수 없어 최신 리포트만 보여준다.
+    // 지난 주를 열었다면 최신 리포트가 아니라 그 주의 시연용 데이터를 쓴다.
+    if (mock) return { week: toWeekSummary(mock, start), detail: toWeeklyDetail(mock) };
+
     const latest = await getFamilyLatestReport(partner.userId).catch(() => null);
-    const report = await resolveCurrentWeek(latest);
-    return { week: toWeekSummary(report, start), detail: toWeeklyDetail(report) };
+    const report = await resolveCurrentWeek(latest, role, weekId);
+    // 가족의 복약 기록을 읽는 통로가 없어서 직접 셀 수가 없다.
+    // 서버 집계는 실제와 안 맞으니 틀린 숫자를 보여주느니 비워 둔다.
+    const safe = report
+      ? { ...report, medication: { ...(report.medication ?? {}), comment: '' } }
+      : report;
+    return { week: toWeekSummary(safe, start), detail: toWeeklyDetail(safe) };
   }
 
   const fetched = await getWeeklyReport(weekId).catch(() => null);
-  // 이번 주(weeksAgo 0)는 아직 쌓이는 중이라 오늘까지만 채운다.
-  const report = weeksAgo === 0 ? await resolveCurrentWeek(fetched) : fetched;
+  // 이번 주(weeksAgo 0)는 오늘까지만 채운다. 지난 주는 통째로 채운다.
+  const report =
+    weeksAgo === 0
+      ? await resolveCurrentWeek(fetched, role, weekId)
+      : (hasRecords(fetched) ? fetched : (mock ?? fetched));
 
-  return { week: toWeekSummary(report, start), detail: toWeeklyDetail(report) };
+  const counted = await withRealMedication(report, start, weeksAgo === 0 ? daysFilledThisWeek() : 7);
+
+  return { week: toWeekSummary(counted, start), detail: toWeeklyDetail(counted) };
 }
 
 export { getMyLatestReport };

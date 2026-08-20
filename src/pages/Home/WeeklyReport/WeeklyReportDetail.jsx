@@ -493,7 +493,7 @@ function WeeklyReportDetail() {
 
         <PageScrollArea $gap={20}>
           {/* 한 주가 다 차야 한마디를 만든다. 쌓이는 중인 주는 카드 자체를 띄우지 않는다. */}
-          {!detail.inProgress && detail.headline && (
+          {detail.headline && (
             <>
               <GreenCard>
                 <AiIcon src={aiIcon} alt="" />

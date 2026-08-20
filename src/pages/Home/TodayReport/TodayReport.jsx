@@ -520,7 +520,7 @@ function TodayReport() {
                   아직 안 만들어졌으면 자리를 비우지 않고 언제 채워지는지 알려준다.
                   저녁 체크를 마쳤는데 아직 안 왔을 때는, 글자만 두면 멈춘 것처럼
                   보여서 만드는 중이라는 표시를 함께 둔다. */}
-              <InfoCard>
+              <InfoCard data-tour="ai-comment">
                 <InfoIcon src={aiIcon} alt="" />
                 <InfoTextCol>
                   <InfoLabel>온담 한마디</InfoLabel>

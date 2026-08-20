@@ -85,7 +85,12 @@ function HomeBottomNav({ onQuestionBoxClick, onHomeClick, onWeeklyReportClick })
   return (
     <Nav>
       {NAV_ITEMS.map((item) => (
-        <NavItem key={item.key} type="button" onClick={handlers[item.key]}>
+        <NavItem
+          key={item.key}
+          type="button"
+          onClick={handlers[item.key]}
+          data-tour={`nav-${item.key}`}
+        >
           <IconBox>
             <NavIcon src={item.icon} alt="" $size={item.size} />
           </IconBox>

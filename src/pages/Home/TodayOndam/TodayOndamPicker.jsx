@@ -96,7 +96,12 @@ function TodayOndamPicker({ onSelect, onClose }) {
 
         <OptionList>
           {OPTIONS.map((option) => (
-            <Option key={option.type} type="button" onClick={() => onSelect(option.type)}>
+            <Option
+              key={option.type}
+              type="button"
+              onClick={() => onSelect(option.type)}
+              data-tour={option.type === 'morning' ? 'picker-morning' : undefined}
+            >
               <OptionIcon src={option.icon} alt="" />
               <OptionTextCol>
                 <OptionLabel>{option.label}</OptionLabel>
