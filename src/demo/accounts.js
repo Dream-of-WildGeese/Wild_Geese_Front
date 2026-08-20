@@ -10,8 +10,8 @@
 //   - .env              VITE_DEV_USER_ID
 
 export const DEMO_ACCOUNTS = {
-  parent: { userId: 39, name: '봉미선' },
-  child: { userId: 35, name: '신짱구' },
+  parent: { userId: 42, name: '봉미선' },
+  child: { userId: 43, name: '신짱구' },
 };
 
 export const getDemoAccount = (role) => DEMO_ACCOUNTS[role] ?? DEMO_ACCOUNTS.child;
