@@ -239,7 +239,7 @@ async function resolveCurrentWeek(fetched, role, weekStartDate) {
 // 서버의 주간 복약 집계가 실제와 맞지 않는다.
 // 등록된 약을 다 더해도 주 41회가 계획인데 '58번 중 51번'이 오고, 목요일까지는
 // 최대 23회인데 51번을 챙겼다고 한다. 날짜별 기록은 정확해서 그걸 직접 센다.
-async function withRealMedication(report, weekStart, days) {
+async function withRealMedication(report, weekStart, days, fallbackMedication) {
   // 시연용 데이터에는 요일별 값이 이미 들어 있다. 그건 손대지 않는다.
   if (!report || report.medication?.daily) return report;
 
@@ -251,6 +251,14 @@ async function withRealMedication(report, weekStart, days) {
   const perDayTotals = logs.map((log) => log?.totalCount ?? 0);
   const takenCount = daily.reduce((sum, value) => sum + (value ?? 0), 0);
   const totalCount = perDayTotals.reduce((sum, value) => sum + value, 0);
+
+  // 컨디션·수면 같은 다른 지표는 그 주에 실제 기록이 있어서 실데이터 경로를 탔는데,
+  // 복약만 그 기간에 실제로 기록된 게 하나도 없을 수 있다(그때는 약을 등록 안
+  // 했거나, 지난 주 조회가 안 되는 경우). 그러면 여기서 매일 0/빈 칸으로만
+  // 채워져 복약 줄만 통째로 빈 걸로 보인다. 복약 몫만 시연용 데이터로 대신 채운다.
+  if (totalCount === 0 && fallbackMedication) {
+    return { ...report, medication: fallbackMedication };
+  }
 
   return {
     ...report,
@@ -374,12 +382,20 @@ export async function loadWeeklyDetail(weekId, person) {
 
   const fetched = await reportPromise;
   // 이번 주(weeksAgo 0)는 오늘까지만 채운다. 지난 주는 통째로 채운다.
+  const days = weeksAgo === 0 ? daysFilledThisWeek() : 7;
   const report =
     weeksAgo === 0
       ? await resolveCurrentWeek(fetched, role, weekId)
       : (hasRecords(fetched) ? fetched : (mock ?? fetched));
 
-  const counted = await withRealMedication(report, start, weeksAgo === 0 ? daysFilledThisWeek() : 7);
+  // 컨디션 등 다른 지표에 실제 기록이 있어 실데이터 경로를 탔을 때, 복약만
+  // 실제 기록이 없어 0으로 비면 대신 채워 넣을 시연용 복약 데이터.
+  const fallbackMedication =
+    weeksAgo === 0
+      ? getMockCurrentWeek(role, days, weekId)?.medication ?? null
+      : mock?.medication ?? null;
+
+  const counted = await withRealMedication(report, start, days, fallbackMedication);
 
   return { week: toWeekSummary(counted, start), detail: toWeeklyDetail(counted) };
 }
