@@ -1,11 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import styled from 'styled-components';
-import micIcon from '../../../../assets/popup/mic.svg';
-import likeIcon from '../../../../assets/reaction/like.svg';
-import cheerIcon from '../../../../assets/reaction/cheer.svg';
-import funnyIcon from '../../../../assets/reaction/funny.svg';
-import bestIcon from '../../../../assets/reaction/best.svg';
-import congratsIcon from '../../../../assets/reaction/congrats.svg';
+import micIcon from '../../../../assets/popup/mic.png';
+import likeIcon from '../../../../assets/reaction/like.png';
+import cheerIcon from '../../../../assets/reaction/cheer.png';
+import funnyIcon from '../../../../assets/reaction/funny.png';
+import bestIcon from '../../../../assets/reaction/best.png';
+import congratsIcon from '../../../../assets/reaction/congrats.png';
 import {
   getTodayQuestion,
   submitMorningAnswer,
@@ -24,6 +24,7 @@ import {
   PopupBackdrop,
   PopupCard,
   PopupInnerBorder,
+  PopupClose,
   PopupTitle,
   PopupPrimaryButton,
   PopupSecondaryButton,
@@ -121,6 +122,15 @@ const HintText = styled.p`
 `;
 
 // Figma 525:1251 — 내 답변은 살구색, 가족 답변은 노란색 카드로 구분한다.
+// 닫을 방법이 '완료'와 바깥 누르기뿐이라, 답을 안 쓴 채로는 빠져나가기 어려웠다.
+// 다른 팝업들과 같은 자리(오른쪽 위)에 회색 닫기를 둔다.
+const CloseButton = styled(PopupClose)`
+  position: absolute;
+  top: 18px;
+  right: 20px;
+  font-size: 18px;
+`;
+
 const AnswerCard = styled.div`
   width: 100%;
   padding: 16px;
@@ -314,8 +324,17 @@ function DayQuestionPopup({ onClose }) {
   if (step === 'result') {
     return (
       <PopupBackdrop onClick={onClose}>
-        <PopupCard $center $gap={16} $padTop={44} onClick={(event) => event.stopPropagation()}>
+        <PopupCard
+          $center
+          $gap={16}
+          $padTop={44}
+          onClick={(event) => event.stopPropagation()}
+          data-tour="morning-popup"
+        >
           <PopupInnerBorder />
+          <CloseButton type="button" aria-label="닫기" onClick={onClose}>
+            ✕
+          </CloseButton>
           <PopupTitle $center $size={24}>
             답변 확인하기
           </PopupTitle>
@@ -402,8 +421,16 @@ function DayQuestionPopup({ onClose }) {
 
   return (
     <PopupBackdrop onClick={onClose}>
-      <PopupCard $center $gap={16} onClick={(event) => event.stopPropagation()}>
+      <PopupCard
+        $center
+        $gap={16}
+        onClick={(event) => event.stopPropagation()}
+        data-tour="morning-popup"
+      >
         <PopupInnerBorder />
+        <CloseButton type="button" aria-label="닫기" onClick={onClose}>
+          ✕
+        </CloseButton>
         <PopupTitle $center $size={30}>
           오늘의 질문
         </PopupTitle>

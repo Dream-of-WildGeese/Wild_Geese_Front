@@ -199,7 +199,10 @@ const DayLabel = styled.span`
 `;
 
 // 컨디션은 표정 그림 대신 점수 색만 칠한 동그라미로 보여준다.
+// border-box로 두지 않으면 테두리(1.5px×2)만큼 옆의 점선 원(EmptyCircle)보다
+// 커 보인다. $size를 실제 렌더 지름 그대로로 맞추려면 border-box가 필요하다.
 const ConditionDot = styled.span`
+  box-sizing: border-box;
   width: ${({ $size }) => $size}px;
   height: ${({ $size }) => $size}px;
   border-radius: 50%;
@@ -493,7 +496,7 @@ function WeeklyReportDetail() {
 
         <PageScrollArea $gap={20}>
           {/* 한 주가 다 차야 한마디를 만든다. 쌓이는 중인 주는 카드 자체를 띄우지 않는다. */}
-          {!detail.inProgress && detail.headline && (
+          {detail.headline && (
             <>
               <GreenCard>
                 <AiIcon src={aiIcon} alt="" />
@@ -517,7 +520,7 @@ function WeeklyReportDetail() {
                   <DayCol key={item.day}>
                     {/* 아직 답하지 않은 날은 빈 원으로 둔다. 표정을 채우면 기록한 것처럼 보인다 */}
                     {item.score ? (
-                      <ConditionDot $size={34} $color={scoreColor(item.score)} />
+                      <ConditionDot $size={26} $color={scoreColor(item.score)} />
                     ) : (
                       <IconWrap>
                         <EmptyCircle src={emptyCircleIcon} alt="" />

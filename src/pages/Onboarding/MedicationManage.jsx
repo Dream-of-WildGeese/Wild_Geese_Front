@@ -2,9 +2,9 @@ import React from 'react';
 import styled from 'styled-components';
 import { useNavigate } from 'react-router-dom';
 
-import back from '../../assets/onboarding/back.svg';
-import pill from '../../assets/onboarding/med.svg';
-import trash from '../../assets/onboarding/trash.svg';
+import back from '../../assets/onboarding/back.png';
+import pill from '../../assets/onboarding/med.png';
+import trash from '../../assets/onboarding/trash.png';
 import { getMedications, deleteMedication } from '../../api/medication';
 import { useApi, useApiAction } from '../../hooks/useApi';
 import { toMedicationView } from '../../utils/medication';

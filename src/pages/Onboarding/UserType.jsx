@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
-import pinkFlower from '../../assets/onboarding/pinkflower.svg';
-import yellowFlower from '../../assets/onboarding/yellowflower.svg';
+import pinkFlower from '../../assets/onboarding/pinkflower.png';
+import yellowFlower from '../../assets/onboarding/yellowflower.png';
 import { useAppData } from '../../store/AppDataContext';
 import { setUserId } from '../../api/client';
 import { getDemoAccount } from '../../demo/accounts';

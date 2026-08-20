@@ -1,15 +1,15 @@
 import { useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
-import family from '../../assets/onboarding/family.svg';
+import family from '../../assets/onboarding/family.png';
 
-import pinkFlower from '../../assets/onboarding/pinkflower.svg';
-import yellowFlower from '../../assets/onboarding/yellowflower.svg';
-import leafLeft from '../../assets/onboarding/leaf-left.svg';
-import leafRight from '../../assets/onboarding/leafmin.svg';
-import leafIconmin from '../../assets/onboarding/leaf.svg';
-import leafIcon from '../../assets/onboarding/leaf.svg';
-import moonIcon from '../../assets/onboarding/moon.svg';
-import medIcon from '../../assets/onboarding/med.svg';
+import pinkFlower from '../../assets/onboarding/pinkflower.png';
+import yellowFlower from '../../assets/onboarding/yellowflower.png';
+import leafLeft from '../../assets/onboarding/leaf-left.png';
+import leafRight from '../../assets/onboarding/leafmin.png';
+import leafIconmin from '../../assets/onboarding/leaf.png';
+import leafIcon from '../../assets/onboarding/leaf.png';
+import moonIcon from '../../assets/onboarding/moon.png';
+import medIcon from '../../assets/onboarding/med.png';
 import introText from '../../assets/onboarding/intro-text.svg';
 import logo from '../../assets/onboarding/ondam-logo.svg';
 

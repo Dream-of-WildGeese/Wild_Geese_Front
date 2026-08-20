@@ -20,7 +20,7 @@ const OPTIONS = [
     label: '아침 연결 질문',
     desc: '오늘의 이야기를 나눠요',
   },
-  { type: 'medication', icon: pillIcon, label: '약 체크', desc: '오늘 약은 챙겨 드셨나요?' },
+  { type: 'medication', icon: pillIcon, label: '오늘의 약을 챙겨요', desc: '오늘 약은 챙겨 드셨나요?' },
   { type: 'evening', icon: moonIcon, label: '저녁 건강 기록', desc: '오늘의 건강을 기록해요' },
 ];
 
@@ -96,7 +96,12 @@ function TodayOndamPicker({ onSelect, onClose }) {
 
         <OptionList>
           {OPTIONS.map((option) => (
-            <Option key={option.type} type="button" onClick={() => onSelect(option.type)}>
+            <Option
+              key={option.type}
+              type="button"
+              onClick={() => onSelect(option.type)}
+              data-tour={option.type === 'morning' ? 'picker-morning' : undefined}
+            >
               <OptionIcon src={option.icon} alt="" />
               <OptionTextCol>
                 <OptionLabel>{option.label}</OptionLabel>

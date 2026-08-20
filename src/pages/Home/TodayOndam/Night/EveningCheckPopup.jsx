@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useState } from 'react';
 import styled, { keyframes } from 'styled-components';
 import PopupPortal from '../../../../components/PopupPortal';
-import faceGood from '../../../../assets/evening/face-good.svg';
-import faceNormal from '../../../../assets/evening/face-normal.svg';
-import faceBad from '../../../../assets/evening/face-bad.svg';
+import faceGood from '../../../../assets/evening/face-good.png';
+import faceNormal from '../../../../assets/evening/face-normal.png';
+import faceBad from '../../../../assets/evening/face-bad.png';
 import micIcon from '../../../../assets/evening/mic-icon.png';
 import {
   getTodayEveningQuestions,
@@ -25,43 +25,6 @@ import { Spinner } from '../../../../components/Loading';
 // Figma 22~22e: 저녁 건강체크가 별도 페이지에서 5단계 팝업으로 바뀌었다.
 // 선택지 아이콘은 좋음/보통/나쁨 세 장을 모든 질문이 공유한다(디자인에서도 같은 에셋).
 const FACE_BY_INDEX = [faceGood, faceNormal, faceBad];
-
-// 질문과 선택지 글은 서버가 내려주는데, 그 문구가 '무엇을 재는지' 흐릿했다.
-//   수면  주관적 만족도라 사람마다 기준이 달랐다 (주간 리포트는 시간 기준인데 어긋났다)
-//   식사  '한두 끼 걸렀어요'(끼니 수)와 '입맛이 없었어요'(식욕)가 한 줄에 섞여 있었다
-//   활동  '집에서 쉬었어요'와 '거의 못 움직였어요'가 겹치고, 많이 걸은 날을 고를 수 없었다
-//
-// 서버 문구가 바뀌기 전까지 화면에서만 갈아끼운다. 무엇을 고르는지는 metricType으로,
-// 어느 선택지인지는 점수(3~1)로 짚어서 순서가 바뀌어도 어긋나지 않는다.
-// 점수는 서버 값을 그대로 보내므로 주간 리포트 그래프에는 영향이 없다.
-const QUESTION_TEXT = {
-  SLEEP: {
-    content: '어젯밤 몇 시간 주무셨어요?',
-    labels: { 3: '7시간 이상', 2: '5~7시간', 1: '5시간 미만' },
-  },
-  MEAL: {
-    content: '오늘 식사는 몇 끼 하셨어요?',
-    labels: { 3: '세 끼 다 챙겼어요', 2: '한 끼 걸렀어요', 1: '두 끼 이상 걸렀어요' },
-  },
-  ACTIVITY: {
-    content: '오늘 바깥 활동은 얼마나 하셨어요?',
-    labels: { 3: '30분 이상 걸었어요', 2: '잠깐 다녀왔어요', 1: '거의 안 나갔어요' },
-  },
-};
-
-const applyQuestionText = (question) => {
-  const replacement = QUESTION_TEXT[question?.metricType];
-  if (!replacement) return question;
-
-  return {
-    ...question,
-    content: replacement.content ?? question.content,
-    choices: (question.choices ?? []).map((choice) => ({
-      ...choice,
-      label: replacement.labels?.[Math.round(Number(choice.value))] ?? choice.label,
-    })),
-  };
-};
 
 const Backdrop = styled.div`
   /* Layout(폰 프레임)이 기준이 되도록 absolute를 쓴다. fixed면 브라우저 창 가운데에 뜬다. */
@@ -316,9 +279,8 @@ function EveningCheckPopup({ onClose, onCompleted, onAlreadyDone, forceEdit = fa
   const { data, loading, error } = useApi(getTodayEveningQuestions);
   const { execute: submitAnswers, loading: submitting } = useApiAction(submitEveningAnswers);
 
-  // 바꾼 문구로 화면도 그리고 저장도 한다. 기록에 남는 글과 화면에서 고른 글이
-  // 달라지면 나중에 건강일지에서 엉뚱한 문장이 보인다.
-  const questions = (data?.questions ?? []).map(applyQuestionText);
+  // 질문 문구·선택지 라벨은 서버가 내려주는 값을 그대로 쓴다.
+  const questions = data?.questions ?? [];
   const totalSteps = questions.length;
   const question = questions[stepIndex];
   const isLastStep = stepIndex === totalSteps - 1;

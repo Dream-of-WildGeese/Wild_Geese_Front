@@ -23,9 +23,6 @@ import {
   PopupPrimaryButton,
 } from '../../../components/PopupShell';
 
-const PRESET_TIMES = ['오전 8:00', '오후 12:00', '오후 6:00', '오후 10:00'];
-const ALL_DAY_VALUES = DAY_OPTIONS.map((day) => day.value);
-
 function MedicineEdit() {
   const navigate = useNavigate();
   const { id } = useParams();
@@ -60,6 +57,8 @@ function MedicineEdit() {
     // 요일이 비어 있으면(옛 데이터) 매일로 본다
     setDays(medication.days.length > 0 ? medication.days : ALL_DAY_VALUES);
   }, [medication]);
+
+  const customTimes = times.filter((t) => !PRESET_TIMES.includes(t));
 
   const customTimes = times.filter((t) => !PRESET_TIMES.includes(t));
 

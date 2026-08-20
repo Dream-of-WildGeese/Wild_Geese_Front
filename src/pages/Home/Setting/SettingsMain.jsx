@@ -27,6 +27,7 @@ import {
   PageDivider,
   PageScrollArea,
 } from '../../../components/PageShell';
+import { resetTour } from '../../../utils/tour';
 
 
 const SectionLabel = styled.p`
@@ -266,6 +267,12 @@ function SettingsMain() {
     navigate('/');
   };
 
+  // 표시를 지우고 홈으로 보내면, 홈에 도착했을 때 가이드가 처음부터 다시 뜬다.
+  const handleReplayTour = () => {
+    resetTour();
+    navigate('/home');
+  };
+
   return (
     <PageFrame>
       <PageContent>
@@ -357,6 +364,15 @@ function SettingsMain() {
               {/* 가족 구성원 조회는 userId와 email만 내려줘서 이름 대신 email을 보여준다 */}
               <RowValue>{partner ? partner.email : '아직 연결된 가족이 없어요'}</RowValue>
             </Row>
+          </Card>
+
+          <SectionLabel>도움말</SectionLabel>
+          <Card>
+            {/* 시작 가이드는 처음 한 번만 뜬다. 다시 보고 싶을 때 여기서 연다. */}
+            <ClickableRow type="button" onClick={handleReplayTour}>
+              <RowLabel>시작 가이드 다시 보기</RowLabel>
+              <RowValue>›</RowValue>
+            </ClickableRow>
           </Card>
 
           <SectionLabel>계정</SectionLabel>

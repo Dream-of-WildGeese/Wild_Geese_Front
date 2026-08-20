@@ -1,6 +1,6 @@
 import styled from 'styled-components';
 import { useNavigate } from 'react-router-dom';
-import backIcon from '../../assets/onboarding/back.svg';
+import backIcon from '../../assets/onboarding/back.png';
 
 const HeaderWrap = styled.div`
   flex-shrink: 0;

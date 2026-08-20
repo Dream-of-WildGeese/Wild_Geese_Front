@@ -1,9 +1,9 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
 import cloudIcon from '../../../assets/weekly/cloud.png';
 import checkIcon from '../../../assets/weekly/check.png';
-import { loadWeeklyList } from './weeklyReportData';
+import { loadWeeklyList, prefetchWeeklyReport } from './weeklyReportData';
 import { useApi } from '../../../hooks/useApi';
 import { useLazyList } from '../../../hooks/useLazyList';
 import { LoadingLine } from '../../../components/Loading';
@@ -98,7 +98,8 @@ const ContentCol = styled.div`
   flex-direction: column;
   gap: 6px;
   align-items: flex-start;
-  min-width: 0;
+  /* 주차 이름은 한 줄로 두고, 남는 자리는 옆의 한 줄평이 쓴다 */
+  flex-shrink: 0;
 `;
 
 const TitleLine = styled.div`
@@ -138,25 +139,27 @@ const Badge = styled.span`
 `;
 
 // 한 줄평은 연필 없이 오른쪽에 붙인다.
+// 너비를 167px로 못 박아뒀더니 남는 자리를 못 썼다. 주차 이름이 쓰고 남은
+// 만큼을 한 줄평이 가져가게 둔다.
 const EditLabel = styled.div`
+  flex: 1;
+  min-width: 0;
   display: flex;
   align-items: center;
   justify-content: flex-end;
-  width: 167px;
-  flex-shrink: 0;
 `;
 
-// 한 줄평이 길면 넘치는 만큼 말줄임으로 자른다.
+// 예전에는 한 줄로 고정하고 넘치면 '...'으로 잘라서, 무슨 말인지 알 수 없었다.
+// 어절 단위로 줄을 바꿔 끝까지 보여준다.
 const EditText = styled.span`
   min-width: 0;
   font-family: 'Noto Sans KR';
   font-size: 16px;
   font-weight: 700;
+  line-height: 1.35;
   color: #3f5a1b;
   text-align: right;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  word-break: keep-all;
 `;
 
 // 월별 탭 없이 주차가 위에서 아래로 그냥 쌓인다.
@@ -200,6 +203,16 @@ function WeeklyReport() {
     hasMore,
     sentinelRef,
   } = useLazyList(pastWeeks, { step: 8, resetKey: person });
+
+  // 상세 리포트는 서버가 AI 문구를 만드느라 3~4초가 걸린다. 목록이 뜬 뒤
+  // 미리 받아두면, 누를 때쯤에는 이미 도착해 있어 기다림이 사라진다.
+  // 가족 리포트는 주차를 지정해 부를 수 없어서 미리 받아둘 것이 없다.
+  const currentWeekId = person === 'me' ? currentWeek?.id : null;
+  const latestPastId = person === 'me' ? pastWeeks[0]?.id : null;
+  useEffect(() => {
+    if (currentWeekId) prefetchWeeklyReport(currentWeekId);
+    if (latestPastId) prefetchWeeklyReport(latestPastId);
+  }, [currentWeekId, latestPastId]);
 
   const openWeek = (weekId) =>
     navigate(`/home/weekly-report/${weekId}`, { state: { person } });

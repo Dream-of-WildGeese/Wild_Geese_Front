@@ -42,7 +42,7 @@ const RuledLayer = styled.img`
 
 const CloseButton = styled.button`
   position: absolute;
-  left: 26px;
+  right: 26px;
   top: 24px;
   color: #8c8780;
   font-size: 18px;

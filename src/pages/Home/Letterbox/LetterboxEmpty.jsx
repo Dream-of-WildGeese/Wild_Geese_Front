@@ -1,5 +1,5 @@
 import styled from 'styled-components';
-import envelopeEmpty from '../../../assets/letterbox/envelope-empty-img.svg';
+import envelopeEmpty from '../../../assets/letterbox/envelope-empty-img.png';
 import {
   PopupCard,
   PopupInnerBorder,

@@ -18,6 +18,7 @@ import { getReceivedLetters, markLetterAsRead } from '../../api/letter';
 import { getNotifications, readNotification } from '../../api/notification';
 import { useApi, useApiAction } from '../../hooks/useApi';
 import { toLetterView } from '../../utils/letter';
+import { toDateString } from '../../utils/medication';
 
 const Stage = styled.div`
   position: relative;
@@ -109,11 +110,24 @@ function Home() {
     refetchNotifications();
   };
 
+  // 아침 질문·저녁 체크·복약 팝업이 부르는 API는 전부 '오늘' 것만 다룬다.
+  // 지난 알림을 눌러도 오늘 기록이 열리면 알림 속 날짜와 다른 게 열린 셈이라,
+  // 이 알림이 오늘 온 것일 때만 그 팝업으로 보낸다.
+  const isTodayNotification = (notification) => {
+    const raw = notification.scheduledAt || notification.sentAt;
+    if (!raw) return false;
+    const date = new Date(raw);
+    if (Number.isNaN(date.getTime())) return false;
+    return toDateString(date) === toDateString(new Date());
+  };
+
   const openNotificationTarget = (notification) => {
     if (notification.type === 'WEEKLY_REPORT') {
       navigate('/home/weekly-report');
       return;
     }
+    // 편지는 특정 편지를 그대로 열 수 있어 날짜와 상관없이 이동한다.
+    if (notification.type !== 'LETTER' && !isTodayNotification(notification)) return;
     // 어떤 화면으로 가야 할지 모르는 종류면 목록에 그대로 머문다.
     const popup = POPUP_BY_NOTIFICATION[notification.type];
     if (popup) setActivePopup(popup);

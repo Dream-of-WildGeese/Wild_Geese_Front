@@ -73,7 +73,15 @@ export function useWebPush() {
   const removeBrowserSubscription = async () => {
     if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
     try {
-      const registration = await navigator.serviceWorker.ready;
+      // 서비스 워커가 등록된 적이 없으면 navigator.serviceWorker.ready는 실패(reject)
+      // 하는 게 아니라 영영 안 풀린다. 그러면 이 함수를 기다리는 로그아웃까지
+      // 통째로 멈춰버리므로, 일정 시간 안에 안 끝나면 포기하고 넘어간다.
+      const registration = await Promise.race([
+        navigator.serviceWorker.ready,
+        new Promise((_, reject) =>
+          setTimeout(() => reject(new Error('서비스 워커 준비 시간 초과')), 2000),
+        ),
+      ]);
       const subscription = await registration.pushManager.getSubscription();
       if (subscription) await subscription.unsubscribe();
     } catch (error) {

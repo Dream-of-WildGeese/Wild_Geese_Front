@@ -2,7 +2,7 @@ import styled from 'styled-components';
 import medicationIconBg from '../../assets/medication-icon-bg.svg';
 import settingsIconBg from '../../assets/settings-icon-bg.svg';
 import healthCrossIcon from '../../assets/home/popup-cross.svg';
-import bellIcon from '../../assets/home/bell.svg';
+import bellIcon from '../../assets/home/bell.png';
 import settingsIcon from '../../assets/home/settings.png';
 
 const Bar = styled.div`
@@ -77,7 +77,12 @@ function HomeTopBar({
 
   return (
     <Bar>
-      <IconButton type="button" aria-label="건강 챙기기" onClick={onMedicationClick}>
+      <IconButton
+        type="button"
+        aria-label="건강 챙기기"
+        onClick={onMedicationClick}
+        data-tour="top-health"
+      >
         <IconBackground src={medicationIconBg} alt="" />
         <IconGlyph src={healthCrossIcon} alt="" />
       </IconButton>
@@ -87,6 +92,7 @@ function HomeTopBar({
         type="button"
         aria-label={hasUnread ? `안 읽은 알림 ${unreadNotificationCount}건 보기` : '받은 알림 보기'}
         onClick={onNotificationsClick}
+        data-tour="top-bell"
       >
         <IconBackground src={settingsIconBg} alt="" />
         <IconGlyph src={bellIcon} alt="" />
@@ -94,8 +100,8 @@ function HomeTopBar({
           <Badge>{unreadNotificationCount > 99 ? '99+' : unreadNotificationCount}</Badge>
         )}
       </IconButton>
-      
-      <IconButton type="button" aria-label="설정" onClick={onSettingsClick}>
+
+      <IconButton type="button" aria-label="설정" onClick={onSettingsClick} data-tour="top-settings">
         <IconBackground src={settingsIconBg} alt="" />
         <IconGlyph src={settingsIcon} alt="" />
       </IconButton>

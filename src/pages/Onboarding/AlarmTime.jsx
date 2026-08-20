@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import styled from 'styled-components';
-import alarmSun from '../../assets/onboarding/alarm-sun.svg';
-import alarmMoon from '../../assets/onboarding/alarm-moon.svg';
-import heart from '../../assets/onboarding/heart.svg';
-import clock from '../../assets/onboarding/clock.svg';
+import alarmSun from '../../assets/onboarding/alarm-sun.png';
+import alarmMoon from '../../assets/onboarding/alarm-moon.png';
+import heart from '../../assets/onboarding/heart.png';
+import clock from '../../assets/onboarding/clock.png';
 import { useAppData } from '../../store/AppDataContext';
 import { updateNotificationSetting } from '../../api/user';
 import { useApiAction } from '../../hooks/useApi';

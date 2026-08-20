@@ -7,7 +7,7 @@ import { useApiAction } from '../../hooks/useApi';
 import { useLocation } from 'react-router-dom';
 import { useAppData } from '../../store/AppDataContext';
 import { getDemoPartner, getPartnerRelation } from '../../demo/accounts';
-import heart from '../../assets/onboarding/heart.svg';
+import heart from '../../assets/onboarding/heart.png';
 
 const InviteCode = () => {
   const navigate = useNavigate();

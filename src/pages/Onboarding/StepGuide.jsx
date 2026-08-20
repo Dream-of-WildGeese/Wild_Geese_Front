@@ -1,8 +1,8 @@
 import React from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
-import heart from '../../assets/onboarding/heart.svg';
-import arrow from '../../assets/onboarding/arrow.svg';
+import heart from '../../assets/onboarding/heart.png';
+import arrow from '../../assets/onboarding/arrow.png';
 
 const StepGuide = () => {
   const navigate = useNavigate();
