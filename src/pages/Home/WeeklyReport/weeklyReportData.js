@@ -341,8 +341,8 @@ export async function loadWeeklyDetail(weekId, person) {
     const partner = await findPartner();
     if (!partner) return null;
 
-    // 가족 구성원의 특정 지난 주를 조회하는 API가 없다(최신 리포트만 가능).
-    // 엉뚱한 주를 최신 리포트로 보여주느니 비워 둔다.
+    // 목록(/history)은 가족 것도 받아오지만, 특정 지난 주 하나를 상세 조회하는 API는
+    // 아직 없다(최신 리포트만 가능). 엉뚱한 주를 최신 리포트로 보여주느니 비워 둔다.
     if (weeksAgo > 0) return { week: toWeekSummary(null, start), detail: null };
 
     const latest = await getFamilyLatestReport(partner.userId).catch(() => null);
