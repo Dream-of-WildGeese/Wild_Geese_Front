@@ -19,7 +19,7 @@ export const TOUR_STEPS = [
     advance: 'any',
     place: 'center',
     title: '온담에 오신 걸 환영해요',
-    body: '떨어져 지내도 매일 안부를 나누는 곳이에요.\n어떻게 쓰는지 한 바퀴 보여드릴게요.',
+    body: '가족과 떨어져 있어도 온담이 매일 이어줄게요.\n천천히 한 바퀴 둘러볼까요?',
     action: '시작하기',
   },
   {
@@ -27,8 +27,8 @@ export const TOUR_STEPS = [
     anchor: 'cta',
     target: 'cta',
     advance: 'next',
-    title: '하루를 여기서 시작해요',
-    body: '아침 질문, 약 체크, 저녁 기록을 이 자리에서 엽니다.',
+    title: '온담과 하루를 시작해보세요',
+    body: '눌러보면 오늘 할 일이 한눈에 보여요.',
   },
   {
     // 아침 질문 팝업까지 직접 열게 하지 않는다. 팝업 전체와 닫기 버튼만
@@ -40,16 +40,20 @@ export const TOUR_STEPS = [
     anchor: 'picker-box',
     targets: ['picker-close', 'picker-box'],
     advance: 'gone',
-    title: '아침엔 질문, 낮엔 약, 저녁엔 기록',
-    body: '하루 세 번이면 충분해요. 닫으면 다음으로 넘어가요.',
+    // '다음/이전'을 눌러도 실제로 이 버튼을 누른 것과 같은 효과를 내려면 어디를
+    // 눌러야 하는지 필요하다. targets의 첫 번째(클릭 통과 자리)와 항상 같지는
+    // 않아서(아래 'ai' 단계 참고) 따로 적는다.
+    closeWith: 'picker-close',
+    title: '이렇게 세 가지를 남길 수 있어요',
+    body: '지금은 둘러보기만 하고, 다음을 눌러 넘어가요.',
   },
   {
     id: 'journal-nav',
     anchor: 'nav-journal',
     target: 'nav-journal',
     advance: 'next',
-    title: '오늘 남긴 기록은 한곳에 모여요',
-    body: '아침 답변부터 약, 저녁 기록까지 하루가 쌓입니다.',
+    title: '오늘 남긴 기록은 여기서 봐요',
+    body: '아침 질문 답변부터 약, 저녁 기록까지 하루치가 한눈에 모여요.',
   },
   {
     id: 'ai',
@@ -61,8 +65,11 @@ export const TOUR_STEPS = [
     // 뒤로가기 버튼은 화면 왼쪽 위에 있어서 어두운 판에 덮인다.
     // '뒤로가기로 돌아가라'고 해놓고 그 버튼을 막으면 여기서 갇힌다.
     passthrough: true,
-    title: '온담이 하루를 읽고 한마디 남겨드려요',
-    body: '오늘의 기록을 보고 하루를 되돌아보세요.',
+    // 여기선 실제로 눌러야 하는 곳(page-back)이 targets의 첫 번째가 아니다.
+    // 'ai-comment'는 클릭할 곳이 아니라 그냥 같이 밝혀서 보여주기만 하는 자리다.
+    closeWith: 'page-back',
+    title: '여기서 온담의 한마디를 볼 수 있어요',
+    body: '하루 기록을 바탕으로 온담이 짧은 코멘트를 남겨드려요.',
   },
   {
     // 투어에서 안 연 기능들이 여기서 한꺼번에 이름을 얻는다.

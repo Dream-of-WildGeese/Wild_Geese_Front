@@ -7,14 +7,14 @@ import navWeeklyIcon from '../../assets/home/nav-weekly.png';
 // 어떤 건 작아 보인다. 투명 여백을 재서(아래 참고) 화면에 보이는 넓이가 서로
 // 비슷해지도록 그림마다 다른 크기를 준다.
 //
-//   추억 보관함     캔버스(240x240) 전체가 꽉 차 있음 (여백 없음, 100%)
+//   추억 보관함     캔버스 240x240의 218x221 (91% x 92%)
 //   오늘의 건강일지  캔버스 160x160의 113x142 (71% x 89%)
 //   주간 이야기     캔버스 160x160의 124x134 (78% x 84%)
 //
 // 이 값을 넣으면 눈에 보이는 그림이 모두 46x46 안팎이 된다.
 // (예전에는 42 / 56 / 56으로 벌어져서 가운데 것만 커 보였다)
 const NAV_ITEMS = [
-  { key: 'questions', icon: navQuestionIcon, label: '추억 보관함', size: 46 },
+  { key: 'questions', icon: navQuestionIcon, label: '추억 보관함', size: 50 },
   { key: 'journal', icon: navHomeIcon, label: '오늘의 건강일지', size: 58 },
   { key: 'weekly', icon: navWeeklyIcon, label: '주간 이야기', size: 57 },
 ];
