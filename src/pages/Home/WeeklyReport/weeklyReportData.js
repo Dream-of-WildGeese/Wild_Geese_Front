@@ -9,10 +9,10 @@ import { getDailyLog } from '../../../api/daily';
 import { getMedicationLogs } from '../../../api/medication';
 import { getUserId } from '../../../api/client';
 import { toDateString } from '../../../utils/medication';
-import { getMockReport, getMockCurrentWeek, MOCK_WEEK_COUNT } from '../../../mock/weeklyReport';
 
 const DAYS = ['월', '화', '수', '목', '금', '토', '일'];
-const PAST_WEEK_COUNT = MOCK_WEEK_COUNT;
+// 목록에 한 번에 보여줄 지난 주 개수. 서버 이력이 이보다 많아도 최근 것부터 이만큼만 자른다.
+const PAST_WEEK_COUNT = 12;
 
 // 저녁 건강체크 선택지 점수를 도트 색으로 바꾼다.
 // 서버가 주는 값은 좋았어요=3, 보통=2, 힘들었어요=1로 클수록 좋은 상태다.
@@ -44,19 +44,12 @@ const formatWeekLabel = (start) => {
   return `${start.getMonth() + 1}월 ${ORDINALS[index] ?? '마지막'}주`;
 };
 
-// 가족에서 나와 상대를 찾고, 시연용 데이터를 고를 역할('parent' | 'child')도 함께 정한다.
-// 부모와 자녀는 생활 패턴이 달라서 목업 세트가 나뉘어 있다.
-const findFamilyRoles = async () => {
+// 가족에서 상대를 찾는다.
+const findPartner = async () => {
   const family = await getMyFamily().catch(() => null);
   const myUserId = getUserId();
   const members = family?.members ?? [];
-
-  const me = members.find((member) => String(member.userId) === String(myUserId));
-  const partner = members.find((member) => String(member.userId) !== String(myUserId));
-
-  // 가족 조회가 실패하면 돌봄을 받는 쪽(부모)으로 본다.
-  const myRole = me?.role === 'CHILD' ? 'child' : 'parent';
-  return { partner, myRole, partnerRole: myRole === 'parent' ? 'child' : 'parent' };
+  return members.find((member) => String(member.userId) !== String(myUserId));
 };
 
 // 화면이 점수로 표정 아이콘을 고르므로 색과 함께 원점수도 넘긴다.
@@ -197,12 +190,8 @@ async function buildCurrentWeekMetrics(weekStart, days) {
   return filled ? daily : null;
 }
 
-// 이번 주는 서버에 실제 기록이 있으면 그걸 쓰고, 없을 때만 오늘까지 채운 시연용
-// 데이터를 쓴다. 시연 도중 입력한 내용이 목업에 가려지면 안 된다.
-//
-// allowMock: 본인 계정은 실제 API 결과만 보여준다(기록이 없으면 빈 채로).
-// 가족 계정은 그 주를 다시 조회할 통로가 없어서 목업으로라도 채운다.
-async function resolveCurrentWeek(fetched, role, weekStartDate, { allowMock = true } = {}) {
+// 이번 주는 서버에 실제 기록이 있으면 그걸 쓰고, 없으면 있는 그대로 빈 채로 둔다.
+async function resolveCurrentWeek(fetched) {
   const days = daysFilledThisWeek();
   const weekStart = getWeekStart();
 
@@ -236,16 +225,14 @@ async function resolveCurrentWeek(fetched, role, weekStartDate, { allowMock = tr
     };
   }
 
-  if (!allowMock) return fetched;
-  return getMockCurrentWeek(role, days, weekStartDate) ?? fetched;
+  return fetched;
 }
 
 // 서버의 주간 복약 집계가 실제와 맞지 않는다.
 // 등록된 약을 다 더해도 주 41회가 계획인데 '58번 중 51번'이 오고, 목요일까지는
 // 최대 23회인데 51번을 챙겼다고 한다. 날짜별 기록은 정확해서 그걸 직접 센다.
-async function withRealMedication(report, weekStart, days, fallbackMedication) {
-  // 시연용 데이터에는 요일별 값이 이미 들어 있다. 그건 손대지 않는다.
-  if (!report || report.medication?.daily) return report;
+async function withRealMedication(report, weekStart, days) {
+  if (!report) return report;
 
   const dates = Array.from({ length: days }, (_, index) => toDateString(addDays(weekStart, index)));
   const logs = await Promise.all(dates.map((date) => getMedicationLogs(date).catch(() => null)));
@@ -255,14 +242,6 @@ async function withRealMedication(report, weekStart, days, fallbackMedication) {
   const perDayTotals = logs.map((log) => log?.totalCount ?? 0);
   const takenCount = daily.reduce((sum, value) => sum + (value ?? 0), 0);
   const totalCount = perDayTotals.reduce((sum, value) => sum + value, 0);
-
-  // 컨디션·수면 같은 다른 지표는 그 주에 실제 기록이 있어서 실데이터 경로를 탔는데,
-  // 복약만 그 기간에 실제로 기록된 게 하나도 없을 수 있다(그때는 약을 등록 안
-  // 했거나, 지난 주 조회가 안 되는 경우). 그러면 여기서 매일 0/빈 칸으로만
-  // 채워져 복약 줄만 통째로 빈 걸로 보인다. 복약 몫만 시연용 데이터로 대신 채운다.
-  if (totalCount === 0 && fallbackMedication) {
-    return { ...report, medication: fallbackMedication };
-  }
 
   return {
     ...report,
@@ -305,29 +284,16 @@ export const prefetchWeeklyReport = (weekId) => {
 export async function loadWeeklyList(person) {
   const thisWeekStart = getWeekStart();
   const thisWeekId = toDateString(thisWeekStart);
-  const starts = Array.from({ length: PAST_WEEK_COUNT + 1 }, (_, index) =>
-    addDays(thisWeekStart, -7 * index),
-  );
-
-  const { partner, myRole, partnerRole } = await findFamilyRoles();
-  const role = person === 'me' ? myRole : partnerRole;
-
-  const mockPast = starts
-    .slice(1)
-    .map((start, index) => getMockReport(role, index + 1, toDateString(start)));
 
   // 이번 주 카드는 주차 이름과 '입력 중' 표시만 보여준다. 리포트를 받을 일이 없다.
   const currentSummary = toWeekSummary({ inProgress: true }, thisWeekStart);
 
-  // 가족은 지난 주를 조회할 통로가 없어서 시연용 데이터로 채운다.
+  // 가족 구성원의 지난 주를 목록으로 조회하는 API가 없다(최신 한 건만 가능).
+  // 없는 걸 지어내는 대신 목록은 비워 둔다.
   if (person !== 'me') {
+    const partner = await findPartner();
     if (!partner) return { current: null, past: [], partnerOnly: true };
-
-    return {
-      current: currentSummary,
-      past: mockPast.map((report, index) => toWeekSummary(report, starts[index + 1])),
-      partnerOnly: true,
-    };
+    return { current: currentSummary, past: [], partnerOnly: true };
   }
 
   // 월요일 시작과 일요일 시작이 섞여 오는데, 앱은 월요일 기준이라 월요일 것만 취한다.
@@ -339,19 +305,14 @@ export async function loadWeeklyList(person) {
       .map((item) => [item.weekStartDate, item]),
   );
 
-  // 서버에 있는 주와 시연용으로 채울 주를 합친다.
-  const pastDates = [...new Set([...starts.slice(1).map(toDateString), ...byDate.keys()])]
+  const pastDates = [...byDate.keys()]
     .filter((date) => date < thisWeekId)
     .sort((a, b) => b.localeCompare(a))
     .slice(0, PAST_WEEK_COUNT);
 
   return {
     current: currentSummary,
-    past: pastDates.map((date) => {
-      const start = new Date(`${date}T00:00:00`);
-      // 서버에 있으면 그 한 줄평을, 없으면 몇 주 전인지에 맞는 시연용 데이터를 쓴다.
-      return toWeekSummary(byDate.get(date) ?? getMockReport(role, weeksAgoOf(start), date), start);
-    }),
+    past: pastDates.map((date) => toWeekSummary(byDate.get(date), new Date(`${date}T00:00:00`))),
     partnerOnly: false,
   };
 }
@@ -364,18 +325,17 @@ export async function loadWeeklyDetail(weekId, person) {
   // 가족 조회를 기다린 뒤에 리포트를 부르면 두 시간이 그대로 더해진다.
   // 리포트 쪽이 3~4초로 훨씬 길어서, 둘을 같이 띄워 보낸다.
   const reportPromise = person === 'me' ? fetchWeeklyReport(weekId) : null;
-  const { partner, myRole, partnerRole } = await findFamilyRoles();
-  const role = person === 'me' ? myRole : partnerRole;
-  const mock = getMockReport(role, weeksAgo, weekId);
 
   if (person !== 'me') {
+    const partner = await findPartner();
     if (!partner) return null;
-    // 가족은 특정 주를 지정할 수 없어 최신 리포트만 보여준다.
-    // 지난 주를 열었다면 최신 리포트가 아니라 그 주의 시연용 데이터를 쓴다.
-    if (mock) return { week: toWeekSummary(mock, start), detail: toWeeklyDetail(mock) };
+
+    // 가족 구성원의 특정 지난 주를 조회하는 API가 없다(최신 리포트만 가능).
+    // 엉뚱한 주를 최신 리포트로 보여주느니 비워 둔다.
+    if (weeksAgo > 0) return { week: toWeekSummary(null, start), detail: null };
 
     const latest = await getFamilyLatestReport(partner.userId).catch(() => null);
-    const report = await resolveCurrentWeek(latest, role, weekId);
+    const report = await resolveCurrentWeek(latest);
     // 가족의 복약 기록을 읽는 통로가 없어서 직접 셀 수가 없다.
     // 서버 집계는 실제와 안 맞으니 틀린 숫자를 보여주느니 비워 둔다.
     const safe = report
@@ -387,11 +347,9 @@ export async function loadWeeklyDetail(weekId, person) {
   const fetched = await reportPromise;
   // 이번 주(weeksAgo 0)는 오늘까지만 채운다. 지난 주는 통째로 채운다.
   const days = weeksAgo === 0 ? daysFilledThisWeek() : 7;
-  // 본인 계정은 목업을 섞지 않는다. 실제 기록이 없으면 있는 그대로 빈 채로 보여준다.
-  const report =
-    weeksAgo === 0 ? await resolveCurrentWeek(fetched, role, weekId, { allowMock: false }) : fetched;
+  const report = weeksAgo === 0 ? await resolveCurrentWeek(fetched) : fetched;
 
-  const counted = await withRealMedication(report, start, days, null);
+  const counted = await withRealMedication(report, start, days);
 
   return { week: toWeekSummary(counted, start), detail: toWeeklyDetail(counted) };
 }
