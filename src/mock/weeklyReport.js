@@ -72,6 +72,50 @@ const PARENT_WEEKS = [
     activity: { daily: [1, 1, 1, 2, 1, 1, 2], trend: 'DOWN', comment: '한 주 동안 거의 나가지 않으셨어요.' },
     meds: { daily: [5, 5, 5, 5, 5, 5, 5], perDay: 6, comment: '하루 한 번씩은 놓치셨어요.' },
   },
+  {
+    weeklyComment: '장마에 지친 주',
+    nextWeekSuggestion: '비 오는 날엔 집 안에서 스트레칭이라도 해보시면 좋겠어요.',
+    headlineDesc:
+      '비가 이어지면서 바깥 활동이 줄었어요. 관절이 쑤신 날에는 컨디션도 함께 떨어졌습니다.',
+    condition: { daily: [2, 2, 1, 2, 2, 3, 3], trend: 'DOWN', comment: '비 오는 날에 특히 힘들어하셨어요.' },
+    sleep: { daily: [2, 2, 2, 3, 3, 3, 2], comment: '잠은 그런대로 주무셨어요.' },
+    meal: { daily: [3, 3, 2, 3, 3, 3, 2], comment: '입맛이 없는 날이 하루 있었어요.' },
+    activity: { daily: [1, 1, 1, 2, 2, 3, 2], trend: 'DOWN', comment: '비 때문에 걷기가 어려우셨어요.' },
+    meds: { daily: [6, 6, 5, 6, 6, 6, 6], perDay: 6, comment: '거의 빠짐없이 챙기셨어요.' },
+  },
+  {
+    weeklyComment: '손주가 다녀간 주',
+    nextWeekSuggestion: '좋은 기운을 이어서 이번 주도 가볍게 움직여보세요.',
+    headlineDesc:
+      '주말에 손주가 다녀가면서 활동량과 컨디션이 함께 올라갔어요. 식사도 잘 챙기셨습니다.',
+    condition: { daily: [2, 3, 3, 3, 3, 3, 3], trend: 'UP', comment: '주말로 갈수록 좋아지셨어요.' },
+    sleep: { daily: [2, 2, 3, 3, 3, 2, 3], comment: '수면이 안정적이었어요.' },
+    meal: { daily: [3, 3, 3, 3, 3, 3, 3], comment: '한 끼도 거르지 않으셨어요.' },
+    activity: { daily: [2, 2, 3, 3, 3, 3, 3], trend: 'UP', comment: '주말 나들이가 있었네요.' },
+    meds: { daily: [6, 6, 6, 6, 5, 6, 6], perDay: 6, comment: '금요일 한 번만 놓치셨어요.' },
+  },
+  {
+    weeklyComment: '더위에 힘든 주',
+    nextWeekSuggestion: '한낮은 피하고 아침저녁으로 걸어보시면 어떨까요?',
+    headlineDesc:
+      '더위가 심해서 낮 활동이 어려우셨어요. 물을 자주 드시고 시원할 때 움직이시면 좋겠습니다.',
+    condition: { daily: [2, 1, 2, 2, 1, 2, 2], trend: 'DOWN', comment: '더위에 지치신 날이 많았어요.' },
+    sleep: { daily: [1, 2, 1, 2, 2, 2, 3], comment: '더워서 잠을 설치셨어요.' },
+    meal: { daily: [2, 2, 3, 2, 2, 3, 3], comment: '입맛이 없는 날이 이어졌어요.' },
+    activity: { daily: [1, 2, 1, 1, 2, 2, 2], trend: 'DOWN', comment: '한낮 외출이 어려우셨어요.' },
+    meds: { daily: [5, 6, 6, 5, 6, 6, 6], perDay: 6, comment: '두 번 정도 놓치셨어요.' },
+  },
+  {
+    weeklyComment: '차분히 지낸 주',
+    nextWeekSuggestion: '지금 흐름이 좋아요. 수면 시간만 조금 더 챙겨보세요.',
+    headlineDesc:
+      '큰 굴곡 없이 지내신 한 주예요. 다만 주중 수면이 짧아서 그 부분만 챙기시면 좋겠습니다.',
+    condition: { daily: [3, 2, 3, 2, 3, 3, 2], trend: 'FLAT', comment: '고르게 지내셨어요.' },
+    sleep: { daily: [2, 1, 2, 2, 2, 3, 3], comment: '주중 수면이 짧았어요.' },
+    meal: { daily: [3, 3, 3, 3, 2, 3, 3], comment: '식사는 잘 챙기셨어요.' },
+    activity: { daily: [2, 3, 2, 3, 2, 3, 2], trend: 'FLAT', comment: '꾸준히 걸으셨어요.' },
+    meds: { daily: [6, 6, 6, 6, 6, 5, 6], perDay: 6, comment: '토요일 한 번만 놓치셨어요.' },
+  },
 ];
 
 // 자녀: 영양제 한 알 정도(하루 1번, 주 7번)라 복약 숫자가 작다.
@@ -126,6 +170,46 @@ const CHILD_WEEKS = [
     meal: { daily: [2, 2, 3, 2, 2, 2, 3], comment: '식사는 그럭저럭이었어요.' },
     activity: { daily: [1, 1, 1, 1, 1, 2, 1], trend: 'DOWN', comment: '거의 나가지 않으셨어요.' },
     meds: { daily: [1, 0, 1, 0, 1, 0, 1], perDay: 1, comment: '하루 걸러 놓치셨어요.' },
+  },
+  {
+    weeklyComment: '야근이 많던 주',
+    nextWeekSuggestion: '늦게 끝나는 날엔 저녁이라도 꼭 챙겨 드세요.',
+    headlineDesc: '야근이 이어지면서 식사와 수면이 함께 밀렸어요.',
+    condition: { daily: [2, 2, 1, 1, 2, 3, 3], trend: 'DOWN', comment: '주중에 특히 지치셨어요.' },
+    sleep: { daily: [1, 1, 1, 2, 2, 3, 3], comment: '주중 수면이 많이 부족했어요.' },
+    meal: { daily: [2, 1, 2, 1, 2, 3, 3], comment: '끼니를 거르신 날이 많았어요.' },
+    activity: { daily: [1, 1, 2, 1, 2, 3, 2], trend: 'DOWN', comment: '움직일 틈이 없으셨네요.' },
+    meds: { daily: [1, 0, 1, 0, 1, 1, 1], perDay: 1, comment: '이틀 놓치셨어요.' },
+  },
+  {
+    weeklyComment: '운동을 시작한 주',
+    nextWeekSuggestion: '시작이 좋아요. 이번 주도 같은 흐름으로 가봐요.',
+    headlineDesc: '퇴근 후 운동을 시작하면서 활동량이 크게 늘었어요.',
+    condition: { daily: [2, 3, 3, 2, 3, 3, 3], trend: 'UP', comment: '몸이 가벼워지셨네요.' },
+    sleep: { daily: [2, 2, 3, 2, 3, 3, 3], comment: '잠도 함께 좋아졌어요.' },
+    meal: { daily: [2, 3, 3, 2, 3, 3, 2], comment: '식사가 규칙적이었어요.' },
+    activity: { daily: [3, 3, 2, 3, 3, 3, 2], trend: 'UP', comment: '거의 매일 운동하셨어요.' },
+    meds: { daily: [1, 1, 1, 1, 1, 1, 1], perDay: 1, comment: '한 번도 안 빠뜨리셨어요!' },
+  },
+  {
+    weeklyComment: '감기로 쉰 주',
+    nextWeekSuggestion: '아직 회복 중이니 무리하지 마시고 푹 쉬세요.',
+    headlineDesc: '주 중반에 감기를 앓으면서 컨디션이 크게 떨어졌어요.',
+    condition: { daily: [2, 1, 1, 1, 2, 2, 3], trend: 'DOWN', comment: '아프셨던 한 주네요.' },
+    sleep: { daily: [2, 3, 3, 3, 2, 2, 3], comment: '푹 쉬면서 잠은 많이 주무셨어요.' },
+    meal: { daily: [2, 1, 1, 2, 2, 3, 3], comment: '입맛이 없으셨어요.' },
+    activity: { daily: [1, 1, 1, 1, 1, 2, 2], trend: 'DOWN', comment: '거의 누워 지내셨어요.' },
+    meds: { daily: [1, 1, 0, 1, 1, 1, 1], perDay: 1, comment: '한 번만 놓치셨어요.' },
+  },
+  {
+    weeklyComment: '평범하게 지낸 주',
+    nextWeekSuggestion: '잠자는 시간만 조금 앞당겨보면 어떨까요?',
+    headlineDesc: '특별한 일 없이 무난하게 지나간 한 주였어요.',
+    condition: { daily: [2, 2, 3, 2, 2, 3, 2], trend: 'FLAT', comment: '고르게 지내셨어요.' },
+    sleep: { daily: [2, 2, 2, 1, 2, 3, 3], comment: '목요일만 많이 부족했어요.' },
+    meal: { daily: [2, 3, 2, 2, 3, 3, 2], comment: '식사는 그런대로 챙기셨어요.' },
+    activity: { daily: [2, 2, 2, 2, 3, 2, 2], trend: 'FLAT', comment: '꾸준히 움직이셨어요.' },
+    meds: { daily: [1, 1, 1, 0, 1, 1, 0], perDay: 1, comment: '두 번 놓치셨어요.' },
   },
 ];
 
