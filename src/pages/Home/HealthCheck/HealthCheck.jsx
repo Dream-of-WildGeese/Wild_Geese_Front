@@ -854,7 +854,7 @@ const YearText = styled.span`
   font-family: 'Noto Sans KR', sans-serif;
   font-size: 11px;
   font-weight: 700;
-  line-height: 1.3;
+  line-height: 1;
 `;
 
 const MonthDayText = styled.span`
@@ -863,7 +863,7 @@ const MonthDayText = styled.span`
   font-size: 16px;
   font-weight: 800;
   letter-spacing: -0.5px;
-  line-height: 1.3;
+  line-height: 1;
   white-space: nowrap;
 `;
 
