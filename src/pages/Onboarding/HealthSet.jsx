@@ -73,32 +73,39 @@ const HealthSet = () => {
     }
   }, [me]);
 
+  // 서버에 저장된 값은 "로컬에 아직 아무 값도 없을 때"만 채운다.
+  // prefilledRef는 리마운트되면 다시 false로 초기화되는데, 복용약 관리 화면에
+  // 갔다가 돌아오면 HealthSet이 통째로 리마운트된다. 그때 이 조건 없이 무조건
+  // 채우면, 방금 고른 값(아직 저장 전이라 서버엔 없는 값)을 서버의 예전 값으로
+  // 덮어써버린다. 그리고 그렇게 몰래 채워진 성별 때문에, 사용자가 직접 고르지
+  // 않아도 필수 입력 검사를 통과해버리는 문제도 같이 생겼다.
   const { data: healthProfile } = useApi(getHealthProfile);
   const prefilledRef = useRef(false);
   useEffect(() => {
     if (prefilledRef.current || !healthProfile) return;
     prefilledRef.current = true;
 
-    if (healthProfile.birthDate) {
+    if (healthProfile.birthDate && !data.profile.birth) {
       setBirth(healthProfile.birthDate);
       setProfile({ birth: healthProfile.birthDate });
     }
-    if (GENDER_LABELS[healthProfile.gender]) {
+    if (GENDER_LABELS[healthProfile.gender] && !data.profile.gender) {
       setGender(GENDER_LABELS[healthProfile.gender]);
       setProfile({ gender: GENDER_LABELS[healthProfile.gender] });
     }
-    if (healthProfile.diseases?.length) {
+    if (healthProfile.diseases?.length && !data.conditions?.length) {
       const uniqueDiseases = [...new Set(healthProfile.diseases)];
       setConditions(uniqueDiseases);
       setOtherDiseases(uniqueDiseases.filter((d) => !DISEASE_LIST.includes(d)));
     }
-    if (healthProfile.wellnessInterests?.length) {
+    if (healthProfile.wellnessInterests?.length && !data.interests?.length) {
       const labels = healthProfile.wellnessInterests
         .map((value) => INTEREST_LABELS[value])
         .filter(Boolean);
       setInterests(labels);
       saveInterests(labels);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [healthProfile]);
 
   const { data: medicationList } = useApi(getMedications);
