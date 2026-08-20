@@ -58,3 +58,29 @@ export function toggleDisease({ selected, others }, disease) {
     others,
   };
 }
+
+// 건강 관심사도 같은 이유로 한곳에 모아둔다. 서버는 관심사를 enum으로만
+// 주고받는데, 화면 라벨(한글)과 서버 값을 오가는 규칙이 온보딩과 프로필
+// 수정에서 서로 다르면 두 화면이 다른 항목을 보여주게 된다.
+// '없음'은 실제로 보낼 값이 없어서 wellnessInterests가 빈 배열로 나가면 된다.
+export const INTEREST_VALUES = {
+  '체력 관리': 'ACTIVITY',
+  '스트레스 관리': 'MOOD',
+  '수면 개선': 'SLEEP',
+  '식습관 개선': 'MEAL',
+};
+
+export const INTEREST_LABELS = Object.fromEntries(
+  Object.entries(INTEREST_VALUES).map(([label, value]) => [value, label]),
+);
+
+export const INTEREST_LIST = ['체력 관리', '스트레스 관리', '수면 개선', '식습관 개선', '없음'];
+
+// '없음'은 다른 관심사와 함께 고를 수 없다.
+export function toggleInterest(interests, item) {
+  if (item === '없음') {
+    return interests.includes('없음') ? [] : ['없음'];
+  }
+  const filtered = interests.filter((v) => v !== '없음');
+  return filtered.includes(item) ? filtered.filter((v) => v !== item) : [...filtered, item];
+}

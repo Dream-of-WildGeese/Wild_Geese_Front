@@ -8,7 +8,13 @@ import { useApi, useApiAction } from '../../hooks/useApi';
 import BirthDatePickerModal from '../../components/BirthDatePickerModal';
 import heart from '../../assets/onboarding/heart.png';
 import MissingFieldsPopup from '../../components/MissingFieldsPopup';
-import { DISEASE_LIST } from '../../utils/health';
+import {
+  DISEASE_LIST,
+  INTEREST_VALUES,
+  INTEREST_LABELS,
+  INTEREST_LIST,
+  toggleInterest as toggleInterestValue,
+} from '../../utils/health';
 
 // "1856-03-02" -> "1856년 3월 2일"
 const formatBirthLabel = (value) => {
@@ -18,29 +24,6 @@ const formatBirthLabel = (value) => {
 
 const GENDER_VALUES = { male: 'MALE', female: 'FEMALE' };
 const GENDER_LABELS = { MALE: 'male', FEMALE: 'female' };
-
-
-
-// 서버가 실제로 받는 enum은 SLEEP/ACTIVITY/MEAL/MEDICINE/MOOD뿐이고 NONE은 없다.
-// '없음'은 여기 안 넣어서, 고르면 wellnessInterests가 자연스럽게 빈 배열로 나가게 한다.
-const INTEREST_VALUES = {
-  '체력 관리': 'ACTIVITY',
-  '스트레스 관리': 'MOOD',
-  '수면 개선': 'SLEEP',
-  '식습관 개선': 'MEAL',
-};
-
-const INTEREST_LABELS = Object.fromEntries(
-  Object.entries(INTEREST_VALUES).map(([label, value]) => [value, label]),
-);
-
-const INTEREST_LIST = [
-  '체력 관리',
-  '스트레스 관리',
-  '수면 개선',
-  '식습관 개선',
-  '없음',
-];
 
 const MIN_AGE = 14;
 const MAX_AGE = 120;
@@ -144,15 +127,7 @@ const HealthSet = () => {
   };
 
   const toggleInterest = (item) => {
-    let next;
-    if (item === '없음') {
-      next = interests.includes('없음') ? [] : ['없음'];
-    } else {
-      const filtered = interests.filter((v) => v !== '없음');
-      next = filtered.includes(item)
-        ? filtered.filter((v) => v !== item)
-        : [...filtered, item];
-    }
+    const next = toggleInterestValue(interests, item);
     setInterests(next);
     saveInterests(next);
   };

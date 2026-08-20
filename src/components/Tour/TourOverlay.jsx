@@ -136,15 +136,6 @@ const Body = styled.p`
   word-break: keep-all;
 `;
 
-const Hint = styled.p`
-  margin: 2px 0 0;
-  color: #7d9440;
-  font-family: 'Noto Sans KR';
-  font-size: 14px;
-  font-weight: 700;
-  word-break: keep-all;
-`;
-
 const FootRow = styled.div`
   margin-top: 6px;
   display: flex;
@@ -165,15 +156,24 @@ const Dot = styled.span`
   background: ${({ $on }) => ($on ? '#8fae4a' : 'rgba(74, 58, 47, 0.22)')};
 `;
 
+// 발치의 '다음' 버튼 옆에 두면 매 단계 상호작용(팝업 열기·이동)에 묻혀서 잘
+// 안 보였다. 어느 단계에서든 바로 눈에 띄도록 화면 우측 상단에 고정한다.
 const SkipButton = styled.button`
-  padding: 6px 4px;
-  border: none;
-  background: none;
-  color: #8c8780;
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  z-index: 1;
+  pointer-events: auto;
+
+  padding: 6px 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  background: rgba(0, 0, 0, 0.25);
+
+  color: rgba(255, 255, 255, 0.92);
   font-family: 'Noto Sans KR';
-  font-size: 14px;
-  font-weight: 500;
-  text-decoration: underline;
+  font-size: 13px;
+  font-weight: 600;
   cursor: pointer;
 `;
 
@@ -307,7 +307,10 @@ function TourOverlay({ onClose }) {
       const el = findTarget(first);
       tries += 1;
       if (el) {
-        el.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+        // 'nearest'는 이미 화면 안에 있으면 안 움직여서, 위쪽에 걸친 자리는
+        // 아래쪽 여백만 잔뜩 남기고 안 옮겨졌다. 가운데로 옮겨서 위아래
+        // 여백이 고르게 남게 한다.
+        el.scrollIntoView({ block: 'center', inline: 'center', behavior: 'smooth' });
         clearInterval(timer);
       } else if (tries > 20) {
         clearInterval(timer);
@@ -358,8 +361,9 @@ function TourOverlay({ onClose }) {
       if (hole.top >= NEEDED) return { bottom: frame.height - hole.top + 14 };
       return { bottom: 16 };
     }
-    // 하단 툴바 위에 이름표가 붙으므로 그만큼 더 띄운다.
-    if (step.place === 'bottom') return { bottom: 175 };
+    // 하단 툴바 위에 이름표가 붙으므로 그만큼 더 띄운다. 175에서는 설명
+    // 창과 툴바(+이름표)가 거의 맞닿아 보여서 간격을 더 벌린다.
+    if (step.place === 'bottom') return { bottom: 205 };
     if (step.place === 'top') return { top: 120 };
     return { top: '50%', transform: 'translateY(-50%)' };
   })();
@@ -399,6 +403,11 @@ function TourOverlay({ onClose }) {
           />
         </Dim>
 
+        {/* 어느 단계에서든 바로 눈에 띄도록 우측 상단에 고정해서 둔다. */}
+        <SkipButton type="button" onClick={finish}>
+          건너뛰기
+        </SkipButton>
+
         {/* 막는 일. 통과 단계에서는 아예 깔지 않는다.
             구멍 자리만 비우고 나머지를 네 조각으로 덮어서, 구멍 안의 진짜 버튼만 눌린다. */}
         {!step.passthrough &&
@@ -437,7 +446,6 @@ function TourOverlay({ onClose }) {
         <Bubble style={bubblePosition} onClick={(event) => event.stopPropagation()}>
           <Title>{step.title}</Title>
           <Body>{step.body}</Body>
-          {step.hint && <Hint>{step.hint}</Hint>}
 
           <FootRow>
             <Dots>
@@ -446,14 +454,10 @@ function TourOverlay({ onClose }) {
               ))}
             </Dots>
 
-            {step.action ? (
+            {step.action && (
               <ActionButton type="button" onClick={goNext}>
                 {step.action}
               </ActionButton>
-            ) : (
-              <SkipButton type="button" onClick={finish}>
-                건너뛰기
-              </SkipButton>
             )}
           </FootRow>
         </Bubble>

@@ -169,9 +169,13 @@ function MedicineLogEditPopup({ onClose, onDone }) {
           복약 기록 수정
         </PopupTitle>
 
-        <SubtitleRow>
-          <SubtitleText>드신 약을 눌러주세요</SubtitleText>
-        </SubtitleRow>
+        {/* 누를 약이 하나도 없을 땐 '눌러주세요'가 할 게 없다는 뜻으로
+            읽혀서 어색하다. 약이 있을 때만 보여준다. */}
+        {!loading && !error && data?.items.length > 0 && (
+          <SubtitleRow>
+            <SubtitleText>드신 약을 눌러주세요</SubtitleText>
+          </SubtitleRow>
+        )}
 
         {loading && <EmptyText>불러오는 중이에요...</EmptyText>}
         {error && <EmptyText>{error.message}</EmptyText>}
