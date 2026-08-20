@@ -98,7 +98,8 @@ const ContentCol = styled.div`
   flex-direction: column;
   gap: 6px;
   align-items: flex-start;
-  min-width: 0;
+  /* 주차 이름은 한 줄로 두고, 남는 자리는 옆의 한 줄평이 쓴다 */
+  flex-shrink: 0;
 `;
 
 const TitleLine = styled.div`
@@ -138,25 +139,27 @@ const Badge = styled.span`
 `;
 
 // 한 줄평은 연필 없이 오른쪽에 붙인다.
+// 너비를 167px로 못 박아뒀더니 남는 자리를 못 썼다. 주차 이름이 쓰고 남은
+// 만큼을 한 줄평이 가져가게 둔다.
 const EditLabel = styled.div`
+  flex: 1;
+  min-width: 0;
   display: flex;
   align-items: center;
   justify-content: flex-end;
-  width: 167px;
-  flex-shrink: 0;
 `;
 
-// 한 줄평이 길면 넘치는 만큼 말줄임으로 자른다.
+// 예전에는 한 줄로 고정하고 넘치면 '...'으로 잘라서, 무슨 말인지 알 수 없었다.
+// 어절 단위로 줄을 바꿔 끝까지 보여준다.
 const EditText = styled.span`
   min-width: 0;
   font-family: 'Noto Sans KR';
   font-size: 16px;
   font-weight: 700;
+  line-height: 1.35;
   color: #3f5a1b;
   text-align: right;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  word-break: keep-all;
 `;
 
 // 월별 탭 없이 주차가 위에서 아래로 그냥 쌓인다.
